@@ -1,0 +1,402 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		B10000000000000000000201 /* PrabuOneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000101 /* PrabuOneApp.swift */; };
+		B10000000000000000000202 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000102 /* ContentView.swift */; };
+		B10000000000000000000203 /* ScreenCaptureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000103 /* ScreenCaptureManager.swift */; };
+		B10000000000000000000204 /* LocalPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000104 /* LocalPreviewView.swift */; };
+		B10000000000000000000205 /* CaptureStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000105 /* CaptureStats.swift */; };
+		B10000000000000000000208 /* CarMirrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000108 /* CarMirrorView.swift */; };
+		B10000000000000000000207 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000107 /* Assets.xcassets */; };
+		B10000000000000000000209 /* LifeItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000109 /* LifeItem.swift */; };
+		B10000000000000000000210 /* ReminderEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000110 /* ReminderEngine.swift */; };
+		B10000000000000000000211 /* LifeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000111 /* LifeStore.swift */; };
+		B10000000000000000000212 /* AddLifeItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000112 /* AddLifeItemView.swift */; };
+		B10000000000000000000213 /* CategoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000113 /* CategoryDetailView.swift */; };
+		B10000000000000000000214 /* CreditCardData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000114 /* CreditCardData.swift */; };
+		B10000000000000000000215 /* VehicleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000115 /* VehicleData.swift */; };
+		B10000000000000000000216 /* DocumentData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000116 /* DocumentData.swift */; };
+		B10000000000000000000217 /* MoneyHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000117 /* MoneyHubView.swift */; };
+		B10000000000000000000218 /* VehicleHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000118 /* VehicleHubView.swift */; };
+		B10000000000000000000219 /* LifeDatesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000119 /* LifeDatesHubView.swift */; };
+		B10000000000000000000220 /* DocumentVaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000120 /* DocumentVaultView.swift */; };
+		B10000000000000000000221 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000121 /* HapticManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10000000000000000000009 /* PrabuOne.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrabuOne.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000101 /* PrabuOneApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrabuOneApp.swift; sourceTree = "<group>"; };
+		B10000000000000000000102 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B10000000000000000000103 /* ScreenCaptureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCaptureManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000104 /* LocalPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPreviewView.swift; sourceTree = "<group>"; };
+		B10000000000000000000105 /* CaptureStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureStats.swift; sourceTree = "<group>"; };
+		B10000000000000000000108 /* CarMirrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarMirrorView.swift; sourceTree = "<group>"; };
+		B10000000000000000000106 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10000000000000000000107 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B10000000000000000000109 /* LifeItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeItem.swift; sourceTree = "<group>"; };
+		B10000000000000000000110 /* ReminderEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderEngine.swift; sourceTree = "<group>"; };
+		B10000000000000000000111 /* LifeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeStore.swift; sourceTree = "<group>"; };
+		B10000000000000000000112 /* AddLifeItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLifeItemView.swift; sourceTree = "<group>"; };
+		B10000000000000000000113 /* CategoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryDetailView.swift; sourceTree = "<group>"; };
+		B10000000000000000000114 /* CreditCardData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditCardData.swift; sourceTree = "<group>"; };
+		B10000000000000000000115 /* VehicleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleData.swift; sourceTree = "<group>"; };
+		B10000000000000000000116 /* DocumentData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentData.swift; sourceTree = "<group>"; };
+		B10000000000000000000117 /* MoneyHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyHubView.swift; sourceTree = "<group>"; };
+		B10000000000000000000118 /* VehicleHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleHubView.swift; sourceTree = "<group>"; };
+		B10000000000000000000119 /* LifeDatesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeDatesHubView.swift; sourceTree = "<group>"; };
+		B10000000000000000000120 /* DocumentVaultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentVaultView.swift; sourceTree = "<group>"; };
+		B10000000000000000000121 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		B10000000000000000000011 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B10000000000000000000003 = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000004 /* PrabuOne */,
+				B10000000000000000000008 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B10000000000000000000004 /* PrabuOne */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000101 /* PrabuOneApp.swift */,
+				B10000000000000000000102 /* ContentView.swift */,
+				B10000000000000000000108 /* CarMirrorView.swift */,
+				B10000000000000000000005 /* ScreenCapture */,
+				B10000000000000000000006 /* Preview */,
+				B10000000000000000000007 /* Models */,
+				B10000000000000000000013 /* Engine */,
+				B10000000000000000000014 /* Views */,
+				B10000000000000000000107 /* Assets.xcassets */,
+				B10000000000000000000106 /* Info.plist */,
+			);
+			path = PrabuOne;
+			sourceTree = "<group>";
+		};
+		B10000000000000000000005 /* ScreenCapture */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000103 /* ScreenCaptureManager.swift */,
+			);
+			path = ScreenCapture;
+			sourceTree = "<group>";
+		};
+		B10000000000000000000006 /* Preview */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000104 /* LocalPreviewView.swift */,
+			);
+			path = Preview;
+			sourceTree = "<group>";
+		};
+		B10000000000000000000007 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000105 /* CaptureStats.swift */,
+				B10000000000000000000109 /* LifeItem.swift */,
+				B10000000000000000000114 /* CreditCardData.swift */,
+				B10000000000000000000115 /* VehicleData.swift */,
+				B10000000000000000000116 /* DocumentData.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		B10000000000000000000008 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000009 /* PrabuOne.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B10000000000000000000013 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000110 /* ReminderEngine.swift */,
+				B10000000000000000000111 /* LifeStore.swift */,
+				B10000000000000000000121 /* HapticManager.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		B10000000000000000000014 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000112 /* AddLifeItemView.swift */,
+				B10000000000000000000113 /* CategoryDetailView.swift */,
+				B10000000000000000000117 /* MoneyHubView.swift */,
+				B10000000000000000000118 /* VehicleHubView.swift */,
+				B10000000000000000000119 /* LifeDatesHubView.swift */,
+				B10000000000000000000120 /* DocumentVaultView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B10000000000000000000002 /* PrabuOne */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B10000000000000000000030 /* Build configuration list for PBXNativeTarget "PrabuOne" */;
+			buildPhases = (
+				B10000000000000000000010 /* Sources */,
+				B10000000000000000000011 /* Frameworks */,
+				B10000000000000000000012 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PrabuOne;
+			productName = PrabuOne;
+			productReference = B10000000000000000000009 /* PrabuOne.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B10000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					B10000000000000000000002 = {
+						CreatedOnToolsVersion = 27.0;
+						DevelopmentTeam = GHWNCYN8YV;
+					};
+				};
+			};
+			buildConfigurationList = B10000000000000000000020 /* Build configuration list for PBXProject "PrabuOne" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = B10000000000000000000003;
+			productRefGroup = B10000000000000000000008 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B10000000000000000000002 /* PrabuOne */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B10000000000000000000012 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000207 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B10000000000000000000010 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B10000000000000000000201 /* PrabuOneApp.swift in Sources */,
+				B10000000000000000000202 /* ContentView.swift in Sources */,
+				B10000000000000000000203 /* ScreenCaptureManager.swift in Sources */,
+				B10000000000000000000204 /* LocalPreviewView.swift in Sources */,
+				B10000000000000000000205 /* CaptureStats.swift in Sources */,
+				B10000000000000000000208 /* CarMirrorView.swift in Sources */,
+				B10000000000000000000209 /* LifeItem.swift in Sources */,
+				B10000000000000000000210 /* ReminderEngine.swift in Sources */,
+				B10000000000000000000211 /* LifeStore.swift in Sources */,
+				B10000000000000000000212 /* AddLifeItemView.swift in Sources */,
+				B10000000000000000000213 /* CategoryDetailView.swift in Sources */,
+				B10000000000000000000214 /* CreditCardData.swift in Sources */,
+				B10000000000000000000215 /* VehicleData.swift in Sources */,
+				B10000000000000000000216 /* DocumentData.swift in Sources */,
+				B10000000000000000000217 /* MoneyHubView.swift in Sources */,
+				B10000000000000000000218 /* VehicleHubView.swift in Sources */,
+				B10000000000000000000219 /* LifeDatesHubView.swift in Sources */,
+				B10000000000000000000220 /* DocumentVaultView.swift in Sources */,
+				B10000000000000000000221 /* HapticManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B10000000000000000000021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = GHWNCYN8YV;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDEFINED_VARIABLES = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B10000000000000000000022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = GHWNCYN8YV;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDEFINED_VARIABLES = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		B10000000000000000000031 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = GHWNCYN8YV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PrabuOne/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.prabuganesan.prabuone;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B10000000000000000000032 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = GHWNCYN8YV;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = PrabuOne/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.prabuganesan.prabuone;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B10000000000000000000020 /* Build configuration list for PBXProject "PrabuOne" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B10000000000000000000021 /* Debug */,
+				B10000000000000000000022 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B10000000000000000000030 /* Build configuration list for PBXNativeTarget "PrabuOne" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B10000000000000000000031 /* Debug */,
+				B10000000000000000000032 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = B10000000000000000000001 /* Project object */;
+}
