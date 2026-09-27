@@ -76,4 +76,9 @@ public final class ReminderEngine: NSObject {
         let identifiers = item.reminderDaysBefore.map { "prabuone-\(item.id.uuidString)-\($0)" }
         center.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
+    
+    /// Cancels all pending notifications across the app.
+    public func cancelAllReminders() {
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+    }
 }

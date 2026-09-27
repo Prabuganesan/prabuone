@@ -40,7 +40,7 @@ public struct VehicleHubView: View {
                             Text(vehicle.makeModel)
                                 .font(.system(size: 24, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
-                            Text("\(vehicle.registrationNumber) • \(vehicle.fuelType)")
+                            Text(vehicle.registrationNumber.isEmpty ? vehicle.fuelType : "\(vehicle.registrationNumber) • \(vehicle.fuelType)")
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -68,7 +68,7 @@ public struct VehicleHubView: View {
                         
                         Button(action: {
                             HapticManager.light()
-                            newOdometerText = "\(vehicle.currentOdometerKm)"
+                            newOdometerText = vehicle.currentOdometerKm > 0 ? "\(vehicle.currentOdometerKm)" : ""
                             showingUpdateOdometer = true
                         }) {
                             Text("Update km")
@@ -102,8 +102,8 @@ public struct VehicleHubView: View {
                     
                     VehicleStatCard(
                         title: "Fuel Economy",
-                        value: "\(String(format: "%.1f", vehicle.averageFuelEconomy ?? 16.4)) km/L",
-                        subtitle: "\(vehicle.fuelType) avg",
+                        value: vehicle.averageFuelEconomy != nil ? "\(String(format: "%.1f", vehicle.averageFuelEconomy!)) km/L" : "--",
+                        subtitle: vehicle.averageFuelEconomy != nil ? "\(vehicle.fuelType) avg" : "Log 2 refuels to view",
                         icon: "gauge.with.needle.fill",
                         color: .purple
                     )

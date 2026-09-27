@@ -264,13 +264,23 @@ public final class LifeStore: ObservableObject {
     }
     
     private func loadFromDisk() {
+        // One-time purge of legacy dummy seed data
+        let purgeKey = "has_purged_dummy_seed_data_v2"
+        if !UserDefaults.standard.bool(forKey: purgeKey) {
+            try? FileManager.default.removeItem(at: getURL(for: itemsFileName))
+            try? FileManager.default.removeItem(at: getURL(for: cardsFileName))
+            try? FileManager.default.removeItem(at: getURL(for: vehicleFileName))
+            try? FileManager.default.removeItem(at: getURL(for: documentsFileName))
+            UserDefaults.standard.set(true, forKey: purgeKey)
+        }
+        
         let itemsURL = getURL(for: itemsFileName)
         if FileManager.default.fileExists(atPath: itemsURL.path),
            let data = try? Data(contentsOf: itemsURL),
            let loaded = try? JSONDecoder().decode([LifeItem].self, from: data) {
             self.items = loaded
         } else {
-            seedInitialItems()
+            self.items = []
         }
         
         let cardsURL = getURL(for: cardsFileName)
@@ -279,7 +289,7 @@ public final class LifeStore: ObservableObject {
            let loaded = try? JSONDecoder().decode([CreditCardAccount].self, from: data) {
             self.creditCards = loaded
         } else {
-            seedInitialCards()
+            self.creditCards = []
         }
         
         let vehicleURL = getURL(for: vehicleFileName)
@@ -288,7 +298,7 @@ public final class LifeStore: ObservableObject {
            let loaded = try? JSONDecoder().decode(VehicleProfile.self, from: data) {
             self.vehicleProfile = loaded
         } else {
-            seedInitialVehicle()
+            self.vehicleProfile = VehicleProfile()
         }
         
         let docsURL = getURL(for: documentsFileName)
@@ -297,172 +307,20 @@ public final class LifeStore: ObservableObject {
            let loaded = try? JSONDecoder().decode([DocumentRecord].self, from: data) {
             self.documents = loaded
         } else {
-            seedInitialDocuments()
+            self.documents = []
         }
     }
     
-    private func seedInitialItems() {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        let sampleItems: [LifeItem] = [
-            LifeItem(
-                title: "HDFC Regalia Card",
-                subtitle: "Payment Due • Outstanding ₹42,350",
-                category: .creditCard,
-                dueDate: calendar.date(byAdding: .day, value: 2, to: today) ?? today,
-                amount: 42350,
-                repeatFrequency: .monthly
-            ),
-            LifeItem(
-                title: "Jio Mobile Recharge",
-                subtitle: "SIM 1 • ₹299 Unlimited Plan",
-                category: .mobileBill,
-                dueDate: calendar.date(byAdding: .day, value: 4, to: today) ?? today,
-                amount: 299,
-                repeatFrequency: .monthly
-            ),
-            LifeItem(
-                title: "Kia Sonet Insurance",
-                subtitle: "Annual Comprehensive Policy Renewal",
-                category: .vehicle,
-                dueDate: calendar.date(byAdding: .day, value: 12, to: today) ?? today,
-                amount: 18500,
-                repeatFrequency: .yearly
-            ),
-            LifeItem(
-                title: "Cursor Pro Subscription",
-                subtitle: "AI Coding Assistant Plan ($20)",
-                category: .subscription,
-                dueDate: calendar.date(byAdding: .day, value: 16, to: today) ?? today,
-                amount: 1700,
-                repeatFrequency: .monthly
-            ),
-            LifeItem(
-                title: "Netflix Premium",
-                subtitle: "4K Family Plan",
-                category: .subscription,
-                dueDate: calendar.date(byAdding: .day, value: 18, to: today) ?? today,
-                amount: 649,
-                repeatFrequency: .monthly
-            ),
-            LifeItem(
-                title: "Thaya's Birthday",
-                subtitle: "Family Celebration & Gift",
-                category: .birthday,
-                dueDate: calendar.date(byAdding: .day, value: 24, to: today) ?? today,
-                repeatFrequency: .yearly
-            ),
-            LifeItem(
-                title: "Kia Sonet PUC Certificate",
-                subtitle: "Vehicle Pollution Expiry",
-                category: .document,
-                dueDate: calendar.date(byAdding: .day, value: 35, to: today) ?? today,
-                amount: 100,
-                repeatFrequency: .yearly
-            )
-        ]
-        
-        self.items = sampleItems
-        for item in sampleItems {
-            ReminderEngine.shared.scheduleReminders(for: item)
-        }
+    /// Complete purge to reset app data if needed.
+    public func clearAllData() {
+        self.items = []
+        self.creditCards = []
+        self.vehicleProfile = VehicleProfile()
+        self.documents = []
+        ReminderEngine.shared.cancelAllReminders()
         saveToDisk()
-    }
-    
-    private func seedInitialCards() {
-        self.creditCards = [
-            CreditCardAccount(
-                bankName: "HDFC Bank",
-                cardName: "Regalia Gold",
-                lastFourDigits: "4821",
-                creditLimit: 500000,
-                outstandingAmount: 42350,
-                statementDay: 15,
-                dueDay: 5,
-                rewardPoints: 14200,
-                cardNetwork: "Visa"
-            ),
-            CreditCardAccount(
-                bankName: "ICICI Bank",
-                cardName: "Amazon Pay",
-                lastFourDigits: "9102",
-                creditLimit: 250000,
-                outstandingAmount: 8200,
-                statementDay: 20,
-                dueDay: 10,
-                rewardPoints: 3450,
-                cardNetwork: "Visa"
-            )
-        ]
         saveCardsToDisk()
-    }
-    
-    private func seedInitialVehicle() {
-        self.vehicleProfile = VehicleProfile(
-            makeModel: "Kia Sonet HTX",
-            registrationNumber: "TN 01 AB 1234",
-            fuelType: "Diesel",
-            currentOdometerKm: 45320,
-            nextServiceDueKm: 50000,
-            serviceHistory: [
-                VehicleServiceRecord(
-                    title: "Periodic 40,000 km Service",
-                    date: Calendar.current.date(byAdding: .month, value: -4, to: Date()) ?? Date(),
-                    odometerKm: 40210,
-                    cost: 8450,
-                    itemsReplaced: ["Engine Oil (Fully Synthetic)", "Oil Filter", "Air Filter", "Cabin AC Filter"],
-                    serviceCenter: "Kia Authorized Service Center"
-                )
-            ],
-            fuelHistory: [
-                FuelRecord(
-                    date: Calendar.current.date(byAdding: .day, value: -6, to: Date()) ?? Date(),
-                    odometerKm: 45050,
-                    liters: 38.5,
-                    totalCost: 3650
-                )
-            ]
-        )
         saveVehicleToDisk()
-    }
-    
-    private func seedInitialDocuments() {
-        let calendar = Calendar.current
-        let today = Date()
-        
-        self.documents = [
-            DocumentRecord(
-                title: "Kia Sonet Registration Certificate (RC)",
-                documentType: "RC Book",
-                documentNumber: "TN01AB1234",
-                expiryDate: calendar.date(byAdding: .year, value: 12, to: today)
-            ),
-            DocumentRecord(
-                title: "Driving License",
-                documentType: "Driving License",
-                documentNumber: "DL-0420110012345",
-                expiryDate: calendar.date(byAdding: .year, value: 8, to: today)
-            ),
-            DocumentRecord(
-                title: "Indian Passport",
-                documentType: "Passport",
-                documentNumber: "Z4829104",
-                expiryDate: calendar.date(byAdding: .year, value: 4, to: today)
-            ),
-            DocumentRecord(
-                title: "Kia Sonet Comprehensive Insurance",
-                documentType: "Insurance Policy",
-                documentNumber: "POL-ICICI-849201",
-                expiryDate: calendar.date(byAdding: .day, value: 12, to: today)
-            ),
-            DocumentRecord(
-                title: "Pollution Under Control (PUC)",
-                documentType: "PUC Certificate",
-                documentNumber: "PUC-TN-94021",
-                expiryDate: calendar.date(byAdding: .day, value: 35, to: today)
-            )
-        ]
         saveDocumentsToDisk()
     }
 }

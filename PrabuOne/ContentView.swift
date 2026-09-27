@@ -127,6 +127,28 @@ public struct ContentView: View {
                                 RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.red.opacity(0.25), lineWidth: 1)
                             )
+                        } else {
+                            // 🟢 All Clear Banner
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.green)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("All Clear")
+                                        .font(.system(size: 15, weight: .bold))
+                                    Text(store.items.isEmpty ? "Tap + to add your cards, vehicle, and bills" : "No urgent payments or renewals due")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                            }
+                            .padding(14)
+                            .background(Color.green.opacity(0.08))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color.green.opacity(0.2), lineWidth: 1)
+                            )
                         }
                         
                         // 💰 Monthly Outflow Overview Card

@@ -73,13 +73,13 @@ public struct VehicleProfile: Identifiable, Codable, Equatable {
     public init(
         id: UUID = UUID(),
         makeModel: String = "Kia Sonet",
-        registrationNumber: String = "TN 01 AB 1234",
+        registrationNumber: String = "",
         fuelType: String = "Diesel",
-        currentOdometerKm: Int = 45320,
-        nextServiceDueKm: Int = 50000,
-        insuranceExpiryDate: Date = Calendar.current.date(byAdding: .day, value: 12, to: Date()) ?? Date(),
-        pucExpiryDate: Date = Calendar.current.date(byAdding: .day, value: 35, to: Date()) ?? Date(),
-        fastagBalance: Double = 750,
+        currentOdometerKm: Int = 0,
+        nextServiceDueKm: Int = 10000,
+        insuranceExpiryDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date(),
+        pucExpiryDate: Date = Calendar.current.date(byAdding: .month, value: 6, to: Date()) ?? Date(),
+        fastagBalance: Double = 0,
         serviceHistory: [VehicleServiceRecord] = [],
         fuelHistory: [FuelRecord] = []
     ) {
@@ -108,15 +108,15 @@ public struct VehicleProfile: Identifiable, Codable, Equatable {
         serviceHistory.reduce(0) { $0 + $1.cost }
     }
     
-    /// Estimated fuel economy (km/L) from the latest fuel entries.
+    /// Estimated fuel economy (km/L) from fuel entries.
     public var averageFuelEconomy: Double? {
-        guard fuelHistory.count >= 2 else { return 16.4 } // Reasonable benchmark for Kia Sonet Diesel
+        guard fuelHistory.count >= 2 else { return nil }
         let sorted = fuelHistory.sorted { $0.odometerKm < $1.odometerKm }
         guard let first = sorted.first, let last = sorted.last, last.odometerKm > first.odometerKm else {
-            return 16.4
+            return nil
         }
         let totalKm = Double(last.odometerKm - first.odometerKm)
         let totalLiters = sorted.dropFirst().reduce(0.0) { $0 + $1.liters }
-        return totalLiters > 0 ? (totalKm / totalLiters) : 16.4
+        return totalLiters > 0 ? (totalKm / totalLiters) : nil
     }
 }
