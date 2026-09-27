@@ -4,6 +4,7 @@ import SwiftUI
 public struct LifeDatesHubView: View {
     @ObservedObject var store: LifeStore
     @State private var showingAddDate = false
+    @State private var selectedItemToEdit: LifeItem? = nil
     
     public init(store: LifeStore) {
         self.store = store
@@ -50,16 +51,24 @@ public struct LifeDatesHubView: View {
                         .padding(.vertical, 32)
                     } else {
                         ForEach(birthdayItems) { item in
-                            LifeDateCard(item: item)
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        withAnimation {
-                                            store.deleteItem(item)
-                                        }
-                                    } label: {
-                                        Label("Delete Event", systemImage: "trash")
-                                    }
+                            LifeDateCard(item: item, onEdit: {
+                                selectedItemToEdit = item
+                            })
+                            .contextMenu {
+                                Button {
+                                    selectedItemToEdit = item
+                                } label: {
+                                    Label("Edit Event", systemImage: "pencil")
                                 }
+                                
+                                Button(role: .destructive) {
+                                    withAnimation {
+                                        store.deleteItem(item)
+                                    }
+                                } label: {
+                                    Label("Delete Event", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                 }
@@ -84,12 +93,16 @@ public struct LifeDatesHubView: View {
         .sheet(isPresented: $showingAddDate) {
             AddLifeDateSheet(store: store)
         }
+        .sheet(item: $selectedItemToEdit) { item in
+            EditLifeDateSheet(store: store, item: item)
+        }
     }
 }
 
 /// Card showing milestone countdown and gift notes.
 struct LifeDateCard: View {
     let item: LifeItem
+    var onEdit: (() -> Void)? = nil
     
     var body: some View {
         HStack(spacing: 16) {
@@ -120,6 +133,15 @@ struct LifeDateCard: View {
             }
             
             Spacer()
+            
+            if let onEdit = onEdit {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
             
             VStack(alignment: .trailing, spacing: 2) {
                 Text("\(item.daysRemaining)")
@@ -183,6 +205,63 @@ struct AddLifeDateSheet: View {
                         dismiss()
                     }
                     .disabled(name.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+/// Sheet for editing an existing milestone or birthday event.
+struct EditLifeDateSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    let item: LifeItem
+    
+    @State private var title = ""
+    @State private var subtitle = ""
+    @State private var eventDate = Date()
+    @State private var giftNotes = ""
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Person & Event") {
+                    TextField("Title (e.g. Thaya's Birthday)", text: $title)
+                    TextField("Description (e.g. Annual Celebration)", text: $subtitle)
+                }
+                
+                Section("Event Date") {
+                    DatePicker("Date", selection: $eventDate, displayedComponents: [.date])
+                }
+                
+                Section("Gift & Planning Notes") {
+                    TextField("Ideas, dinner reservations, gift plans", text: $giftNotes, axis: .vertical)
+                        .lineLimit(3...5)
+                }
+            }
+            .navigationTitle("Edit Life Date")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                title = item.title
+                subtitle = item.subtitle
+                eventDate = item.dueDate
+                giftNotes = item.notes ?? ""
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        var updated = item
+                        updated.title = title.trimmingCharacters(in: .whitespaces)
+                        updated.subtitle = subtitle.trimmingCharacters(in: .whitespaces)
+                        updated.dueDate = eventDate
+                        updated.notes = giftNotes.isEmpty ? nil : giftNotes
+                        store.updateItem(updated)
+                        dismiss()
+                    }
+                    .disabled(title.isEmpty)
                 }
             }
         }

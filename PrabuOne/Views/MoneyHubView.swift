@@ -9,6 +9,8 @@ public struct MoneyHubView: View {
     @State private var selectedTab: Int = 0
     @State private var showingAddCard = false
     @State private var showingAddSubscription = false
+    @State private var selectedCardToEdit: CreditCardAccount? = nil
+    @State private var selectedItemToEdit: LifeItem? = nil
     
     public init(store: LifeStore, initialTab: Int = 0) {
         self.store = store
@@ -48,6 +50,7 @@ public struct MoneyHubView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: {
+                    HapticManager.light()
                     if selectedTab == 0 {
                         showingAddCard = true
                     } else {
@@ -65,9 +68,13 @@ public struct MoneyHubView: View {
         .sheet(isPresented: $showingAddSubscription) {
             AddLifeItemView(store: store)
         }
+        .sheet(item: $selectedCardToEdit) { card in
+            EditCreditCardSheet(store: store, card: card)
+        }
+        .sheet(item: $selectedItemToEdit) { item in
+            EditLifeItemSheet(store: store, item: item)
+        }
     }
-    
-    // MARK: - Credit Cards View
     
     // MARK: - Credit Cards View
     
@@ -91,8 +98,16 @@ public struct MoneyHubView: View {
                         withAnimation {
                             store.toggleCardPaid(card)
                         }
+                    }, onEdit: {
+                        selectedCardToEdit = card
                     })
                     .contextMenu {
+                        Button {
+                            selectedCardToEdit = card
+                        } label: {
+                            Label("Edit Card Details", systemImage: "pencil")
+                        }
+                        
                         Button(role: .destructive) {
                             withAnimation {
                                 store.deleteCreditCard(card)
@@ -152,16 +167,33 @@ public struct MoneyHubView: View {
             } else {
                 VStack(spacing: 10) {
                     ForEach(subs) { item in
-                        LifeItemRow(item: item, onTogglePaid: {
-                            withAnimation {
-                                HapticManager.success()
-                                store.toggleCompleted(item)
+                        HStack {
+                            LifeItemRow(item: item, onTogglePaid: {
+                                withAnimation {
+                                    HapticManager.success()
+                                    store.toggleCompleted(item)
+                                }
+                            })
+                            
+                            Button(action: {
+                                selectedItemToEdit = item
+                            }) {
+                                Image(systemName: "pencil.circle")
+                                    .foregroundColor(.secondary)
+                                    .font(.system(size: 18))
                             }
-                        })
+                            .buttonStyle(.plain)
+                        }
                         .padding(12)
                         .background(Color(UIColor.secondarySystemBackground))
                         .cornerRadius(14)
                         .contextMenu {
+                            Button {
+                                selectedItemToEdit = item
+                            } label: {
+                                Label("Edit Subscription", systemImage: "pencil")
+                            }
+                            
                             Button(role: .destructive) {
                                 withAnimation {
                                     store.deleteItem(item)
@@ -189,16 +221,33 @@ public struct MoneyHubView: View {
                     .padding(.vertical, 24)
             } else {
                 ForEach(bills) { item in
-                    LifeItemRow(item: item, onTogglePaid: {
-                        withAnimation {
-                            HapticManager.success()
-                            store.toggleCompleted(item)
+                    HStack {
+                        LifeItemRow(item: item, onTogglePaid: {
+                            withAnimation {
+                                HapticManager.success()
+                                store.toggleCompleted(item)
+                            }
+                        })
+                        
+                        Button(action: {
+                            selectedItemToEdit = item
+                        }) {
+                            Image(systemName: "pencil.circle")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 18))
                         }
-                    })
+                        .buttonStyle(.plain)
+                    }
                     .padding(12)
                     .background(Color(UIColor.secondarySystemBackground))
                     .cornerRadius(14)
                     .contextMenu {
+                        Button {
+                            selectedItemToEdit = item
+                        } label: {
+                            Label("Edit Bill", systemImage: "pencil")
+                        }
+                        
                         Button(role: .destructive) {
                             withAnimation {
                                 store.deleteItem(item)
@@ -225,6 +274,7 @@ public struct MoneyHubView: View {
 struct CreditCardView: View {
     let card: CreditCardAccount
     let onTogglePaid: () -> Void
+    var onEdit: (() -> Void)? = nil
     
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -239,6 +289,15 @@ struct CreditCardView: View {
                 }
                 
                 Spacer()
+                
+                if let onEdit = onEdit {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil.circle")
+                            .font(.system(size: 20))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                }
                 
                 Text("•••• \(card.lastFourDigits)")
                     .font(.system(size: 15, weight: .semibold, design: .monospaced))
@@ -375,6 +434,163 @@ struct AddCreditCardSheet: View {
                         dismiss()
                     }
                     .disabled(bankName.isEmpty || cardName.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+/// Sheet for editing an existing credit card account.
+struct EditCreditCardSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    let card: CreditCardAccount
+    
+    @State private var bankName = ""
+    @State private var cardName = ""
+    @State private var lastFourDigits = ""
+    @State private var creditLimitText = ""
+    @State private var outstandingText = ""
+    @State private var statementDay = 15
+    @State private var dueDay = 5
+    @State private var rewardPointsText = "0"
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Card Details") {
+                    TextField("Bank Name", text: $bankName)
+                    TextField("Card Name", text: $cardName)
+                    TextField("Last 4 Digits", text: $lastFourDigits)
+                        .keyboardType(.numberPad)
+                }
+                
+                Section("Limits & Balances") {
+                    TextField("Total Credit Limit (₹)", text: $creditLimitText)
+                        .keyboardType(.numberPad)
+                    TextField("Current Outstanding (₹)", text: $outstandingText)
+                        .keyboardType(.numberPad)
+                    TextField("Reward Points", text: $rewardPointsText)
+                        .keyboardType(.numberPad)
+                }
+                
+                Section("Billing Cycle") {
+                    Stepper("Statement Date: \(statementDay)th", value: $statementDay, in: 1...31)
+                    Stepper("Payment Due Date: \(dueDay)th", value: $dueDay, in: 1...31)
+                }
+            }
+            .navigationTitle("Edit Credit Card")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                bankName = card.bankName
+                cardName = card.cardName
+                lastFourDigits = card.lastFourDigits
+                creditLimitText = "\(Int(card.creditLimit))"
+                outstandingText = "\(Int(card.outstandingAmount))"
+                statementDay = card.statementDay
+                dueDay = card.dueDay
+                rewardPointsText = "\(card.rewardPoints)"
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        var updated = card
+                        updated.bankName = bankName
+                        updated.cardName = cardName
+                        updated.lastFourDigits = lastFourDigits
+                        if let lim = Double(creditLimitText) { updated.creditLimit = lim }
+                        if let out = Double(outstandingText) { updated.outstandingAmount = out }
+                        if let pts = Int(rewardPointsText) { updated.rewardPoints = pts }
+                        updated.statementDay = statementDay
+                        updated.dueDay = dueDay
+                        store.updateCreditCard(updated)
+                        dismiss()
+                    }
+                    .disabled(bankName.isEmpty || cardName.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+/// Sheet for editing an existing subscription, bill, or life item.
+struct EditLifeItemSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    let item: LifeItem
+    
+    @State private var title: String = ""
+    @State private var subtitle: String = ""
+    @State private var category: LifeCategory = .subscription
+    @State private var dueDate: Date = Date()
+    @State private var amountText: String = ""
+    @State private var repeatFrequency: RepeatFrequency = .monthly
+    @State private var notes: String = ""
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Basic Information") {
+                    TextField("Title", text: $title)
+                    TextField("Subtitle", text: $subtitle)
+                    Picker("Category", selection: $category) {
+                        ForEach(LifeCategory.allCases) { cat in
+                            Label(cat.rawValue, systemImage: cat.iconName).tag(cat)
+                        }
+                    }
+                }
+                
+                Section("Timeline & Amount") {
+                    DatePicker("Due Date", selection: $dueDate, displayedComponents: [.date])
+                    HStack {
+                        Text("₹").foregroundColor(.secondary)
+                        TextField("Amount", text: $amountText)
+                            .keyboardType(.numberPad)
+                    }
+                    Picker("Repeat", selection: $repeatFrequency) {
+                        ForEach(RepeatFrequency.allCases) { freq in
+                            Text(freq.rawValue).tag(freq)
+                        }
+                    }
+                }
+                
+                Section("Notes") {
+                    TextField("Notes & details", text: $notes, axis: .vertical)
+                        .lineLimit(3...5)
+                }
+            }
+            .navigationTitle("Edit Commitment")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                title = item.title
+                subtitle = item.subtitle
+                category = item.category
+                dueDate = item.dueDate
+                amountText = item.amount != nil ? "\(Int(item.amount!))" : ""
+                repeatFrequency = item.repeatFrequency
+                notes = item.notes ?? ""
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        var updated = item
+                        updated.title = title.trimmingCharacters(in: .whitespaces)
+                        updated.subtitle = subtitle.trimmingCharacters(in: .whitespaces)
+                        updated.category = category
+                        updated.dueDate = dueDate
+                        updated.amount = Double(amountText.replacingOccurrences(of: ",", with: ""))
+                        updated.repeatFrequency = repeatFrequency
+                        updated.notes = notes.isEmpty ? nil : notes
+                        store.updateItem(updated)
+                        dismiss()
+                    }
+                    .disabled(title.isEmpty)
                 }
             }
         }

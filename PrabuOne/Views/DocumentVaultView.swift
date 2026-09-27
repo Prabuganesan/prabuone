@@ -4,6 +4,7 @@ import SwiftUI
 public struct DocumentVaultView: View {
     @ObservedObject var store: LifeStore
     @State private var showingAddDocument = false
+    @State private var selectedDocToEdit: DocumentRecord? = nil
     @State private var copiedToastText: String? = nil
     
     public init(store: LifeStore) {
@@ -41,8 +42,16 @@ public struct DocumentVaultView: View {
                                         copiedToastText = nil
                                     }
                                 }
+                            }, onEdit: {
+                                selectedDocToEdit = doc
                             })
                             .contextMenu {
+                                Button {
+                                    selectedDocToEdit = doc
+                                } label: {
+                                    Label("Edit Document", systemImage: "pencil")
+                                }
+                                
                                 Button {
                                     UIPasteboard.general.string = doc.documentNumber
                                     HapticManager.success()
@@ -99,6 +108,9 @@ public struct DocumentVaultView: View {
         .sheet(isPresented: $showingAddDocument) {
             AddDocumentSheet(store: store)
         }
+        .sheet(item: $selectedDocToEdit) { doc in
+            EditDocumentSheet(store: store, document: doc)
+        }
     }
 }
 
@@ -106,6 +118,7 @@ public struct DocumentVaultView: View {
 struct DocumentCard: View {
     let document: DocumentRecord
     let onCopy: () -> Void
+    var onEdit: (() -> Void)? = nil
     
     private var iconName: String {
         switch document.documentType {
@@ -140,6 +153,15 @@ struct DocumentCard: View {
                 }
                 
                 Spacer()
+                
+                if let onEdit = onEdit {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil.circle")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
                 
                 statusBadge
             }
@@ -266,6 +288,72 @@ struct AddDocumentSheet: View {
                             expiryDate: hasExpiry ? expiryDate : nil
                         )
                         store.addDocument(doc)
+                        dismiss()
+                    }
+                    .disabled(title.isEmpty || documentNumber.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+/// Sheet for editing an existing document in the vault.
+struct EditDocumentSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    let document: DocumentRecord
+    
+    @State private var title = ""
+    @State private var documentType = "RC Book"
+    @State private var documentNumber = ""
+    @State private var hasExpiry = true
+    @State private var expiryDate = Date().addingTimeInterval(86400 * 365)
+    
+    let types = ["RC Book", "Driving License", "Passport", "Aadhaar Card", "PAN Card", "Insurance Policy", "PUC Certificate", "Agreement"]
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Document Information") {
+                    TextField("Document Name", text: $title)
+                    Picker("Type", selection: $documentType) {
+                        ForEach(types, id: \.self) { type in
+                            Text(type).tag(type)
+                        }
+                    }
+                    TextField("Document Number / ID", text: $documentNumber)
+                }
+                
+                Section("Validity") {
+                    Toggle("Has Expiry Date", isOn: $hasExpiry)
+                    if hasExpiry {
+                        DatePicker("Expiry Date", selection: $expiryDate, displayedComponents: [.date])
+                    }
+                }
+            }
+            .navigationTitle("Edit Document")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                title = document.title
+                documentType = document.documentType
+                documentNumber = document.documentNumber
+                hasExpiry = document.expiryDate != nil
+                if let exp = document.expiryDate {
+                    expiryDate = exp
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        var updated = document
+                        updated.title = title.trimmingCharacters(in: .whitespaces)
+                        updated.documentType = documentType
+                        updated.documentNumber = documentNumber.trimmingCharacters(in: .whitespaces)
+                        updated.expiryDate = hasExpiry ? expiryDate : nil
+                        store.updateDocument(updated)
                         dismiss()
                     }
                     .disabled(title.isEmpty || documentNumber.isEmpty)

@@ -160,11 +160,68 @@ public final class LifeStore: ObservableObject {
         }
     }
     
+    public func updateCreditCard(_ card: CreditCardAccount) {
+        guard let index = creditCards.firstIndex(where: { $0.id == card.id }) else { return }
+        creditCards[index] = card
+        HapticManager.success()
+        // Synchronize with LifeItem
+        if let itemIndex = items.firstIndex(where: { $0.category == .creditCard && $0.title.contains(card.cardName) }) {
+            items[itemIndex].title = "\(card.bankName) \(card.cardName)"
+            items[itemIndex].subtitle = "Ending in \(card.lastFourDigits) • Limit ₹\(Int(card.creditLimit))"
+            items[itemIndex].amount = card.outstandingAmount
+            items[itemIndex].dueDate = nextDateForDay(card.dueDay)
+            ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+        }
+    }
+    
     // MARK: - Mutations (Vehicle)
     
     public func updateOdometer(newKm: Int) {
         vehicleProfile.currentOdometerKm = newKm
         HapticManager.success()
+    }
+    
+    public func updateNextServiceKm(newKm: Int) {
+        vehicleProfile.nextServiceDueKm = newKm
+        HapticManager.success()
+    }
+    
+    public func updateInsuranceExpiry(newDate: Date) {
+        vehicleProfile.insuranceExpiryDate = newDate
+        HapticManager.success()
+        // Sync or create LifeItem for Insurance
+        if let itemIndex = items.firstIndex(where: { $0.category == .vehicle && $0.title.contains("Insurance") }) {
+            items[itemIndex].dueDate = newDate
+            ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+        } else {
+            let item = LifeItem(
+                title: "\(vehicleProfile.makeModel) Insurance",
+                subtitle: "Policy Renewal",
+                category: .vehicle,
+                dueDate: newDate,
+                repeatFrequency: .yearly
+            )
+            addItem(item)
+        }
+    }
+    
+    public func updatePUCExpiry(newDate: Date) {
+        vehicleProfile.pucExpiryDate = newDate
+        HapticManager.success()
+        // Sync or create LifeItem for PUC
+        if let itemIndex = items.firstIndex(where: { $0.category == .document && $0.title.contains("PUC") }) {
+            items[itemIndex].dueDate = newDate
+            ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+        } else {
+            let item = LifeItem(
+                title: "\(vehicleProfile.makeModel) PUC Certificate",
+                subtitle: "Pollution Expiry",
+                category: .document,
+                dueDate: newDate,
+                repeatFrequency: .yearly
+            )
+            addItem(item)
+        }
     }
     
     public func updateFastagBalance(newBalance: Double) {
@@ -179,11 +236,23 @@ public final class LifeStore: ObservableObject {
         HapticManager.success()
     }
     
+    public func updateFullVehicleProfile(_ profile: VehicleProfile) {
+        vehicleProfile = profile
+        HapticManager.success()
+    }
+    
     public func addServiceRecord(_ record: VehicleServiceRecord) {
         vehicleProfile.serviceHistory.insert(record, at: 0)
         vehicleProfile.currentOdometerKm = max(vehicleProfile.currentOdometerKm, record.odometerKm)
         vehicleProfile.nextServiceDueKm = record.odometerKm + 10000
         HapticManager.success()
+    }
+    
+    public func updateServiceRecord(_ record: VehicleServiceRecord) {
+        if let index = vehicleProfile.serviceHistory.firstIndex(where: { $0.id == record.id }) {
+            vehicleProfile.serviceHistory[index] = record
+            HapticManager.success()
+        }
     }
     
     public func deleteServiceRecord(id: UUID) {
@@ -195,6 +264,13 @@ public final class LifeStore: ObservableObject {
         vehicleProfile.fuelHistory.insert(record, at: 0)
         vehicleProfile.currentOdometerKm = max(vehicleProfile.currentOdometerKm, record.odometerKm)
         HapticManager.success()
+    }
+    
+    public func updateFuelRecord(_ record: FuelRecord) {
+        if let index = vehicleProfile.fuelHistory.firstIndex(where: { $0.id == record.id }) {
+            vehicleProfile.fuelHistory[index] = record
+            HapticManager.success()
+        }
     }
     
     public func deleteFuelRecord(id: UUID) {
@@ -216,6 +292,23 @@ public final class LifeStore: ObservableObject {
                 repeatFrequency: .never
             )
             addItem(docItem)
+        }
+    }
+    
+    public func updateDocument(_ doc: DocumentRecord) {
+        guard let index = documents.firstIndex(where: { $0.id == doc.id }) else { return }
+        let oldDoc = documents[index]
+        documents[index] = doc
+        HapticManager.success()
+        
+        // Update corresponding LifeItem
+        if let itemIndex = items.firstIndex(where: { $0.category == .document && $0.title == oldDoc.title }) {
+            items[itemIndex].title = doc.title
+            items[itemIndex].subtitle = "\(doc.documentType) Expiry (\(doc.documentNumber))"
+            if let expiry = doc.expiryDate {
+                items[itemIndex].dueDate = expiry
+                ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+            }
         }
     }
     

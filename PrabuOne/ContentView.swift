@@ -6,6 +6,7 @@ public struct ContentView: View {
     @StateObject private var store = LifeStore.shared
     @StateObject private var captureManager = ScreenCaptureManager()
     @State private var showingAddSheet = false
+    @State private var selectedItemToEdit: LifeItem? = nil
     @State private var searchText = ""
     
     public init() {}
@@ -93,6 +94,8 @@ public struct ContentView: View {
                                         withAnimation {
                                             store.toggleCompleted(item)
                                         }
+                                    }, onEdit: {
+                                        selectedItemToEdit = item
                                     })
                                 }
                             }
@@ -116,6 +119,8 @@ public struct ContentView: View {
                                             withAnimation {
                                                 store.toggleCompleted(item)
                                             }
+                                        }, onEdit: {
+                                            selectedItemToEdit = item
                                         })
                                     }
                                 }
@@ -314,6 +319,9 @@ public struct ContentView: View {
             .sheet(isPresented: $showingAddSheet) {
                 AddLifeItemView(store: store)
             }
+            .sheet(item: $selectedItemToEdit) { item in
+                EditLifeItemSheet(store: store, item: item)
+            }
         }
     }
     
@@ -330,25 +338,44 @@ public struct ContentView: View {
 struct AttentionItemRow: View {
     let item: LifeItem
     let onComplete: () -> Void
+    var onEdit: (() -> Void)? = nil
     
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: item.category.iconName)
-                .font(.system(size: 16))
-                .foregroundColor(.red)
-                .frame(width: 24)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text(item.amount != nil ? "\(item.formattedAmount ?? "") • \(item.daysRemainingText)" : item.daysRemainingText)
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+            Button(action: {
+                if let onEdit = onEdit {
+                    onEdit()
+                }
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: item.category.iconName)
+                        .font(.system(size: 16))
+                        .foregroundColor(.red)
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.title)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text(item.amount != nil ? "\(item.formattedAmount ?? "") • \(item.daysRemainingText)" : item.daysRemainingText)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
+            .buttonStyle(.plain)
             
             Spacer()
+            
+            if let onEdit = onEdit {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle")
+                        .font(.system(size: 18))
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
             
             Button(action: {
                 HapticManager.success()
@@ -367,6 +394,22 @@ struct AttentionItemRow: View {
         .padding(10)
         .background(Color(UIColor.systemBackground))
         .cornerRadius(10)
+        .contextMenu {
+            if let onEdit = onEdit {
+                Button {
+                    onEdit()
+                } label: {
+                    Label("Edit Commitment", systemImage: "pencil")
+                }
+            }
+            
+            Button {
+                HapticManager.success()
+                onComplete()
+            } label: {
+                Label("Mark as Done", systemImage: "checkmark.circle")
+            }
+        }
     }
 }
 
