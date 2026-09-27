@@ -6,7 +6,9 @@ public struct ContentView: View {
     @StateObject private var store = LifeStore.shared
     @StateObject private var captureManager = ScreenCaptureManager()
     @State private var showingAddSheet = false
+    @State private var showingQuickNoteSheet = false
     @State private var selectedItemToEdit: LifeItem? = nil
+    @State private var selectedNoteToEdit: QuickNote? = nil
     @State private var searchText = ""
     
     public init() {}
@@ -19,6 +21,15 @@ public struct ContentView: View {
             $0.subtitle.lowercased().contains(query) ||
             $0.category.displayName.lowercased().contains(query) ||
             ($0.notes?.lowercased().contains(query) ?? false)
+        }
+    }
+    
+    private var noteSearchResults: [QuickNote] {
+        guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
+        let query = searchText.lowercased()
+        return store.quickNotes.filter {
+            $0.title.lowercased().contains(query) ||
+            $0.content.lowercased().contains(query)
         }
     }
     
@@ -45,14 +56,26 @@ public struct ContentView: View {
                         
                         Spacer()
                         
-                        // Quick Add Action
-                        Button(action: {
-                            HapticManager.light()
-                            showingAddSheet = true
-                        }) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(.blue)
+                        HStack(spacing: 10) {
+                            // ⚡ Sudden Quick Note Button
+                            Button(action: {
+                                HapticManager.light()
+                                showingQuickNoteSheet = true
+                            }) {
+                                Image(systemName: "square.and.pencil.circle.fill")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.amberAccent)
+                            }
+                            
+                            // + Quick Add Life Commitment
+                            Button(action: {
+                                HapticManager.light()
+                                showingAddSheet = true
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
                     .padding(.horizontal, 4)
@@ -79,24 +102,75 @@ public struct ContentView: View {
                     
                     if !searchText.isEmpty {
                         // Search Results Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Search Results (\(searchResults.count))")
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("Search Results (\(searchResults.count + noteSearchResults.count))")
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                             
-                            if searchResults.isEmpty {
-                                Text("No items matching '\(searchText)'")
+                            if searchResults.isEmpty && noteSearchResults.isEmpty {
+                                Text("No items or notes matching '\(searchText)'")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                     .padding(.vertical, 16)
                             } else {
-                                ForEach(searchResults) { item in
-                                    AttentionItemRow(item: item, onComplete: {
-                                        withAnimation {
-                                            store.toggleCompleted(item)
+                                if !searchResults.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Commitments & Items")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.secondary)
+                                        
+                                        ForEach(searchResults) { item in
+                                            AttentionItemRow(item: item, onComplete: {
+                                                withAnimation {
+                                                    store.toggleCompleted(item)
+                                                }
+                                            }, onEdit: {
+                                                selectedItemToEdit = item
+                                            })
                                         }
-                                    }, onEdit: {
-                                        selectedItemToEdit = item
-                                    })
+                                    }
+                                }
+                                
+                                if !noteSearchResults.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Quick Notes (\(noteSearchResults.count))")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.secondary)
+                                        
+                                        ForEach(noteSearchResults) { note in
+                                            Button(action: {
+                                                selectedNoteToEdit = note
+                                            }) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: "square.and.pencil")
+                                                        .foregroundColor(.amberAccent)
+                                                        .frame(width: 20)
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(note.displayTitle)
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                            .foregroundColor(.primary)
+                                                        
+                                                        if !note.previewSnippet.isEmpty {
+                                                            Text(note.previewSnippet)
+                                                                .font(.system(size: 12))
+                                                                .foregroundColor(.secondary)
+                                                                .lineLimit(1)
+                                                        }
+                                                    }
+                                                    
+                                                    Spacer()
+                                                    
+                                                    Image(systemName: "chevron.right")
+                                                        .font(.system(size: 11, weight: .bold))
+                                                        .foregroundColor(.secondary.opacity(0.4))
+                                                }
+                                                .padding(12)
+                                                .background(Color(UIColor.secondarySystemBackground))
+                                                .cornerRadius(12)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -307,6 +381,16 @@ public struct ContentView: View {
                                         badgeCount: store.documents.count
                                     )
                                 }
+                                
+                                NavigationLink(destination: QuickNotesHubView(store: store)) {
+                                    PillarCard(
+                                        icon: "square.and.pencil",
+                                        color: .amberAccent,
+                                        title: "Quick Notes",
+                                        subtitle: "Sudden Thoughts & Memos",
+                                        badgeCount: store.quickNotes.count
+                                    )
+                                }
                             }
                         }
                     }
@@ -319,8 +403,14 @@ public struct ContentView: View {
             .sheet(isPresented: $showingAddSheet) {
                 AddLifeItemView(store: store)
             }
+            .sheet(isPresented: $showingQuickNoteSheet) {
+                NoteEditorSheet(store: store, noteToEdit: nil)
+            }
             .sheet(item: $selectedItemToEdit) { item in
                 EditLifeItemSheet(store: store, item: item)
+            }
+            .sheet(item: $selectedNoteToEdit) { note in
+                NoteEditorSheet(store: store, noteToEdit: note)
             }
         }
     }

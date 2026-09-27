@@ -58,14 +58,22 @@
 - **Milestone Editor**: Tap pencil button or context menu to update name, celebration description, event date, and gift / dinner planning notes.
 - **Smart Reminders**: Automated multi-stage alerts at 30 days, 7 days, 1 day, and on the day.
 
-### 5. 🔴 Attention-Driven Dashboard
+### 5. 📝 Quick Notes & Sudden Thoughts (Instant Scratchpad)
+- **Sudden Thought Capture**: 1-tap action directly from the top header or the Quick Notes hub to note ideas, parking slot numbers, gate passes, locker codes, or temporary checklists instantly.
+- **Immediate Keyboard Auto-Focus**: No mandatory fields or forms required — tap, type, and save with zero friction.
+- **Pin Important Notes**: Keep vital codes or reminders pinned at the top.
+- **Color Accent Tagging**: Visual organization with 5 curated color accents (Amber Yellow, Sky Blue, Emerald Green, Indigo Purple, Coral Rose).
+- **Universal Search Integration**: All notes and memos are searchable directly from the home screen universal search bar.
+- **One-Tap Copy & Share**: Copy note content to clipboard with tactile haptic feedback.
+
+### 6. 🔴 Attention-Driven Dashboard
 - **"Needs Attention" Radar**: Dynamically surfaces bills, service dues, policy renewals, or birthdays due today or within 7 days.
 - **Tap-to-Edit Attention Items**: Tap any item in the attention card or search results to open the editor directly.
 - **Monthly Outflow Predictor**: Computes total committed expenditure (₹) for the current calendar month.
-- **Universal Instant Search**: Search across cards, subscriptions, utility bills, vehicle records, documents, and birthdays.
+- **Universal Instant Search**: Search across cards, subscriptions, utility bills, vehicle records, documents, birthdays, and quick notes.
 - **Multi-Stage Local Reminders**: Proactive push notifications scheduled automatically at **30 days, 7 days, 3 days, 1 day, and 0 days** prior to due dates.
 
-### 6. 🪞 Car Mirror Utility
+### 7. 🪞 Car Mirror Utility
 - **Low-Latency Vehicle Mirroring**: Custom `AVSampleBufferDisplayLayer` hardware preview for streaming your iPhone screen to vehicle CarPlay displays.
 - **Keep-Awake Protection**: Prevents display dimming or auto-lock (`isIdleTimerDisabled = true`) while mirroring is active.
 - **Immersion Mode**: Tap on the live viewport to toggle distraction-free edge-to-edge mirroring.

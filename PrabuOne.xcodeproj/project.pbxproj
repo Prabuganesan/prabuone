@@ -27,6 +27,8 @@
 		B10000000000000000000219 /* LifeDatesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000119 /* LifeDatesHubView.swift */; };
 		B10000000000000000000220 /* DocumentVaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000120 /* DocumentVaultView.swift */; };
 		B10000000000000000000221 /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000121 /* HapticManager.swift */; };
+		B10000000000000000000222 /* QuickNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000122 /* QuickNote.swift */; };
+		B10000000000000000000223 /* QuickNotesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000123 /* QuickNotesHubView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -52,6 +54,8 @@
 		B10000000000000000000119 /* LifeDatesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LifeDatesHubView.swift; sourceTree = "<group>"; };
 		B10000000000000000000120 /* DocumentVaultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentVaultView.swift; sourceTree = "<group>"; };
 		B10000000000000000000121 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000122 /* QuickNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
+		B10000000000000000000123 /* QuickNotesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickNotesHubView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -114,6 +118,7 @@
 				B10000000000000000000114 /* CreditCardData.swift */,
 				B10000000000000000000115 /* VehicleData.swift */,
 				B10000000000000000000116 /* DocumentData.swift */,
+				B10000000000000000000122 /* QuickNote.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -145,6 +150,7 @@
 				B10000000000000000000118 /* VehicleHubView.swift */,
 				B10000000000000000000119 /* LifeDatesHubView.swift */,
 				B10000000000000000000120 /* DocumentVaultView.swift */,
+				B10000000000000000000123 /* QuickNotesHubView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -238,6 +244,8 @@
 				B10000000000000000000219 /* LifeDatesHubView.swift in Sources */,
 				B10000000000000000000220 /* DocumentVaultView.swift in Sources */,
 				B10000000000000000000221 /* HapticManager.swift in Sources */,
+				B10000000000000000000222 /* QuickNote.swift in Sources */,
+				B10000000000000000000223 /* QuickNotesHubView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -12,11 +12,13 @@ public final class LifeStore: ObservableObject {
     @Published public var creditCards: [CreditCardAccount] = [] { didSet { saveCardsToDisk() } }
     @Published public var vehicleProfile: VehicleProfile = VehicleProfile() { didSet { saveVehicleToDisk() } }
     @Published public var documents: [DocumentRecord] = [] { didSet { saveDocumentsToDisk() } }
+    @Published public var quickNotes: [QuickNote] = [] { didSet { saveNotesToDisk() } }
     
     private let itemsFileName = "prabuone_life_items.json"
     private let cardsFileName = "prabuone_credit_cards.json"
     private let vehicleFileName = "prabuone_vehicle.json"
     private let documentsFileName = "prabuone_documents.json"
+    private let notesFileName = "prabuone_notes.json"
     
     public init() {
         loadFromDisk()
@@ -318,6 +320,38 @@ public final class LifeStore: ObservableObject {
         items.removeAll { $0.category == .document && $0.title == doc.title }
     }
     
+    // MARK: - Mutations (Quick Notes)
+    
+    @discardableResult
+    public func addQuickNote(title: String = "", content: String, colorTag: String = "yellow", isPinned: Bool = false) -> QuickNote {
+        let note = QuickNote(title: title, content: content, isPinned: isPinned, colorTag: colorTag)
+        quickNotes.insert(note, at: 0)
+        HapticManager.success()
+        return note
+    }
+    
+    public func updateQuickNote(_ note: QuickNote) {
+        if let index = quickNotes.firstIndex(where: { $0.id == note.id }) {
+            var updated = note
+            updated.updatedAt = Date()
+            quickNotes[index] = updated
+            HapticManager.selection()
+        }
+    }
+    
+    public func deleteQuickNote(_ note: QuickNote) {
+        quickNotes.removeAll { $0.id == note.id }
+        HapticManager.light()
+    }
+    
+    public func togglePinQuickNote(_ note: QuickNote) {
+        if let index = quickNotes.firstIndex(where: { $0.id == note.id }) {
+            quickNotes[index].isPinned.toggle()
+            quickNotes[index].updatedAt = Date()
+            HapticManager.selection()
+        }
+    }
+    
     // MARK: - Helpers
     
     private func nextDateForDay(_ day: Int) -> Date {
@@ -356,6 +390,10 @@ public final class LifeStore: ObservableObject {
         try? JSONEncoder().encode(documents).write(to: getURL(for: documentsFileName), options: .atomic)
     }
     
+    private func saveNotesToDisk() {
+        try? JSONEncoder().encode(quickNotes).write(to: getURL(for: notesFileName), options: .atomic)
+    }
+    
     private func loadFromDisk() {
         // One-time purge of legacy dummy seed data
         let purgeKey = "has_purged_dummy_seed_data_v2"
@@ -364,6 +402,7 @@ public final class LifeStore: ObservableObject {
             try? FileManager.default.removeItem(at: getURL(for: cardsFileName))
             try? FileManager.default.removeItem(at: getURL(for: vehicleFileName))
             try? FileManager.default.removeItem(at: getURL(for: documentsFileName))
+            try? FileManager.default.removeItem(at: getURL(for: notesFileName))
             UserDefaults.standard.set(true, forKey: purgeKey)
         }
         
@@ -402,6 +441,15 @@ public final class LifeStore: ObservableObject {
         } else {
             self.documents = []
         }
+        
+        let notesURL = getURL(for: notesFileName)
+        if FileManager.default.fileExists(atPath: notesURL.path),
+           let data = try? Data(contentsOf: notesURL),
+           let loaded = try? JSONDecoder().decode([QuickNote].self, from: data) {
+            self.quickNotes = loaded
+        } else {
+            self.quickNotes = []
+        }
     }
     
     /// Complete purge to reset app data if needed.
@@ -410,10 +458,12 @@ public final class LifeStore: ObservableObject {
         self.creditCards = []
         self.vehicleProfile = VehicleProfile()
         self.documents = []
+        self.quickNotes = []
         ReminderEngine.shared.cancelAllReminders()
         saveToDisk()
         saveCardsToDisk()
         saveVehicleToDisk()
         saveDocumentsToDisk()
+        saveNotesToDisk()
     }
 }
