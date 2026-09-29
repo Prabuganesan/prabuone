@@ -1,29 +1,44 @@
 import SwiftUI
 
-/// Dedicated Scratchpad & Quick Notes Hub for instant thoughts, memos, and checklists.
+/// Dedicated Scratchpad & Quick Notes Hub for instant thoughts, memos, and checklists with timed reminders.
 public struct QuickNotesHubView: View {
     @ObservedObject var store: LifeStore
     @State private var showingAddNote = false
     @State private var selectedNoteToEdit: QuickNote? = nil
     @State private var noteSearchText = ""
+    @State private var selectedFilter: NoteFilter = .all
     @State private var copiedToast: String? = nil
+    
+    public enum NoteFilter: String, CaseIterable {
+        case all = "All Notes"
+        case reminders = "Reminders"
+    }
     
     public init(store: LifeStore) {
         self.store = store
     }
     
+    private var baseNotes: [QuickNote] {
+        switch selectedFilter {
+        case .all:
+            return store.quickNotes
+        case .reminders:
+            return store.quickNotes.filter { $0.hasReminder }
+        }
+    }
+    
     private var filteredNotes: [QuickNote] {
         let query = noteSearchText.trimmingCharacters(in: .whitespaces).lowercased()
-        let allNotes = store.quickNotes
+        let notes = baseNotes
         if query.isEmpty {
-            return allNotes.sorted { (a, b) -> Bool in
+            return notes.sorted { (a, b) -> Bool in
                 if a.isPinned == b.isPinned {
                     return a.updatedAt > b.updatedAt
                 }
                 return a.isPinned && !b.isPinned
             }
         }
-        return allNotes.filter {
+        return notes.filter {
             $0.title.lowercased().contains(query) ||
             $0.content.lowercased().contains(query)
         }.sorted { (a, b) -> Bool in
@@ -42,26 +57,39 @@ public struct QuickNotesHubView: View {
         filteredNotes.filter { !$0.isPinned }
     }
     
+    private var totalRemindersCount: Int {
+        store.quickNotes.filter { $0.hasReminder }.count
+    }
+    
     public var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    // Quick Search Bar
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.secondary)
-                        TextField("Search your notes & sudden ideas...", text: $noteSearchText)
-                            .font(.system(size: 15))
-                        if !noteSearchText.isEmpty {
-                            Button(action: { noteSearchText = "" }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.secondary)
+                    // Segment Filter & Search Bar
+                    VStack(spacing: 12) {
+                        Picker("Filter", selection: $selectedFilter) {
+                            Text("All Notes (\(store.quickNotes.count))").tag(NoteFilter.all)
+                            Text("Reminders 🔔 (\(totalRemindersCount))").tag(NoteFilter.reminders)
+                        }
+                        .pickerStyle(.segmented)
+                        
+                        // Search Bar
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.secondary)
+                            TextField("Search notes, memos, or reminders...", text: $noteSearchText)
+                                .font(.system(size: 15))
+                            if !noteSearchText.isEmpty {
+                                Button(action: { noteSearchText = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
+                        .padding(12)
+                        .background(Color(UIColor.secondarySystemBackground))
+                        .cornerRadius(12)
                     }
-                    .padding(12)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
                     
                     if store.quickNotes.isEmpty {
                         VStack(spacing: 12) {
@@ -74,7 +102,7 @@ public struct QuickNotesHubView: View {
                                 .font(.title3)
                                 .fontWeight(.bold)
                             
-                            Text("Capture sudden thoughts, parking slots, ideas, codes, or lists anytime.")
+                            Text("Capture sudden thoughts, parking slots, ideas, codes, or schedule quick reminders.")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -95,6 +123,23 @@ public struct QuickNotesHubView: View {
                             .padding(.top, 8)
                         }
                         .padding(.vertical, 20)
+                    } else if selectedFilter == .reminders && filteredNotes.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "bell.slash")
+                                .font(.system(size: 42))
+                                .foregroundColor(.secondary)
+                                .padding(.top, 30)
+                            
+                            Text("No Reminders Set")
+                                .font(.headline)
+                            
+                            Text("Add a note and set a timed reminder to get alerted on your phone.")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                        .padding(.vertical, 30)
                     } else {
                         // Pinned Section
                         if !pinnedNotes.isEmpty {
@@ -114,6 +159,8 @@ public struct QuickNotesHubView: View {
                                             selectedNoteToEdit = note
                                         }, onTogglePin: {
                                             store.togglePinQuickNote(note)
+                                        }, onToggleReminder: {
+                                            store.toggleNoteReminderCompleted(note)
                                         }, onCopy: {
                                             copyNote(note)
                                         }, onDelete: {
@@ -128,7 +175,7 @@ public struct QuickNotesHubView: View {
                         if !otherNotes.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
                                 if !pinnedNotes.isEmpty {
-                                    Text("OTHER NOTES")
+                                    Text(selectedFilter == .reminders ? "OTHER REMINDERS" : "OTHER NOTES")
                                         .font(.system(size: 11, weight: .bold))
                                         .foregroundColor(.secondary)
                                 }
@@ -139,6 +186,8 @@ public struct QuickNotesHubView: View {
                                             selectedNoteToEdit = note
                                         }, onTogglePin: {
                                             store.togglePinQuickNote(note)
+                                        }, onToggleReminder: {
+                                            store.toggleNoteReminderCompleted(note)
                                         }, onCopy: {
                                             copyNote(note)
                                         }, onDelete: {
@@ -209,11 +258,12 @@ public struct QuickNotesHubView: View {
     }
 }
 
-/// Visual card for a quick note in the grid.
+/// Visual card for a quick note in the grid with dedicated reminder badge.
 struct QuickNoteCard: View {
     let note: QuickNote
     let onSelect: () -> Void
     let onTogglePin: () -> Void
+    var onToggleReminder: (() -> Void)? = nil
     let onCopy: () -> Void
     let onDelete: () -> Void
     
@@ -265,8 +315,31 @@ struct QuickNoteCard: View {
                     Text(snippet)
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
-                        .lineLimit(4)
+                        .lineLimit(3)
                         .multilineTextAlignment(.leading)
+                }
+                
+                // Dedicated Reminder Pill
+                if let reminderText = note.formattedReminder {
+                    Button(action: {
+                        onToggleReminder?()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: note.isReminderCompleted ? "checkmark.circle.fill" : (note.isReminderOverdue ? "bell.badge.fill" : "bell.fill"))
+                                .font(.system(size: 10))
+                            
+                            Text(note.isReminderCompleted ? "Done" : reminderText)
+                                .font(.system(size: 10, weight: .semibold))
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3.5)
+                        .background(reminderBadgeBackground)
+                        .foregroundColor(reminderBadgeForeground)
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
                 }
                 
                 Spacer(minLength: 4)
@@ -294,6 +367,13 @@ struct QuickNoteCard: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
+            if note.hasReminder {
+                Button(action: { onToggleReminder?() }) {
+                    Label(note.isReminderCompleted ? "Mark Reminder Pending" : "Mark Reminder Done",
+                          systemImage: note.isReminderCompleted ? "bell" : "checkmark.circle")
+                }
+            }
+            
             Button(action: onTogglePin) {
                 Label(note.isPinned ? "Unpin Note" : "Pin Note", systemImage: note.isPinned ? "pin.slash" : "pin")
             }
@@ -307,9 +387,29 @@ struct QuickNoteCard: View {
             }
         }
     }
+    
+    private var reminderBadgeBackground: Color {
+        if note.isReminderCompleted {
+            return Color.gray.opacity(0.18)
+        } else if note.isReminderOverdue {
+            return Color.red.opacity(0.18)
+        } else {
+            return Color.amberAccent.opacity(0.2)
+        }
+    }
+    
+    private var reminderBadgeForeground: Color {
+        if note.isReminderCompleted {
+            return Color.secondary
+        } else if note.isReminderOverdue {
+            return Color.red
+        } else {
+            return Color.amberAccent
+        }
+    }
 }
 
-/// Instant note creation & editing sheet with focus on speed.
+/// Instant note creation & editing sheet with dedicated reminder options and quick presets.
 public struct NoteEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: LifeStore
@@ -319,6 +419,11 @@ public struct NoteEditorSheet: View {
     @State private var content: String = ""
     @State private var isPinned: Bool = false
     @State private var colorTag: String = "yellow"
+    
+    // Dedicated Reminder State
+    @State private var hasReminder: Bool = false
+    @State private var reminderDate: Date = Date().addingTimeInterval(3600)
+    
     @FocusState private var isContentFocused: Bool
     
     let colors: [(name: String, color: Color)] = [
@@ -381,9 +486,9 @@ public struct NoteEditorSheet: View {
                 
                 Divider()
                 
-                // Note Content Editor
+                // Note Content & Reminder Options
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 14) {
                         TextField("Note Title (Optional)", text: $title)
                             .font(.system(size: 20, weight: .bold))
                             .padding(.horizontal, 16)
@@ -394,12 +499,12 @@ public struct NoteEditorSheet: View {
                         TextEditor(text: $content)
                             .focused($isContentFocused)
                             .font(.system(size: 16))
-                            .frame(minHeight: 280)
+                            .frame(minHeight: 180)
                             .padding(.horizontal, 12)
                             .scrollContentBackground(.hidden)
                             .overlay(alignment: .topLeading) {
                                 if content.isEmpty {
-                                    Text("Suddenly note something here... (parking bay, locker code, ideas, lists)")
+                                    Text("Suddenly note something here... (parking slot, code, ideas, lists)")
                                         .foregroundColor(Color(UIColor.placeholderText))
                                         .font(.system(size: 16))
                                         .padding(.horizontal, 16)
@@ -407,6 +512,68 @@ public struct NoteEditorSheet: View {
                                         .allowsHitTesting(false)
                                 }
                             }
+                        
+                        Divider().padding(.horizontal, 16)
+                        
+                        // Dedicated Reminder Section
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "bell.badge.fill")
+                                        .foregroundColor(.amberAccent)
+                                        .font(.system(size: 16))
+                                    Text("Reminder Alert")
+                                        .font(.system(size: 15, weight: .bold))
+                                }
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $hasReminder)
+                                    .labelsHidden()
+                                    .tint(.amberAccent)
+                            }
+                            
+                            if hasReminder {
+                                VStack(spacing: 12) {
+                                    // Quick Presets
+                                    HStack(spacing: 8) {
+                                        presetButton(title: "In 1 Hour", icon: "clock.arrow.circlepath") {
+                                            reminderDate = Date().addingTimeInterval(3600)
+                                        }
+                                        
+                                        presetButton(title: "Tonight 8 PM", icon: "moon.fill") {
+                                            var comp = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+                                            comp.hour = 20
+                                            comp.minute = 0
+                                            var target = Calendar.current.date(from: comp) ?? Date()
+                                            if target <= Date() {
+                                                target = Calendar.current.date(byAdding: .day, value: 1, to: target) ?? Date()
+                                            }
+                                            reminderDate = target
+                                        }
+                                        
+                                        presetButton(title: "Tomorrow 9 AM", icon: "sun.max.fill") {
+                                            var comp = Calendar.current.dateComponents([.year, .month, .day], from: Date().addingTimeInterval(86400))
+                                            comp.hour = 9
+                                            comp.minute = 0
+                                            reminderDate = Calendar.current.date(from: comp) ?? Date()
+                                        }
+                                    }
+                                    
+                                    // Custom Date & Time Picker
+                                    DatePicker("Alert At", selection: $reminderDate, in: Date()..., displayedComponents: [.date, .hourAndMinute])
+                                        .font(.system(size: 14, weight: .medium))
+                                        .tint(.amberAccent)
+                                        .padding(10)
+                                        .background(Color(UIColor.secondarySystemBackground))
+                                        .cornerRadius(10)
+                                }
+                                .padding(.top, 4)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
                     }
                 }
             }
@@ -418,6 +585,10 @@ public struct NoteEditorSheet: View {
                     content = note.content
                     isPinned = note.isPinned
                     colorTag = note.colorTag
+                    hasReminder = note.hasReminder
+                    if let d = note.reminderDate {
+                        reminderDate = d
+                    }
                 } else {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         isContentFocused = true
@@ -440,9 +611,31 @@ public struct NoteEditorSheet: View {
         }
     }
     
+    private func presetButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: {
+            HapticManager.selection()
+            action()
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .background(Color(UIColor.secondarySystemBackground))
+            .foregroundColor(.primary)
+            .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+    }
+    
     private func saveNote() {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalReminderDate: Date? = hasReminder ? reminderDate : nil
         
         if let existing = noteToEdit {
             var updated = existing
@@ -450,13 +643,19 @@ public struct NoteEditorSheet: View {
             updated.content = cleanContent
             updated.isPinned = isPinned
             updated.colorTag = colorTag
+            updated.reminderDate = finalReminderDate
+            // If the reminder date was changed or extended into the future, mark not completed
+            if let newDate = finalReminderDate, newDate > Date() {
+                updated.isReminderCompleted = false
+            }
             store.updateQuickNote(updated)
         } else {
             store.addQuickNote(
                 title: cleanTitle,
                 content: cleanContent,
                 colorTag: colorTag,
-                isPinned: isPinned
+                isPinned: isPinned,
+                reminderDate: finalReminderDate
             )
         }
         dismiss()

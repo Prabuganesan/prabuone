@@ -52,9 +52,16 @@
 - **Commitment Overview**: Track total monthly utility outflow and upcoming due dates.
 - **Full Editability**: Tap any bill or use context menu to edit provider title, plan subtitle, amount, renewal date, and notes.
 
-### 5. 🗄️ Digital Document Vault
+### 5. 🗄️ Digital Document Vault & File Uploads
 - **Official Records Vault**: Store vehicle RC Book, Driving License, Passport, Aadhaar, PAN, Insurance Policies, and PUC Certificates.
-- **Full Edit Support**: Tap pencil button or context menu "Edit Document" to modify document name, type, registration number, or expiration date.
+- **Document Upload (Photos & PDFs)**:
+  - Attach scans and files via **Photo Library** (`PhotosPicker`) or **File/PDF Importer** (`fileImporter`).
+  - Encrypted, on-device sandboxed persistence in `vault_attachments/` with automatic garbage collection when documents are deleted or replaced.
+- **In-App Document Viewer & PDFKit**:
+  - Tap any attached document card to view it directly in the app.
+  - Multi-page PDF viewer powered by `PDFKit` and high-resolution pinch-to-zoom photo previewer.
+  - Native iOS share sheet (`ShareLink`) to export, AirDrop, or send documents anywhere.
+- **Full Edit Support**: Tap pencil button or context menu "Edit Document" to modify document name, type, registration number, expiration date, or upload new attachments.
 - **Live Validity Badges**:
   - 🟢 **VALID**
   - 🟠 **EXPIRING SOON** (< 30 days)
@@ -66,8 +73,13 @@
 - **Milestone Editor**: Tap pencil button or context menu to update name, celebration description, event date, and gift / dinner planning notes.
 - **Smart Reminders**: Automated multi-stage alerts at 30 days, 7 days, 1 day, and on the day.
 
-### 7. 📝 Quick Notes & Sudden Thoughts (Instant Scratchpad)
+### 7. 📝 Quick Notes with Dedicated Reminders (Instant Scratchpad)
 - **Sudden Thought Capture**: 1-tap action directly from the top header or the Quick Notes hub to note ideas, parking slot numbers, gate passes, locker codes, or temporary checklists instantly.
+- **Dedicated Timed Reminders**:
+  - Toggle "Reminder Alert" on any note to receive local push notification alerts at the exact scheduled time.
+  - **Quick Presets**: 1-tap buttons for "In 1 Hour", "Tonight 8 PM", and "Tomorrow 9 AM", or custom Date & Time picker.
+  - **Interactive Reminder Badges**: Note cards display live status (🔔 Upcoming, ⚠️ Overdue, or ✅ Done) with 1-tap toggle to mark as done.
+  - **Dedicated Reminders Filter**: Toggle between "All Notes" and "Reminders 🔔" to view all time-sensitive tasks in one place.
 - **Immediate Keyboard Auto-Focus**: No mandatory fields or forms required — tap, type, and save with zero friction.
 - **Pin Important Notes**: Keep vital codes or reminders pinned at the top.
 - **Color Accent Tagging**: Visual organization with 5 curated color accents (Amber Yellow, Sky Blue, Emerald Green, Indigo Purple, Coral Rose).

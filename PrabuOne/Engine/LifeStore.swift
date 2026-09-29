@@ -280,7 +280,48 @@ public final class LifeStore: ObservableObject {
         HapticManager.light()
     }
     
-    // MARK: - Mutations (Documents)
+    // MARK: - Mutations (Documents & Attachments)
+    
+    /// Returns the directory URL for storing encrypted/local vault attachments.
+    public var vaultAttachmentsDirectoryURL: URL {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let dir = docs.appendingPathComponent("vault_attachments", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: dir.path) {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        }
+        return dir
+    }
+    
+    /// Saves raw document data (image or PDF) to the vault attachments directory.
+    public func saveAttachmentData(_ data: Data, fileExtension: String, originalName: String? = nil) -> (fileName: String, fileType: String)? {
+        let dir = vaultAttachmentsDirectoryURL
+        let cleanExt = fileExtension.replacingOccurrences(of: ".", with: "").lowercased()
+        let uniqueName = "\(UUID().uuidString).\(cleanExt)"
+        let targetURL = dir.appendingPathComponent(uniqueName)
+        
+        do {
+            try data.write(to: targetURL, options: .atomic)
+            let type: String
+            if ["jpg", "jpeg", "png", "heic", "webp"].contains(cleanExt) {
+                type = "image"
+            } else if cleanExt == "pdf" {
+                type = "pdf"
+            } else {
+                type = "document"
+            }
+            return (fileName: uniqueName, fileType: type)
+        } catch {
+            print("Failed to save attachment file: \(error)")
+            return nil
+        }
+    }
+    
+    /// Deletes an attachment file by filename from disk.
+    public func deleteAttachmentFile(fileName: String?) {
+        guard let name = fileName, !name.isEmpty else { return }
+        let fileURL = vaultAttachmentsDirectoryURL.appendingPathComponent(name)
+        try? FileManager.default.removeItem(at: fileURL)
+    }
     
     public func addDocument(_ doc: DocumentRecord) {
         documents.append(doc)
@@ -300,6 +341,12 @@ public final class LifeStore: ObservableObject {
     public func updateDocument(_ doc: DocumentRecord) {
         guard let index = documents.firstIndex(where: { $0.id == doc.id }) else { return }
         let oldDoc = documents[index]
+        
+        // Clean up old attachment if it was replaced or removed
+        if let oldAttachment = oldDoc.attachmentFileName, oldAttachment != doc.attachmentFileName {
+            deleteAttachmentFile(fileName: oldAttachment)
+        }
+        
         documents[index] = doc
         HapticManager.success()
         
@@ -316,17 +363,36 @@ public final class LifeStore: ObservableObject {
     
     public func deleteDocument(_ doc: DocumentRecord) {
         HapticManager.light()
+        deleteAttachmentFile(fileName: doc.attachmentFileName)
         documents.removeAll { $0.id == doc.id }
         items.removeAll { $0.category == .document && $0.title == doc.title }
     }
     
-    // MARK: - Mutations (Quick Notes)
+    // MARK: - Mutations (Quick Notes & Reminders)
     
     @discardableResult
-    public func addQuickNote(title: String = "", content: String, colorTag: String = "yellow", isPinned: Bool = false) -> QuickNote {
-        let note = QuickNote(title: title, content: content, isPinned: isPinned, colorTag: colorTag)
+    public func addQuickNote(
+        title: String = "",
+        content: String,
+        colorTag: String = "yellow",
+        isPinned: Bool = false,
+        reminderDate: Date? = nil
+    ) -> QuickNote {
+        let note = QuickNote(
+            title: title,
+            content: content,
+            isPinned: isPinned,
+            colorTag: colorTag,
+            reminderDate: reminderDate,
+            isReminderCompleted: false
+        )
         quickNotes.insert(note, at: 0)
         HapticManager.success()
+        
+        if reminderDate != nil {
+            ReminderEngine.shared.scheduleNoteReminder(for: note)
+        }
+        
         return note
     }
     
@@ -336,10 +402,12 @@ public final class LifeStore: ObservableObject {
             updated.updatedAt = Date()
             quickNotes[index] = updated
             HapticManager.selection()
+            ReminderEngine.shared.scheduleNoteReminder(for: updated)
         }
     }
     
     public func deleteQuickNote(_ note: QuickNote) {
+        ReminderEngine.shared.cancelNoteReminder(for: note.id)
         quickNotes.removeAll { $0.id == note.id }
         HapticManager.light()
     }
@@ -349,6 +417,21 @@ public final class LifeStore: ObservableObject {
             quickNotes[index].isPinned.toggle()
             quickNotes[index].updatedAt = Date()
             HapticManager.selection()
+        }
+    }
+    
+    public func toggleNoteReminderCompleted(_ note: QuickNote) {
+        if let index = quickNotes.firstIndex(where: { $0.id == note.id }) {
+            quickNotes[index].isReminderCompleted.toggle()
+            quickNotes[index].updatedAt = Date()
+            let updated = quickNotes[index]
+            if updated.isReminderCompleted {
+                ReminderEngine.shared.cancelNoteReminder(for: updated.id)
+                HapticManager.success()
+            } else {
+                ReminderEngine.shared.scheduleNoteReminder(for: updated)
+                HapticManager.selection()
+            }
         }
     }
     

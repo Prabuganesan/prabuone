@@ -77,6 +77,45 @@ public final class ReminderEngine: NSObject {
         center.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
     
+    // MARK: - Quick Note Reminders
+    
+    /// Schedules a dedicated timed alert for a quick note.
+    public func scheduleNoteReminder(for note: QuickNote) {
+        cancelNoteReminder(for: note.id)
+        
+        guard let fireDate = note.reminderDate, !note.isReminderCompleted, fireDate > Date() else {
+            return
+        }
+        
+        let center = UNUserNotificationCenter.current()
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Reminder: \(note.displayTitle)"
+        let bodySnippet = note.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        content.body = bodySnippet.isEmpty ? "Tap to open your note." : bodySnippet
+        content.sound = .default
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        let identifier = "prabuone-note-\(note.id.uuidString)"
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        
+        center.add(request) { error in
+            if let error = error {
+                self.logger.error("Failed to schedule note reminder for \(note.displayTitle): \(error.localizedDescription)")
+            } else {
+                self.logger.info("Successfully scheduled note reminder for \(note.displayTitle) at \(fireDate)")
+            }
+        }
+    }
+    
+    /// Cancels the scheduled alert for a quick note.
+    public func cancelNoteReminder(for noteId: UUID) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: ["prabuone-note-\(noteId.uuidString)"])
+    }
+    
     /// Cancels all pending notifications across the app.
     public func cancelAllReminders() {
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
