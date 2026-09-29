@@ -1,49 +1,141 @@
 import SwiftUI
 
-/// Dedicated Money & Financial Obligations Hub.
-/// Manages Credit Cards, Subscriptions, and Mobile / Utility Bills.
+fileprivate func formatCurrency(_ value: Double) -> String {
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .currency
+    formatter.currencySymbol = "₹"
+    formatter.maximumFractionDigits = 0
+    return formatter.string(from: NSNumber(value: value)) ?? "₹0"
+}
+
+// MARK: - 1. Money & Cards Hub (Credit Cards Only)
+
+/// Dedicated Credit Cards Hub.
+/// Displays card visualizers, limits, outstandings, utilization, and billing cycles.
 public struct MoneyHubView: View {
     @ObservedObject var store: LifeStore
-    public var initialTab: Int = 0
-    
-    @State private var selectedTab: Int = 0
     @State private var showingAddCard = false
-    @State private var showingAddSubscription = false
     @State private var selectedCardToEdit: CreditCardAccount? = nil
-    @State private var selectedItemToEdit: LifeItem? = nil
     
     public init(store: LifeStore, initialTab: Int = 0) {
         self.store = store
-        self.initialTab = initialTab
-        _selectedTab = State(initialValue: initialTab)
+    }
+    
+    private var totalLimit: Double {
+        store.creditCards.reduce(0) { $0 + $1.creditLimit }
+    }
+    
+    private var totalOutstanding: Double {
+        store.creditCards.filter { !$0.isPaidThisMonth }.reduce(0) { $0 + $1.outstandingAmount }
+    }
+    
+    private var totalAvailable: Double {
+        max(0, totalLimit - totalOutstanding)
     }
     
     public var body: some View {
-        VStack(spacing: 0) {
-            Picker("Pillar Segment", selection: $selectedTab) {
-                Text("Cards").tag(0)
-                Text("Subscriptions").tag(1)
-                Text("Bills & Plans").tag(2)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.top, 8)
-            .padding(.bottom, 12)
-            
-            ScrollView {
-                VStack(spacing: 20) {
-                    if selectedTab == 0 {
-                        creditCardsSection
-                    } else if selectedTab == 1 {
-                        subscriptionsSection
-                    } else {
-                        billsSection
+        ScrollView {
+            VStack(spacing: 20) {
+                // Credit Health Summary Header
+                if !store.creditCards.isEmpty {
+                    VStack(spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("TOTAL OUTSTANDING")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                Text(formatCurrency(totalOutstanding))
+                                    .font(.system(size: 26, weight: .heavy, design: .rounded))
+                                    .foregroundColor(totalOutstanding > 0 ? .red : .green)
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 4) {
+                                Text("AVAILABLE CREDIT")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                Text(formatCurrency(totalAvailable))
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        HStack {
+                            Text("Total Credit Limit: \(formatCurrency(totalLimit))")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("\(store.creditCards.count) Active Cards")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .padding(16)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .cornerRadius(16)
+                }
+                
+                // Credit Cards List
+                if store.creditCards.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "creditcard")
+                            .font(.system(size: 40))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 24)
+                        Text("No Credit Cards Added")
+                            .font(.headline)
+                        Text("Tap + above to track statement dates, payment dues, and limits.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        Button(action: {
+                            HapticManager.light()
+                            showingAddCard = true
+                        }) {
+                            Label("Add First Credit Card", systemImage: "plus")
+                                .font(.system(size: 14, weight: .bold))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
+                        .padding(.top, 8)
+                    }
+                    .padding(.vertical, 32)
+                } else {
+                    ForEach(store.creditCards) { card in
+                        CreditCardView(card: card, onTogglePaid: {
+                            withAnimation {
+                                store.toggleCardPaid(card)
+                            }
+                        }, onEdit: {
+                            selectedCardToEdit = card
+                        })
+                        .contextMenu {
+                            Button {
+                                selectedCardToEdit = card
+                            } label: {
+                                Label("Edit Card Details", systemImage: "pencil")
+                            }
+                            
+                            Button(role: .destructive) {
+                                withAnimation {
+                                    store.deleteCreditCard(card)
+                                }
+                            } label: {
+                                Label("Delete Card", systemImage: "trash")
+                            }
+                        }
                     }
                 }
-                .padding(.horizontal)
-                .padding(.top, 4)
-                .padding(.bottom, 24)
             }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
         .navigationTitle("Money & Cards")
         .navigationBarTitleDisplayMode(.inline)
@@ -51,11 +143,7 @@ public struct MoneyHubView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: {
                     HapticManager.light()
-                    if selectedTab == 0 {
-                        showingAddCard = true
-                    } else {
-                        showingAddSubscription = true
-                    }
+                    showingAddCard = true
                 }) {
                     Image(systemName: "plus")
                         .fontWeight(.semibold)
@@ -65,208 +153,307 @@ public struct MoneyHubView: View {
         .sheet(isPresented: $showingAddCard) {
             AddCreditCardSheet(store: store)
         }
-        .sheet(isPresented: $showingAddSubscription) {
-            AddLifeItemView(store: store)
-        }
         .sheet(item: $selectedCardToEdit) { card in
             EditCreditCardSheet(store: store, card: card)
+        }
+    }
+}
+
+// MARK: - 2. Subscriptions Hub (Subscriptions Only)
+
+/// Dedicated Subscriptions Hub.
+/// Displays monthly recurring burn rate, yearly run-rate, and individual subscriptions.
+public struct SubscriptionsHubView: View {
+    @ObservedObject var store: LifeStore
+    @State private var showingAddSubscription = false
+    @State private var selectedItemToEdit: LifeItem? = nil
+    
+    public init(store: LifeStore) {
+        self.store = store
+    }
+    
+    private var subs: [LifeItem] {
+        store.items(for: .subscription)
+    }
+    
+    private var monthlySum: Double {
+        subs.compactMap { $0.amount }.reduce(0, +)
+    }
+    
+    private var yearlySum: Double {
+        monthlySum * 12
+    }
+    
+    public var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Analytics Summary
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("MONTHLY RECURRING")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                        Text(formatCurrency(monthlySum))
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .foregroundColor(.primary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .cornerRadius(14)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("YEARLY RUN-RATE")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                        Text(formatCurrency(yearlySum))
+                            .font(.system(size: 22, weight: .heavy, design: .rounded))
+                            .foregroundColor(.purple)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(14)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .cornerRadius(14)
+                }
+                
+                // List of Subscriptions
+                if subs.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "arrow.triangle.2.circlepath.circle")
+                            .font(.system(size: 40))
+                            .foregroundColor(.purple.opacity(0.7))
+                            .padding(.top, 24)
+                        Text("No Subscriptions Tracked")
+                            .font(.headline)
+                        Text("Track OTT, Cloud, AI tools, memberships, and renewal dates.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        Button(action: {
+                            HapticManager.light()
+                            showingAddSubscription = true
+                        }) {
+                            Label("Add Subscription", systemImage: "plus")
+                                .font(.system(size: 14, weight: .bold))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.purple)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
+                        .padding(.top, 8)
+                    }
+                    .padding(.vertical, 32)
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(subs) { item in
+                            HStack {
+                                LifeItemRow(item: item, onTogglePaid: {
+                                    withAnimation {
+                                        HapticManager.success()
+                                        store.toggleCompleted(item)
+                                    }
+                                })
+                                
+                                Button(action: {
+                                    selectedItemToEdit = item
+                                }) {
+                                    Image(systemName: "pencil.circle")
+                                        .foregroundColor(.secondary)
+                                        .font(.system(size: 18))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(12)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(14)
+                            .contextMenu {
+                                Button {
+                                    selectedItemToEdit = item
+                                } label: {
+                                    Label("Edit Subscription", systemImage: "pencil")
+                                }
+                                
+                                Button(role: .destructive) {
+                                    withAnimation {
+                                        store.deleteItem(item)
+                                    }
+                                } label: {
+                                    Label("Delete Subscription", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+        }
+        .navigationTitle("Subscriptions")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: {
+                    HapticManager.light()
+                    showingAddSubscription = true
+                }) {
+                    Image(systemName: "plus")
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddSubscription) {
+            AddLifeItemView(store: store, initialCategory: .subscription)
         }
         .sheet(item: $selectedItemToEdit) { item in
             EditLifeItemSheet(store: store, item: item)
         }
     }
+}
+
+// MARK: - 3. Mobile & Bills Hub (Bills Only)
+
+/// Dedicated Mobile & Utility Bills Hub.
+/// Displays mobile recharge validity, broadband plans, electricity, and utility commitments.
+public struct MobileBillsHubView: View {
+    @ObservedObject var store: LifeStore
+    @State private var showingAddBill = false
+    @State private var selectedItemToEdit: LifeItem? = nil
     
-    // MARK: - Credit Cards View
-    
-    private var creditCardsSection: some View {
-        VStack(spacing: 16) {
-            if store.creditCards.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "creditcard")
-                        .font(.system(size: 36))
-                        .foregroundColor(.secondary)
-                    Text("No Credit Cards Added")
-                        .font(.headline)
-                    Text("Tap + above to add your first credit card.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.vertical, 32)
-            } else {
-                ForEach(store.creditCards) { card in
-                    CreditCardView(card: card, onTogglePaid: {
-                        withAnimation {
-                            store.toggleCardPaid(card)
-                        }
-                    }, onEdit: {
-                        selectedCardToEdit = card
-                    })
-                    .contextMenu {
-                        Button {
-                            selectedCardToEdit = card
-                        } label: {
-                            Label("Edit Card Details", systemImage: "pencil")
-                        }
-                        
-                        Button(role: .destructive) {
-                            withAnimation {
-                                store.deleteCreditCard(card)
-                            }
-                        } label: {
-                            Label("Delete Card", systemImage: "trash")
-                        }
-                    }
-                }
-            }
-        }
+    public init(store: LifeStore) {
+        self.store = store
     }
     
-    // MARK: - Subscriptions View
-    
-    private var subscriptionsSection: some View {
-        let subs = store.items(for: .subscription)
-        let monthlySum = subs.compactMap { $0.amount }.reduce(0, +)
-        let yearlySum = monthlySum * 12
-        
-        return VStack(spacing: 18) {
-            // Analytics Summary
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("MONTHLY RECURRING")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.secondary)
-                    Text(formatCurrency(monthlySum))
-                        .font(.system(size: 22, weight: .heavy, design: .rounded))
-                        .foregroundColor(.primary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(14)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("YEARLY RUN-RATE")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.secondary)
-                    Text(formatCurrency(yearlySum))
-                        .font(.system(size: 22, weight: .heavy, design: .rounded))
-                        .foregroundColor(.purple)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(14)
-            }
-            
-            // List of Subscriptions
-            if subs.isEmpty {
-                Text("No subscriptions tracked yet.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding(.vertical, 24)
-            } else {
-                VStack(spacing: 10) {
-                    ForEach(subs) { item in
-                        HStack {
-                            LifeItemRow(item: item, onTogglePaid: {
-                                withAnimation {
-                                    HapticManager.success()
-                                    store.toggleCompleted(item)
-                                }
-                            })
-                            
-                            Button(action: {
-                                selectedItemToEdit = item
-                            }) {
-                                Image(systemName: "pencil.circle")
-                                    .foregroundColor(.secondary)
-                                    .font(.system(size: 18))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(12)
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .cornerRadius(14)
-                        .contextMenu {
-                            Button {
-                                selectedItemToEdit = item
-                            } label: {
-                                Label("Edit Subscription", systemImage: "pencil")
-                            }
-                            
-                            Button(role: .destructive) {
-                                withAnimation {
-                                    store.deleteItem(item)
-                                }
-                            } label: {
-                                Label("Delete Subscription", systemImage: "trash")
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    private var bills: [LifeItem] {
+        store.items(for: .mobileBill)
     }
     
-    // MARK: - Bills & Plans View
+    private var totalOutflow: Double {
+        bills.compactMap { $0.amount }.reduce(0, +)
+    }
     
-    private var billsSection: some View {
-        let bills = store.items(for: .mobileBill)
-        
-        return VStack(spacing: 12) {
-            if bills.isEmpty {
-                Text("No mobile or utility bills added yet.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .padding(.vertical, 24)
-            } else {
-                ForEach(bills) { item in
+    public var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Header Banner
+                if !bills.isEmpty {
                     HStack {
-                        LifeItemRow(item: item, onTogglePaid: {
-                            withAnimation {
-                                HapticManager.success()
-                                store.toggleCompleted(item)
-                            }
-                        })
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("MONTHLY UTILITY COMMITMENT")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.secondary)
+                            Text(formatCurrency(totalOutflow))
+                                .font(.system(size: 24, weight: .heavy, design: .rounded))
+                                .foregroundColor(.primary)
+                        }
+                        Spacer()
+                        Image(systemName: "iphone.gen3")
+                            .font(.system(size: 32))
+                            .foregroundColor(.green)
+                    }
+                    .padding(16)
+                    .background(Color.green.opacity(0.1))
+                    .cornerRadius(16)
+                }
+                
+                // List of Bills
+                if bills.isEmpty {
+                    VStack(spacing: 10) {
+                        Image(systemName: "iphone.gen3")
+                            .font(.system(size: 40))
+                            .foregroundColor(.green.opacity(0.7))
+                            .padding(.top, 24)
+                        Text("No Bills Added Yet")
+                            .font(.headline)
+                        Text("Track mobile SIM recharges, Wi-Fi fiber, electricity, and water bills.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
                         
                         Button(action: {
-                            selectedItemToEdit = item
+                            HapticManager.light()
+                            showingAddBill = true
                         }) {
-                            Image(systemName: "pencil.circle")
-                                .foregroundColor(.secondary)
-                                .font(.system(size: 18))
+                            Label("Add Mobile or Utility Bill", systemImage: "plus")
+                                .font(.system(size: 14, weight: .bold))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
                         }
-                        .buttonStyle(.plain)
+                        .padding(.top, 8)
                     }
-                    .padding(12)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(14)
-                    .contextMenu {
-                        Button {
-                            selectedItemToEdit = item
-                        } label: {
-                            Label("Edit Bill", systemImage: "pencil")
-                        }
-                        
-                        Button(role: .destructive) {
-                            withAnimation {
-                                store.deleteItem(item)
+                    .padding(.vertical, 32)
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(bills) { item in
+                            HStack {
+                                LifeItemRow(item: item, onTogglePaid: {
+                                    withAnimation {
+                                        HapticManager.success()
+                                        store.toggleCompleted(item)
+                                    }
+                                })
+                                
+                                Button(action: {
+                                    selectedItemToEdit = item
+                                }) {
+                                    Image(systemName: "pencil.circle")
+                                        .foregroundColor(.secondary)
+                                        .font(.system(size: 18))
+                                }
+                                .buttonStyle(.plain)
                             }
-                        } label: {
-                            Label("Delete Bill", systemImage: "trash")
+                            .padding(12)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .cornerRadius(14)
+                            .contextMenu {
+                                Button {
+                                    selectedItemToEdit = item
+                                } label: {
+                                    Label("Edit Bill", systemImage: "pencil")
+                                }
+                                
+                                Button(role: .destructive) {
+                                    withAnimation {
+                                        store.deleteItem(item)
+                                    }
+                                } label: {
+                                    Label("Delete Bill", systemImage: "trash")
+                                }
+                            }
                         }
                     }
                 }
             }
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
-    }
-    
-    private func formatCurrency(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "₹"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: value)) ?? "₹0"
+        .navigationTitle("Mobile & Bills")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: {
+                    HapticManager.light()
+                    showingAddBill = true
+                }) {
+                    Image(systemName: "plus")
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+        .sheet(isPresented: $showingAddBill) {
+            AddLifeItemView(store: store, initialCategory: .mobileBill)
+        }
+        .sheet(item: $selectedItemToEdit) { item in
+            EditLifeItemSheet(store: store, item: item)
+        }
     }
 }
 

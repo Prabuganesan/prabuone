@@ -33,18 +33,26 @@
 - **Service Records Management**: Add, view, edit (title, date, odometer, cost, service center, replaced parts), or delete maintenance entries.
 - **Fuel Logs & Economy**: Add, view, edit (date, odometer, liters, cost), or delete refuel logs with dynamic fuel economy calculation (`km/L`).
 
-### 2. 💳 Money & Cards Hub
+### 2. 💳 Money & Cards Hub (Credit Cards Only)
+- **Dedicated Cards Hub**: Displays your active credit cards, available limit, total credit limit, and current total outstanding with zero tab clutter.
 - **Credit Card Visualizer & Editor**:
   - Tap pencil button or context menu to edit bank name, card name, last 4 digits, total credit limit, current outstanding, billing statement day, payment due day, and reward points.
   - Interactive utilization progress bar and available limit tracker.
   - **One-Tap "Mark as Paid"**: Instantly resets outstanding dues and synchronizes with home attention items.
-- **Subscriptions Analytics & Management**:
-  - Monthly recurring burn rate and annualized run-rate calculations.
-  - Tap any subscription or use context menu to edit title, subtitle, category, due date, amount, renewal frequency (monthly/yearly), and notes.
-- **Mobile & Utility Bills**:
-  - Track SIM recharges, electricity, and utility commitments with tap-to-edit capabilities and countdown reminders.
+  - **Quick Add**: Dedicated "+" button to add credit cards with billing cycles.
 
-### 3. 🗄️ Digital Document Vault
+### 3. 🔁 Subscriptions Hub (Recurring Subscriptions Only)
+- **Dedicated Subscriptions Hub**: Focused exclusively on recurring services (OTT, Cloud, AI tools, memberships).
+- **Run-Rate Analytics**: Computes monthly recurring burn rate and annualized run-rate calculations.
+- **Full Editability**: Tap any subscription or use context menu to edit title, subtitle, category, due date, amount, renewal frequency (monthly/yearly), and notes.
+- **Quick Add**: Direct "+" action to add subscriptions without selecting categories.
+
+### 4. 📱 Mobile & Bills Hub (SIM & Utility Plans Only)
+- **Dedicated Utility Hub**: Dedicated exclusively to SIM recharges, broadband plans, electricity, and utility commitments.
+- **Commitment Overview**: Track total monthly utility outflow and upcoming due dates.
+- **Full Editability**: Tap any bill or use context menu to edit provider title, plan subtitle, amount, renewal date, and notes.
+
+### 5. 🗄️ Digital Document Vault
 - **Official Records Vault**: Store vehicle RC Book, Driving License, Passport, Aadhaar, PAN, Insurance Policies, and PUC Certificates.
 - **Full Edit Support**: Tap pencil button or context menu "Edit Document" to modify document name, type, registration number, or expiration date.
 - **Live Validity Badges**:
@@ -53,12 +61,12 @@
   - 🔴 **EXPIRED**
 - **One-Tap Copy to Clipboard**: Tap any document number to copy it instantly with a tactile haptic HUD.
 
-### 4. 🎂 Birthdays & Life Milestones
+### 6. 🎂 Birthdays & Life Milestones
 - **Countdown to Moments**: Track days remaining until family birthdays and wedding anniversaries.
 - **Milestone Editor**: Tap pencil button or context menu to update name, celebration description, event date, and gift / dinner planning notes.
 - **Smart Reminders**: Automated multi-stage alerts at 30 days, 7 days, 1 day, and on the day.
 
-### 5. 📝 Quick Notes & Sudden Thoughts (Instant Scratchpad)
+### 7. 📝 Quick Notes & Sudden Thoughts (Instant Scratchpad)
 - **Sudden Thought Capture**: 1-tap action directly from the top header or the Quick Notes hub to note ideas, parking slot numbers, gate passes, locker codes, or temporary checklists instantly.
 - **Immediate Keyboard Auto-Focus**: No mandatory fields or forms required — tap, type, and save with zero friction.
 - **Pin Important Notes**: Keep vital codes or reminders pinned at the top.
@@ -66,14 +74,14 @@
 - **Universal Search Integration**: All notes and memos are searchable directly from the home screen universal search bar.
 - **One-Tap Copy & Share**: Copy note content to clipboard with tactile haptic feedback.
 
-### 6. 🔴 Attention-Driven Dashboard
+### 8. 🔴 Attention-Driven Dashboard
 - **"Needs Attention" Radar**: Dynamically surfaces bills, service dues, policy renewals, or birthdays due today or within 7 days.
 - **Tap-to-Edit Attention Items**: Tap any item in the attention card or search results to open the editor directly.
 - **Monthly Outflow Predictor**: Computes total committed expenditure (₹) for the current calendar month.
 - **Universal Instant Search**: Search across cards, subscriptions, utility bills, vehicle records, documents, birthdays, and quick notes.
 - **Multi-Stage Local Reminders**: Proactive push notifications scheduled automatically at **30 days, 7 days, 3 days, 1 day, and 0 days** prior to due dates.
 
-### 7. 🪞 Car Mirror Utility
+### 9. 🪞 Car Mirror Utility
 - **Low-Latency Vehicle Mirroring**: Custom `AVSampleBufferDisplayLayer` hardware preview for streaming your iPhone screen to vehicle CarPlay displays.
 - **Keep-Awake Protection**: Prevents display dimming or auto-lock (`isIdleTimerDisabled = true`) while mirroring is active.
 - **Immersion Mode**: Tap on the live viewport to toggle distraction-free edge-to-edge mirroring.

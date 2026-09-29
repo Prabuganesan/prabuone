@@ -332,17 +332,17 @@ public struct ContentView: View {
                                     )
                                 }
                                 
-                                NavigationLink(destination: MoneyHubView(store: store, initialTab: 0)) {
+                                NavigationLink(destination: MoneyHubView(store: store)) {
                                     PillarCard(
                                         icon: "creditcard.fill",
                                         color: .blue,
                                         title: "Money & Cards",
                                         subtitle: "Cards & Payments",
-                                        badgeCount: store.items(for: .creditCard).filter { !$0.isCompleted }.count
+                                        badgeCount: store.creditCards.count
                                     )
                                 }
                                 
-                                NavigationLink(destination: MoneyHubView(store: store, initialTab: 1)) {
+                                NavigationLink(destination: SubscriptionsHubView(store: store)) {
                                     PillarCard(
                                         icon: "arrow.triangle.2.circlepath.circle.fill",
                                         color: .purple,
@@ -352,7 +352,7 @@ public struct ContentView: View {
                                     )
                                 }
                                 
-                                NavigationLink(destination: MoneyHubView(store: store, initialTab: 2)) {
+                                NavigationLink(destination: MobileBillsHubView(store: store)) {
                                     PillarCard(
                                         icon: "iphone.gen3",
                                         color: .green,

@@ -7,14 +7,15 @@ public struct AddLifeItemView: View {
     
     @State private var title: String = ""
     @State private var subtitle: String = ""
-    @State private var category: LifeCategory = .creditCard
+    @State private var category: LifeCategory
     @State private var dueDate: Date = Date().addingTimeInterval(86400 * 3) // 3 days from now
     @State private var amountText: String = ""
     @State private var repeatFrequency: RepeatFrequency = .monthly
     @State private var notes: String = ""
     
-    public init(store: LifeStore) {
+    public init(store: LifeStore, initialCategory: LifeCategory = .creditCard) {
         self.store = store
+        _category = State(initialValue: initialCategory)
     }
     
     private var isFormValid: Bool {
