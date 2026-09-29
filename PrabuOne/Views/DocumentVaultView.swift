@@ -351,9 +351,22 @@ struct AddDocumentSheet: View {
                 Section("Document Upload (Photo or PDF)") {
                     if let data = pendingAttachmentData {
                         HStack(spacing: 12) {
-                            Image(systemName: pendingAttachmentFileType == "pdf" ? "doc.richtext.fill" : "photo.fill")
-                                .font(.system(size: 26))
-                                .foregroundColor(.teal)
+                            if pendingAttachmentFileType == "image", let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 44, height: 44)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.teal.opacity(0.15))
+                                        .frame(width: 44, height: 44)
+                                    Image(systemName: pendingAttachmentFileType == "pdf" ? "doc.richtext.fill" : "photo.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.teal)
+                                }
+                            }
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(pendingAttachmentOriginalName ?? "Uploaded Document")
@@ -549,9 +562,22 @@ struct EditDocumentSheet: View {
                 Section("Document Upload (Photo or PDF)") {
                     if let data = pendingAttachmentData {
                         HStack(spacing: 12) {
-                            Image(systemName: pendingAttachmentFileType == "pdf" ? "doc.richtext.fill" : "photo.fill")
-                                .font(.system(size: 26))
-                                .foregroundColor(.teal)
+                            if pendingAttachmentFileType == "image", let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 44, height: 44)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.teal.opacity(0.15))
+                                        .frame(width: 44, height: 44)
+                                    Image(systemName: pendingAttachmentFileType == "pdf" ? "doc.richtext.fill" : "photo.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.teal)
+                                }
+                            }
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(pendingAttachmentOriginalName ?? "New Upload")
@@ -579,9 +605,24 @@ struct EditDocumentSheet: View {
                         .padding(.vertical, 4)
                     } else if let originalName = existingAttachmentOriginalName, !wasAttachmentRemoved {
                         HStack(spacing: 12) {
-                            Image(systemName: existingAttachmentFileType == "pdf" ? "doc.richtext.fill" : "photo.fill")
-                                .font(.system(size: 26))
-                                .foregroundColor(.teal)
+                            if existingAttachmentFileType == "image",
+                               let url = document.attachmentURL,
+                               let uiImage = UIImage(contentsOfFile: url.path) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 44, height: 44)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.teal.opacity(0.15))
+                                        .frame(width: 44, height: 44)
+                                    Image(systemName: existingAttachmentFileType == "pdf" ? "doc.richtext.fill" : "photo.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.teal)
+                                }
+                            }
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(originalName)
@@ -735,25 +776,24 @@ struct EditDocumentSheet: View {
     }
 }
 
-/// In-App Fullscreen Attachment Viewer for Photos & PDFs with Native Sharing.
+/// In-App Fullscreen Attachment Viewer for Photos & PDFs with Screen-Fitting & Interactive Zoom.
 struct DocumentAttachmentViewerSheet: View {
     @Environment(\.dismiss) private var dismiss
     let document: DocumentRecord
     
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                Color(UIColor.black)
+                    .ignoresSafeArea()
+                
                 if let url = document.attachmentURL, FileManager.default.fileExists(atPath: url.path) {
                     if document.attachmentFileType == "pdf" {
                         PDFKitRepresentable(url: url)
-                            .edgesIgnoringSafeArea(.bottom)
+                            .ignoresSafeArea(edges: .bottom)
                     } else if let uiImage = UIImage(contentsOfFile: url.path) {
-                        ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .padding()
-                        }
+                        ZoomableImageView(image: uiImage)
+                            .ignoresSafeArea(edges: .bottom)
                     } else {
                         VStack(spacing: 16) {
                             Image(systemName: "doc.fill")
@@ -761,6 +801,7 @@ struct DocumentAttachmentViewerSheet: View {
                                 .foregroundColor(.teal)
                             Text(document.attachmentOriginalName ?? "Document File")
                                 .font(.headline)
+                                .foregroundColor(.white)
                             ShareLink(item: url) {
                                 Label("Share / Export File", systemImage: "square.and.arrow.up")
                                     .font(.headline)
@@ -780,24 +821,30 @@ struct DocumentAttachmentViewerSheet: View {
                             .foregroundColor(.orange)
                         Text("Document File Not Found")
                             .font(.headline)
+                            .foregroundColor(.white)
                         Text("The attached scan or PDF is not available in local storage.")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.gray)
                     }
                     .padding()
                 }
             }
             .navigationTitle(document.title)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
+                        .foregroundColor(.white)
+                        .fontWeight(.semibold)
                 }
                 
                 if let url = document.attachmentURL, FileManager.default.fileExists(atPath: url.path) {
                     ToolbarItem(placement: .primaryAction) {
                         ShareLink(item: url) {
                             Image(systemName: "square.and.arrow.up")
+                                .foregroundColor(.white)
                         }
                     }
                 }
@@ -806,22 +853,156 @@ struct DocumentAttachmentViewerSheet: View {
     }
 }
 
-/// Native PDF Viewer using PDFKit.
+/// Interactive image viewer that fits the image to the screen on launch and supports pinch-to-zoom and double-tap.
+struct ZoomableImageView: View {
+    let image: UIImage
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Color.black
+                    .ignoresSafeArea()
+                
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .scaleEffect(scale)
+                    .offset(offset)
+                    .gesture(
+                        MagnificationGesture()
+                            .onChanged { value in
+                                let delta = value / lastScale
+                                lastScale = value
+                                let newScale = scale * delta
+                                scale = min(max(newScale, 1.0), 5.0)
+                            }
+                            .onEnded { _ in
+                                lastScale = 1.0
+                                if scale <= 1.0 {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        scale = 1.0
+                                        offset = .zero
+                                        lastOffset = .zero
+                                    }
+                                }
+                            }
+                    )
+                    .simultaneousGesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if scale > 1.0 {
+                                    offset = CGSize(
+                                        width: lastOffset.width + value.translation.width,
+                                        height: lastOffset.height + value.translation.height
+                                    )
+                                }
+                            }
+                            .onEnded { _ in
+                                if scale > 1.0 {
+                                    lastOffset = offset
+                                } else {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        offset = .zero
+                                        lastOffset = .zero
+                                    }
+                                }
+                            }
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            if scale > 1.05 {
+                                scale = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                            } else {
+                                scale = 2.5
+                            }
+                        }
+                    }
+                
+                // Bottom control overlay
+                VStack {
+                    Spacer()
+                    if scale > 1.05 {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                scale = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                            }
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.down.right.and.arrow.up.left")
+                                Text("Fit to Screen")
+                            }
+                            .font(.system(size: 13, weight: .semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.25))
+                            .foregroundColor(.white)
+                            .cornerRadius(20)
+                        }
+                        .padding(.bottom, 24)
+                    } else {
+                        Text("Double-tap or pinch to zoom")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.black.opacity(0.4))
+                            .cornerRadius(12)
+                            .padding(.bottom, 24)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Native PDF Viewer with automatic screen-fit layout.
 struct PDFKitRepresentable: UIViewRepresentable {
     let url: URL
     
     func makeUIView(context: Context) -> PDFView {
         let pdfView = PDFView()
-        pdfView.autoScales = true
         pdfView.displayMode = .singlePageContinuous
         pdfView.displayDirection = .vertical
-        pdfView.document = PDFDocument(url: url)
+        pdfView.displaysPageBreaks = true
+        pdfView.backgroundColor = UIColor.black
+        
+        if let doc = PDFDocument(url: url) {
+            pdfView.document = doc
+        }
+        
+        // Auto scale to fit page width to screen
+        pdfView.autoScales = true
+        DispatchQueue.main.async {
+            pdfView.autoScales = true
+            if pdfView.scaleFactorForSizeToFit > 0 {
+                pdfView.minScaleFactor = pdfView.scaleFactorForSizeToFit * 0.5
+                pdfView.maxScaleFactor = 5.0
+                pdfView.scaleFactor = pdfView.scaleFactorForSizeToFit
+            }
+        }
         return pdfView
     }
     
     func updateUIView(_ uiView: PDFView, context: Context) {
         if uiView.document == nil || uiView.document?.documentURL != url {
             uiView.document = PDFDocument(url: url)
+            DispatchQueue.main.async {
+                uiView.autoScales = true
+                if uiView.scaleFactorForSizeToFit > 0 {
+                    uiView.minScaleFactor = uiView.scaleFactorForSizeToFit * 0.5
+                    uiView.maxScaleFactor = 5.0
+                    uiView.scaleFactor = uiView.scaleFactorForSizeToFit
+                }
+            }
         }
     }
 }
