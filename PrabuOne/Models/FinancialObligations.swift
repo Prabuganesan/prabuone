@@ -15,6 +15,7 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
     public var tenureMonths: Int         // e.g. 60
     public var startDate: Date           // Disbursement date
     public var endDate: Date?            // Closure date
+    public var emisPaidOverride: Int?    // Optional manual override for EMIs paid
     public var theme: String             // Color accent: midnight, navy, sapphire, emerald, amber, ruby
     public var notes: String?
     
@@ -32,6 +33,7 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
         tenureMonths: Int = 36,
         startDate: Date = Date(),
         endDate: Date? = nil,
+        emisPaidOverride: Int? = nil,
         theme: String = "sapphire",
         notes: String? = nil
     ) {
@@ -48,15 +50,97 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
         self.tenureMonths = tenureMonths
         self.startDate = startDate
         self.endDate = endDate
+        self.emisPaidOverride = emisPaidOverride
         self.theme = theme
         self.notes = notes
     }
     
+    private enum CodingKeys: String, CodingKey {
+        case id, loanName, lenderName, accountNumber, loanType, totalPrincipal, remainingPrincipal, emiAmount, interestRate, dueDay, tenureMonths, startDate, endDate, emisPaidOverride, theme, notes
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        loanName = try container.decodeIfPresent(String.self, forKey: .loanName) ?? ""
+        lenderName = try container.decodeIfPresent(String.self, forKey: .lenderName) ?? ""
+        accountNumber = try container.decodeIfPresent(String.self, forKey: .accountNumber) ?? ""
+        loanType = try container.decodeIfPresent(String.self, forKey: .loanType) ?? "Personal Loan"
+        totalPrincipal = try container.decodeIfPresent(Double.self, forKey: .totalPrincipal) ?? 0.0
+        remainingPrincipal = try container.decodeIfPresent(Double.self, forKey: .remainingPrincipal) ?? 0.0
+        emiAmount = try container.decodeIfPresent(Double.self, forKey: .emiAmount) ?? 0.0
+        interestRate = try container.decodeIfPresent(Double.self, forKey: .interestRate) ?? 8.5
+        dueDay = try container.decodeIfPresent(Int.self, forKey: .dueDay) ?? 5
+        tenureMonths = try container.decodeIfPresent(Int.self, forKey: .tenureMonths) ?? 36
+        startDate = try container.decodeIfPresent(Date.self, forKey: .startDate) ?? Date()
+        endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
+        emisPaidOverride = try container.decodeIfPresent(Int.self, forKey: .emisPaidOverride)
+        theme = try container.decodeIfPresent(String.self, forKey: .theme) ?? "sapphire"
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+    }
+    
+    /// Automatic calculation of EMIs paid based on the loan start date and the current date/due day.
+    public var calculatedEmisPaid: Int {
+        let calendar = Calendar.current
+        let today = Date()
+        guard startDate <= today else { return 0 }
+        
+        let startComponents = calendar.dateComponents([.year, .month], from: startDate)
+        let currentComponents = calendar.dateComponents([.year, .month], from: today)
+        
+        guard let startMonthDate = calendar.date(from: startComponents),
+              let currentMonthDate = calendar.date(from: currentComponents) else {
+            return 0
+        }
+        
+        let monthDiff = calendar.dateComponents([.month], from: startMonthDate, to: currentMonthDate).month ?? 0
+        let currentDay = calendar.component(.day, from: today)
+        let thisMonthBilled = currentDay >= dueDay ? 1 : 0
+        let total = monthDiff + thisMonthBilled
+        return min(max(total, 0), tenureMonths)
+    }
+    
+    /// Effective EMIs paid: uses manual override if set, otherwise automatically calculated from start date.
+    public var emisPaid: Int {
+        if let override = emisPaidOverride {
+            return min(max(override, 0), tenureMonths)
+        }
+        return calculatedEmisPaid
+    }
+    
+    /// Remaining EMIs left to pay.
+    public var remainingEmis: Int {
+        max(0, tenureMonths - emisPaid)
+    }
+    
+    /// Estimated closure date for this loan based on start date and tenure.
+    public var calculatedEndDate: Date {
+        if let end = endDate { return end }
+        let calendar = Calendar.current
+        return calendar.date(byAdding: .month, value: tenureMonths, to: startDate) ?? startDate
+    }
+    
+    /// Cumulative EMI amount paid so far.
+    public var totalEmiPaidAmount: Double {
+        Double(emisPaid) * emiAmount
+    }
+    
+    /// Remaining EMI obligation amount left to pay.
+    public var remainingEmiAmount: Double {
+        Double(remainingEmis) * emiAmount
+    }
+    
     public var paidPrincipal: Double {
-        max(0, totalPrincipal - remainingPrincipal)
+        if totalPrincipal > 0 && remainingPrincipal > 0 {
+            return max(0, totalPrincipal - remainingPrincipal)
+        }
+        return totalEmiPaidAmount
     }
     
     public var progressPercentage: Double {
+        if tenureMonths > 0 {
+            return min(max((Double(emisPaid) / Double(tenureMonths)) * 100.0, 0), 100.0)
+        }
         guard totalPrincipal > 0 else { return 0 }
         let ratio = paidPrincipal / totalPrincipal
         return min(max(ratio * 100.0, 0), 100.0)

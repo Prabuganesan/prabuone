@@ -236,6 +236,10 @@ public struct LoansAndLicHubView: View {
                         withAnimation {
                             store.deleteLoan(loan)
                         }
+                    }, onRecordPayment: {
+                        withAnimation {
+                            store.recordEmiPayment(for: loan)
+                        }
                     })
                     .padding(.horizontal)
                 }
@@ -377,6 +381,7 @@ struct LoanCard: View {
     let onCopy: (String, String) -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
+    var onRecordPayment: (() -> Void)? = nil
     
     private var cardGradient: LinearGradient {
         switch loan.theme {
@@ -391,6 +396,18 @@ struct LoanCard: View {
         default: // sapphire
             return LinearGradient(colors: [Color(red: 0.08, green: 0.22, blue: 0.42), Color(red: 0.04, green: 0.11, blue: 0.24)], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
+    }
+    
+    private var formattedStartDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        return formatter.string(from: loan.startDate)
+    }
+    
+    private var formattedEndDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM yyyy"
+        return formatter.string(from: loan.calculatedEndDate)
     }
     
     var body: some View {
@@ -479,40 +496,101 @@ struct LoanCard: View {
                 }
             }
             
-            // Repayment Progress Bar
-            VStack(alignment: .leading, spacing: 6) {
+            // Repayment Progress & Timeline Card
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Repaid: \(formatCurrency(loan.paidPrincipal)) (\(String(format: "%.0f", loan.progressPercentage))%)")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.white.opacity(0.8))
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .foregroundColor(.green)
+                            .font(.system(size: 12))
+                        Text("\(loan.emisPaid) of \(loan.tenureMonths) EMIs Paid (\(String(format: "%.0f", loan.progressPercentage))%)")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    
                     Spacer()
-                    Text("Bal: \(formatCurrency(loan.remainingPrincipal))")
+                    
+                    Text("\(loan.remainingEmis) Left")
                         .font(.system(size: 11, weight: .bold))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.18))
                         .foregroundColor(.white)
+                        .cornerRadius(6)
                 }
                 
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule()
                             .fill(Color.white.opacity(0.2))
-                            .frame(height: 6)
+                            .frame(height: 7)
                         Capsule()
-                            .fill(LinearGradient(colors: [.green, .mint], startPoint: .leading, endPoint: .trailing))
-                            .frame(width: max(0, min(geo.size.width * CGFloat(loan.progressPercentage / 100.0), geo.size.width)), height: 6)
+                            .fill(LinearGradient(colors: [.green, .mint, .cyan], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: max(0, min(geo.size.width * CGFloat(loan.progressPercentage / 100.0), geo.size.width)), height: 7)
                     }
                 }
-                .frame(height: 6)
+                .frame(height: 7)
+                
+                HStack {
+                    Text("Paid: \(formatCurrency(loan.totalEmiPaidAmount))")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
+                    Spacer()
+                    Text("To Pay: \(formatCurrency(loan.remainingEmiAmount))")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                
+                // Timeline row
+                HStack {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 10))
+                        Text("Start: \(formattedStartDate)")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "flag.checkered")
+                            .font(.system(size: 10))
+                        Text("End: \(formattedEndDate)")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                }
             }
+            .padding(12)
+            .background(Color.black.opacity(0.22))
+            .cornerRadius(12)
             
-            // Details footer
+            // Details & Actions Footer
             HStack {
-                Text("\(String(format: "%.2f", loan.interestRate))% p.a. • \(loan.tenureMonths) Mos")
+                Text("\(String(format: "%.2f", loan.interestRate))% p.a. • \(loan.tenureMonths / 12)y \(loan.tenureMonths % 12)m")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.7))
                 
                 Spacer()
                 
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
+                    if loan.remainingEmis > 0, let recordAction = onRecordPayment {
+                        Button(action: recordAction) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 12))
+                                Text("+1 Paid")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(6)
+                        }
+                    }
+                    
                     Button(action: onEdit) {
                         Image(systemName: "pencil.circle.fill")
                             .font(.system(size: 20))
@@ -719,17 +797,74 @@ struct AddLoanSheet: View {
     @State private var lenderName = ""
     @State private var accountNumber = ""
     @State private var loanType = "Personal Loan"
+    
+    // Timeline & EMI Tracking
+    @State private var startDate = Date()
+    @State private var tenureMonths = 36
+    @State private var dueDay = 5
+    @State private var manualOverride = false
+    @State private var manualEmisPaid = 0
+    
+    // Financial Details
     @State private var totalPrincipalString = ""
     @State private var remainingPrincipalString = ""
     @State private var emiAmountString = ""
     @State private var interestRateString = "8.5"
-    @State private var dueDay = 5
-    @State private var tenureMonths = 36
     @State private var theme = "sapphire"
     @State private var notes = ""
     
     let loanTypes = ["Personal Loan", "Home Loan", "Car Loan", "Gold Loan", "Education Loan", "Business Loan", "Consumer Durable", "Others"]
     let themes = [("Sapphire", "sapphire"), ("Emerald", "emerald"), ("Midnight", "midnight"), ("Amber", "amber"), ("Ruby", "ruby")]
+    let tenurePresets = [12, 24, 36, 48, 60, 84, 120, 180, 240, 300, 360]
+    
+    // MARK: - Auto Calculations
+    
+    private var calculatedEmisPaid: Int {
+        let calendar = Calendar.current
+        let today = Date()
+        guard startDate <= today else { return 0 }
+        
+        let startComponents = calendar.dateComponents([.year, .month], from: startDate)
+        let currentComponents = calendar.dateComponents([.year, .month], from: today)
+        
+        guard let startMonthDate = calendar.date(from: startComponents),
+              let currentMonthDate = calendar.date(from: currentComponents) else {
+            return 0
+        }
+        
+        let monthDiff = calendar.dateComponents([.month], from: startMonthDate, to: currentMonthDate).month ?? 0
+        let currentDay = calendar.component(.day, from: today)
+        let thisMonthBilled = currentDay >= dueDay ? 1 : 0
+        let total = monthDiff + thisMonthBilled
+        return min(max(total, 0), tenureMonths)
+    }
+    
+    private var effectiveEmisPaid: Int {
+        if manualOverride {
+            return min(max(manualEmisPaid, 0), tenureMonths)
+        }
+        return calculatedEmisPaid
+    }
+    
+    private var remainingEmis: Int {
+        max(0, tenureMonths - effectiveEmisPaid)
+    }
+    
+    private var calculatedEndDate: Date {
+        let calendar = Calendar.current
+        return calendar.date(byAdding: .month, value: tenureMonths, to: startDate) ?? startDate
+    }
+    
+    private var calculatedEndDateString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: calculatedEndDate)
+    }
+    
+    private var progressPercent: Double {
+        guard tenureMonths > 0 else { return 0 }
+        return (Double(effectiveEmisPaid) / Double(tenureMonths)) * 100.0
+    }
     
     var body: some View {
         NavigationStack {
@@ -746,24 +881,121 @@ struct AddLoanSheet: View {
                         .keyboardType(.numbersAndPunctuation)
                 }
                 
-                Section("Financial Details (₹)") {
-                    TextField("Sanctioned Amount (e.g. 800000)", text: $totalPrincipalString)
-                        .keyboardType(.decimalPad)
-                    TextField("Current Balance Outstanding (e.g. 520000)", text: $remainingPrincipalString)
-                        .keyboardType(.decimalPad)
-                    TextField("Monthly EMI Amount (e.g. 18500)", text: $emiAmountString)
-                        .keyboardType(.decimalPad)
-                    TextField("Interest Rate % p.a. (e.g. 8.75)", text: $interestRateString)
-                        .keyboardType(.decimalPad)
-                }
-                
-                Section("Repayment Schedule") {
+                Section {
+                    DatePicker("Loan Start Date (Disbursal)", selection: $startDate, displayedComponents: [.date])
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Tenure")
+                            Spacer()
+                            Text("\(tenureMonths) Months (\(tenureMonths / 12)y \(tenureMonths % 12)m)")
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Stepper("", value: $tenureMonths, in: 6...360, step: 6)
+                            .labelsHidden()
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(tenurePresets, id: \.self) { months in
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        tenureMonths = months
+                                    }) {
+                                        Text("\(months)m")
+                                            .font(.system(size: 12, weight: tenureMonths == months ? .bold : .medium))
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 5)
+                                            .background(tenureMonths == months ? Color.blue : Color(UIColor.tertiarySystemBackground))
+                                            .foregroundColor(tenureMonths == months ? .white : .primary)
+                                            .cornerRadius(8)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    
                     Picker("Monthly EMI Due Day", selection: $dueDay) {
                         ForEach(1...31, id: \.self) { day in
                             Text("\(day)th of every month").tag(day)
                         }
                     }
-                    Stepper("Tenure: \(tenureMonths) Months (\(tenureMonths / 12) yrs \(tenureMonths % 12) mos)", value: $tenureMonths, in: 6...360, step: 6)
+                    
+                    // Auto Calculation Live Summary Card
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                                .foregroundColor(.blue)
+                            Text("Auto-Calculated Repayment Status")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Divider()
+                        
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("EMIs Paid So Far")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                Text("\(effectiveEmisPaid) of \(tenureMonths) (\(String(format: "%.0f", progressPercent))%)")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(.green)
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("Remaining EMIs")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                Text("\(remainingEmis) EMIs Left")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        
+                        HStack {
+                            Text("Loan Closure Date:")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(calculatedEndDateString)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.blue.opacity(0.08))
+                    .cornerRadius(12)
+                    
+                    Toggle("Adjust EMIs Paid Manually", isOn: $manualOverride)
+                        .onChange(of: manualOverride) { enabled in
+                            if enabled && manualEmisPaid == 0 {
+                                manualEmisPaid = calculatedEmisPaid
+                            }
+                        }
+                    
+                    if manualOverride {
+                        Stepper("Manual EMIs Paid: \(manualEmisPaid)", value: $manualEmisPaid, in: 0...tenureMonths)
+                    }
+                } header: {
+                    Text("Timeline & Auto-Calculation")
+                } footer: {
+                    Text("Prabu One calculates EMIs paid, remaining payments, and loan closure date automatically from the start date.")
+                }
+                
+                Section("Financial Details (₹)") {
+                    TextField("Monthly EMI Amount (e.g. 18500)", text: $emiAmountString)
+                        .keyboardType(.decimalPad)
+                    TextField("Sanctioned Amount (Optional, e.g. 800000)", text: $totalPrincipalString)
+                        .keyboardType(.decimalPad)
+                    TextField("Current Balance Outstanding (Optional)", text: $remainingPrincipalString)
+                        .keyboardType(.decimalPad)
+                    TextField("Interest Rate % p.a. (e.g. 8.75)", text: $interestRateString)
+                        .keyboardType(.decimalPad)
                 }
                 
                 Section("Card Theme") {
@@ -795,10 +1027,19 @@ struct AddLoanSheet: View {
     }
     
     private func saveLoan() {
-        let total = Double(totalPrincipalString) ?? 0
-        let remaining = Double(remainingPrincipalString) ?? total
         let emi = Double(emiAmountString) ?? 0
+        let total = (Double(totalPrincipalString) ?? 0) > 0 ? (Double(totalPrincipalString) ?? 0) : Double(tenureMonths) * emi
         let rate = Double(interestRateString) ?? 8.5
+        
+        let remaining: Double
+        if let userRemaining = Double(remainingPrincipalString), userRemaining > 0 {
+            remaining = userRemaining
+        } else if total > 0 {
+            let paidRatio = Double(effectiveEmisPaid) / Double(max(1, tenureMonths))
+            remaining = max(0, total * (1.0 - paidRatio))
+        } else {
+            remaining = Double(remainingEmis) * emi
+        }
         
         let loan = LoanAccount(
             loanName: loanName.trimmingCharacters(in: .whitespaces),
@@ -811,6 +1052,9 @@ struct AddLoanSheet: View {
             interestRate: rate,
             dueDay: dueDay,
             tenureMonths: tenureMonths,
+            startDate: startDate,
+            endDate: calculatedEndDate,
+            emisPaidOverride: manualOverride ? manualEmisPaid : nil,
             theme: theme,
             notes: notes.isEmpty ? nil : notes
         )
@@ -828,17 +1072,25 @@ struct EditLoanSheet: View {
     @State private var lenderName: String
     @State private var accountNumber: String
     @State private var loanType: String
+    
+    // Timeline & EMI Tracking
+    @State private var startDate: Date
+    @State private var tenureMonths: Int
+    @State private var dueDay: Int
+    @State private var manualOverride: Bool
+    @State private var manualEmisPaid: Int
+    
+    // Financial Details
     @State private var totalPrincipalString: String
     @State private var remainingPrincipalString: String
     @State private var emiAmountString: String
     @State private var interestRateString: String
-    @State private var dueDay: Int
-    @State private var tenureMonths: Int
     @State private var theme: String
     @State private var notes: String
     
     let loanTypes = ["Personal Loan", "Home Loan", "Car Loan", "Gold Loan", "Education Loan", "Business Loan", "Consumer Durable", "Others"]
     let themes = [("Sapphire", "sapphire"), ("Emerald", "emerald"), ("Midnight", "midnight"), ("Amber", "amber"), ("Ruby", "ruby")]
+    let tenurePresets = [12, 24, 36, 48, 60, 84, 120, 180, 240, 300, 360]
     
     init(store: LifeStore, loan: LoanAccount) {
         self.store = store
@@ -847,14 +1099,66 @@ struct EditLoanSheet: View {
         _lenderName = State(initialValue: loan.lenderName)
         _accountNumber = State(initialValue: loan.accountNumber)
         _loanType = State(initialValue: loan.loanType)
+        _startDate = State(initialValue: loan.startDate)
+        _tenureMonths = State(initialValue: loan.tenureMonths)
+        _dueDay = State(initialValue: loan.dueDay)
+        _manualOverride = State(initialValue: loan.emisPaidOverride != nil)
+        _manualEmisPaid = State(initialValue: loan.emisPaid)
         _totalPrincipalString = State(initialValue: String(format: "%.0f", loan.totalPrincipal))
         _remainingPrincipalString = State(initialValue: String(format: "%.0f", loan.remainingPrincipal))
         _emiAmountString = State(initialValue: String(format: "%.0f", loan.emiAmount))
         _interestRateString = State(initialValue: String(format: "%.2f", loan.interestRate))
-        _dueDay = State(initialValue: loan.dueDay)
-        _tenureMonths = State(initialValue: loan.tenureMonths)
         _theme = State(initialValue: loan.theme)
         _notes = State(initialValue: loan.notes ?? "")
+    }
+    
+    // MARK: - Auto Calculations
+    
+    private var calculatedEmisPaid: Int {
+        let calendar = Calendar.current
+        let today = Date()
+        guard startDate <= today else { return 0 }
+        
+        let startComponents = calendar.dateComponents([.year, .month], from: startDate)
+        let currentComponents = calendar.dateComponents([.year, .month], from: today)
+        
+        guard let startMonthDate = calendar.date(from: startComponents),
+              let currentMonthDate = calendar.date(from: currentComponents) else {
+            return 0
+        }
+        
+        let monthDiff = calendar.dateComponents([.month], from: startMonthDate, to: currentMonthDate).month ?? 0
+        let currentDay = calendar.component(.day, from: today)
+        let thisMonthBilled = currentDay >= dueDay ? 1 : 0
+        let total = monthDiff + thisMonthBilled
+        return min(max(total, 0), tenureMonths)
+    }
+    
+    private var effectiveEmisPaid: Int {
+        if manualOverride {
+            return min(max(manualEmisPaid, 0), tenureMonths)
+        }
+        return calculatedEmisPaid
+    }
+    
+    private var remainingEmis: Int {
+        max(0, tenureMonths - effectiveEmisPaid)
+    }
+    
+    private var calculatedEndDate: Date {
+        let calendar = Calendar.current
+        return calendar.date(byAdding: .month, value: tenureMonths, to: startDate) ?? startDate
+    }
+    
+    private var calculatedEndDateString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        return formatter.string(from: calculatedEndDate)
+    }
+    
+    private var progressPercent: Double {
+        guard tenureMonths > 0 else { return 0 }
+        return (Double(effectiveEmisPaid) / Double(tenureMonths)) * 100.0
     }
     
     var body: some View {
@@ -872,24 +1176,121 @@ struct EditLoanSheet: View {
                         .keyboardType(.numbersAndPunctuation)
                 }
                 
-                Section("Financial Details (₹)") {
-                    TextField("Sanctioned Amount", text: $totalPrincipalString)
-                        .keyboardType(.decimalPad)
-                    TextField("Current Balance Outstanding", text: $remainingPrincipalString)
-                        .keyboardType(.decimalPad)
-                    TextField("Monthly EMI Amount", text: $emiAmountString)
-                        .keyboardType(.decimalPad)
-                    TextField("Interest Rate % p.a.", text: $interestRateString)
-                        .keyboardType(.decimalPad)
-                }
-                
-                Section("Repayment Schedule") {
+                Section {
+                    DatePicker("Loan Start Date (Disbursal)", selection: $startDate, displayedComponents: [.date])
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Tenure")
+                            Spacer()
+                            Text("\(tenureMonths) Months (\(tenureMonths / 12)y \(tenureMonths % 12)m)")
+                                .fontWeight(.bold)
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Stepper("", value: $tenureMonths, in: 6...360, step: 6)
+                            .labelsHidden()
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(tenurePresets, id: \.self) { months in
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        tenureMonths = months
+                                    }) {
+                                        Text("\(months)m")
+                                            .font(.system(size: 12, weight: tenureMonths == months ? .bold : .medium))
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 5)
+                                            .background(tenureMonths == months ? Color.blue : Color(UIColor.tertiarySystemBackground))
+                                            .foregroundColor(tenureMonths == months ? .white : .primary)
+                                            .cornerRadius(8)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    
                     Picker("Monthly EMI Due Day", selection: $dueDay) {
                         ForEach(1...31, id: \.self) { day in
                             Text("\(day)th of every month").tag(day)
                         }
                     }
-                    Stepper("Tenure: \(tenureMonths) Months (\(tenureMonths / 12) yrs \(tenureMonths % 12) mos)", value: $tenureMonths, in: 6...360, step: 6)
+                    
+                    // Auto Calculation Live Summary Card
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                                .foregroundColor(.blue)
+                            Text("Auto-Calculated Repayment Status")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.blue)
+                        }
+                        
+                        Divider()
+                        
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("EMIs Paid So Far")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                Text("\(effectiveEmisPaid) of \(tenureMonths) (\(String(format: "%.0f", progressPercent))%)")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(.green)
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing, spacing: 2) {
+                                Text("Remaining EMIs")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                Text("\(remainingEmis) EMIs Left")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(.primary)
+                            }
+                        }
+                        
+                        HStack {
+                            Text("Loan Closure Date:")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text(calculatedEndDateString)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    .padding(12)
+                    .background(Color.blue.opacity(0.08))
+                    .cornerRadius(12)
+                    
+                    Toggle("Adjust EMIs Paid Manually", isOn: $manualOverride)
+                        .onChange(of: manualOverride) { enabled in
+                            if enabled && manualEmisPaid == 0 {
+                                manualEmisPaid = calculatedEmisPaid
+                            }
+                        }
+                    
+                    if manualOverride {
+                        Stepper("Manual EMIs Paid: \(manualEmisPaid)", value: $manualEmisPaid, in: 0...tenureMonths)
+                    }
+                } header: {
+                    Text("Timeline & Auto-Calculation")
+                } footer: {
+                    Text("Prabu One calculates EMIs paid, remaining payments, and loan closure date automatically from the start date.")
+                }
+                
+                Section("Financial Details (₹)") {
+                    TextField("Monthly EMI Amount", text: $emiAmountString)
+                        .keyboardType(.decimalPad)
+                    TextField("Sanctioned Amount", text: $totalPrincipalString)
+                        .keyboardType(.decimalPad)
+                    TextField("Current Balance Outstanding", text: $remainingPrincipalString)
+                        .keyboardType(.decimalPad)
+                    TextField("Interest Rate % p.a.", text: $interestRateString)
+                        .keyboardType(.decimalPad)
                 }
                 
                 Section("Card Theme") {
@@ -933,17 +1334,34 @@ struct EditLoanSheet: View {
     }
     
     private func updateLoan() {
+        let emi = Double(emiAmountString) ?? loan.emiAmount
+        let total = Double(totalPrincipalString) ?? loan.totalPrincipal
+        let rate = Double(interestRateString) ?? loan.interestRate
+        
+        let remaining: Double
+        if let userRemaining = Double(remainingPrincipalString), userRemaining > 0 {
+            remaining = userRemaining
+        } else if total > 0 {
+            let paidRatio = Double(effectiveEmisPaid) / Double(max(1, tenureMonths))
+            remaining = max(0, total * (1.0 - paidRatio))
+        } else {
+            remaining = Double(remainingEmis) * emi
+        }
+        
         var updated = loan
         updated.loanName = loanName.trimmingCharacters(in: .whitespaces)
         updated.lenderName = lenderName.trimmingCharacters(in: .whitespaces)
         updated.accountNumber = accountNumber.trimmingCharacters(in: .whitespaces)
         updated.loanType = loanType
-        updated.totalPrincipal = Double(totalPrincipalString) ?? loan.totalPrincipal
-        updated.remainingPrincipal = Double(remainingPrincipalString) ?? loan.remainingPrincipal
-        updated.emiAmount = Double(emiAmountString) ?? loan.emiAmount
-        updated.interestRate = Double(interestRateString) ?? loan.interestRate
+        updated.totalPrincipal = total
+        updated.remainingPrincipal = remaining
+        updated.emiAmount = emi
+        updated.interestRate = rate
         updated.dueDay = dueDay
         updated.tenureMonths = tenureMonths
+        updated.startDate = startDate
+        updated.endDate = calculatedEndDate
+        updated.emisPaidOverride = manualOverride ? manualEmisPaid : nil
         updated.theme = theme
         updated.notes = notes.isEmpty ? nil : notes
         

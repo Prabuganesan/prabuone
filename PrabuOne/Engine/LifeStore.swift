@@ -190,11 +190,31 @@ public final class LifeStore: ObservableObject {
     // MARK: - Mutations (Loans)
     
     public var totalLoanOutstanding: Double {
-        loans.reduce(0) { $0 + $1.remainingPrincipal }
+        loans.reduce(0) { total, loan in
+            if loan.remainingPrincipal > 0 {
+                return total + loan.remainingPrincipal
+            } else {
+                return total + loan.remainingEmiAmount
+            }
+        }
     }
     
     public var totalMonthlyLoanEmi: Double {
         loans.reduce(0) { $0 + $1.emiAmount }
+    }
+    
+    public func recordEmiPayment(for loan: LoanAccount) {
+        if let index = loans.firstIndex(where: { $0.id == loan.id }) {
+            var updated = loans[index]
+            let newPaid = updated.emisPaid + 1
+            if newPaid <= updated.tenureMonths {
+                updated.emisPaidOverride = newPaid
+                if updated.remainingPrincipal >= updated.emiAmount {
+                    updated.remainingPrincipal -= updated.emiAmount
+                }
+                updateLoan(updated)
+            }
+        }
     }
     
     public func addLoan(_ loan: LoanAccount) {
