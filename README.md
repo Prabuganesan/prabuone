@@ -87,7 +87,10 @@
 - **Full Editability**: Tap any bill or use context menu to edit provider title, plan subtitle, amount, renewal date, and notes.
 
 ### 5. 🗄️ Digital Document Vault & File Uploads
-- **Official Records Vault**: Store vehicle RC Book, Driving License, Passport, Aadhaar, PAN, Insurance Policies, and PUC Certificates.
+- **Official Records Vault**: Store vehicle RC Book, Driving License, Passport, Aadhaar, PAN, Insurance Policies, PUC Certificates, Agreements, and **Others** (custom documents).
+- **"Others" Document Type**:
+  - Full support for uncategorized or custom documents (e.g. Property Deeds, Rental Agreements, Voter ID, Warranties, Will & Trusts).
+  - Dedicated visual icon (`doc.badge.ellipsis`) and custom document naming.
 - **Document Upload (Photos & PDFs)**:
   - Attach scans and files via **Photo Library** (`PhotosPicker`) or **File/PDF Importer** (`fileImporter`).
   - Encrypted, on-device sandboxed persistence in `vault_attachments/` with automatic garbage collection when documents are deleted or replaced.
@@ -102,12 +105,29 @@
   - 🔴 **EXPIRED**
 - **One-Tap Copy to Clipboard**: Tap any document number to copy it instantly with a tactile haptic HUD.
 
-### 6. 🎂 Birthdays & Life Milestones
+### 6. 🏛️ Loans & LIC Insurance Tracking Hub
+- **Dedicated Dual-Track Financial Hub**:
+  - **Loans & EMIs Tab**:
+    - Complete tracking for Personal Loans, Home Loans, Car Loans, Gold Loans, Education Loans, and Business Loans.
+    - Sanctioned Amount vs Remaining Principal Outstanding with visual repayment progress bar.
+    - Monthly EMI amount calculation and monthly due day tracker with countdown (e.g. "Day 5 • Due in 3 days").
+    - Interest rate (`% p.a.`) and tenure tracking.
+    - 1-tap quick copy for **Loan Account Number** with tactile haptic feedback.
+    - Synchronized with the monthly outflow calculator and local reminders.
+  - **LIC & Insurance Policies Tab**:
+    - Track Life Insurance Corporation of India (LIC), Term Life, Health / Mediclaim, and Vehicle Insurance policies.
+    - Sum Assured (Total Life Cover) and annual premium outflow overview.
+    - Premium amount, frequency (Yearly, Half-Yearly, Quarterly, Monthly), and next due date countdown.
+    - Maturity date and policy holder name tracking.
+    - 1-tap quick copy for **Policy Number**.
+    - Urgent upcoming renewals banner for policies expiring within 30 days.
+
+### 7. 🎂 Birthdays & Life Milestones
 - **Countdown to Moments**: Track days remaining until family birthdays and wedding anniversaries.
 - **Milestone Editor**: Tap pencil button or context menu to update name, celebration description, event date, and gift / dinner planning notes.
 - **Smart Reminders**: Automated multi-stage alerts at 30 days, 7 days, 1 day, and on the day.
 
-### 7. 📝 Quick Notes with Dedicated Reminders (Instant Scratchpad)
+### 8. 📝 Quick Notes with Dedicated Reminders (Instant Scratchpad)
 - **Sudden Thought Capture**: 1-tap action directly from the top header or the Quick Notes hub to note ideas, parking slot numbers, gate passes, locker codes, or temporary checklists instantly.
 - **Dedicated Timed Reminders**:
   - Toggle "Reminder Alert" on any note to receive local push notification alerts at the exact scheduled time.
@@ -120,14 +140,33 @@
 - **Universal Search Integration**: All notes and memos are searchable directly from the home screen universal search bar.
 - **One-Tap Copy & Share**: Copy note content to clipboard with tactile haptic feedback.
 
-### 8. 🔴 Attention-Driven Dashboard
+### 9. 🔍 Universal Global Search (All Details Searchable)
+- **Search Across Every Single Detail in Your App**:
+  - **Cards & Banking**: Search by bank name, card name, cardholder name, full/last-4 card number, account number, IFSC code, UPI ID, or branch.
+  - **Loans & EMIs**: Search by lender name, loan title, loan account number, or loan type.
+  - **LIC & Policies**: Search by insurer (LIC, HDFC, Star Health), policy name, policy number, or holder name.
+  - **Document Vault**: Search by title, document number, or type (including "Others").
+  - **Vehicle & Service Logs**: Search by make/model, registration plate, fuel type, service center, or replaced parts.
+  - **Commitments & Subscriptions**: Search by provider, billing category, or notes.
+  - **Quick Notes**: Full-text search across titles and note contents.
+- **Action-Oriented Search Results**:
+  - Instant 1-tap copy buttons for any found card number, account number, policy number, doc ID, or vehicle plate.
+  - Direct tap navigation to edit or view matching records immediately.
+  - Clear section headers with matching result counts.
+
+### 10. ☁️ Google Drive Backup & Cloud Restore
+- **100% Complete Snapshot**: Packages all cards, bank accounts, loans, LIC policies, vehicle profile, service logs, documents, quick notes, and commitments into a portable timestamped archive (`PrabuOne_Backup_YYYY-MM-DD.json`).
+- **1-Tap Export to Google Drive**: Uses native iOS Share Sheet (`UIActivityViewController`) allowing seamless upload directly into Google Drive (or Files, AirDrop, or Gmail).
+- **1-Tap Restore from Google Drive**: Uses native iOS File Importer (`.fileImporter`) to select your backup JSON from Google Drive with pre-restore data validation, detailed entity count confirmation, and automated reminder rescheduling.
+- **Last Backup Tracker**: Live indicator displaying the exact date and time of your latest Google Drive backup.
+
+### 11. 🔴 Attention-Driven Dashboard
 - **"Needs Attention" Radar**: Dynamically surfaces bills, service dues, policy renewals, or birthdays due today or within 7 days.
 - **Tap-to-Edit Attention Items**: Tap any item in the attention card or search results to open the editor directly.
 - **Monthly Outflow Predictor**: Computes total committed expenditure (₹) for the current calendar month.
-- **Universal Instant Search**: Search across cards, subscriptions, utility bills, vehicle records, documents, birthdays, and quick notes.
 - **Multi-Stage Local Reminders**: Proactive push notifications scheduled automatically at **30 days, 7 days, 3 days, 1 day, and 0 days** prior to due dates.
 
-### 9. 🪞 Car Mirror & In-Car Cockpit Display
+### 12. 🪞 Car Mirror & In-Car Cockpit Display
 - **In-Car Cockpit HUD (Full-Screen Landscape / AMOLED Dark Mode)**:
   - Specially designed high-contrast cockpit dashboard for car displays (16:9 / 21:9 aspect ratios) with anti-glare styling.
   - **Live Vehicle Health**: Real-time odometer, distance to next service interval with warning colors (< 1000 km in amber).

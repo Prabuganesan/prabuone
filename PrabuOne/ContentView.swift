@@ -11,25 +11,131 @@ public struct ContentView: View {
     @State private var selectedNoteToEdit: QuickNote? = nil
     @State private var searchText = ""
     
+    @State private var showingGoogleBackupSheet = false
+    @State private var selectedLoanToEdit: LoanAccount? = nil
+    @State private var selectedPolicyToEdit: InsurancePolicyRecord? = nil
+    @State private var selectedDocToEdit: DocumentRecord? = nil
+    @State private var copiedToastText: String? = nil
+    
     public init() {}
     
-    private var searchResults: [LifeItem] {
-        guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
-        let query = searchText.lowercased()
+    // MARK: - Universal Search Across All Data Sources
+    
+    private var cleanQuery: String {
+        searchText.trimmingCharacters(in: .whitespaces).lowercased()
+    }
+    
+    private var cardSearchResults: [CreditCardAccount] {
+        guard !cleanQuery.isEmpty else { return [] }
+        return store.creditCards.filter {
+            $0.bankName.lowercased().contains(cleanQuery) ||
+            $0.cardName.lowercased().contains(cleanQuery) ||
+            $0.cardHolderName.lowercased().contains(cleanQuery) ||
+            $0.cardNumber.contains(cleanQuery) ||
+            $0.lastFourDigits.contains(cleanQuery) ||
+            $0.cardCategory.lowercased().contains(cleanQuery) ||
+            $0.cardNetwork.lowercased().contains(cleanQuery)
+        }
+    }
+    
+    private var bankSearchResults: [BankAccount] {
+        guard !cleanQuery.isEmpty else { return [] }
+        return store.bankAccounts.filter {
+            $0.bankName.lowercased().contains(cleanQuery) ||
+            $0.accountNumber.contains(cleanQuery) ||
+            $0.lastFourDigits.contains(cleanQuery) ||
+            $0.accountHolderName.lowercased().contains(cleanQuery) ||
+            $0.ifscCode.lowercased().contains(cleanQuery) ||
+            $0.upiId.lowercased().contains(cleanQuery) ||
+            $0.branchName.lowercased().contains(cleanQuery)
+        }
+    }
+    
+    private var loanSearchResults: [LoanAccount] {
+        guard !cleanQuery.isEmpty else { return [] }
+        return store.loans.filter {
+            $0.loanName.lowercased().contains(cleanQuery) ||
+            $0.lenderName.lowercased().contains(cleanQuery) ||
+            $0.accountNumber.contains(cleanQuery) ||
+            $0.loanType.lowercased().contains(cleanQuery) ||
+            ($0.notes?.lowercased().contains(cleanQuery) ?? false)
+        }
+    }
+    
+    private var licSearchResults: [InsurancePolicyRecord] {
+        guard !cleanQuery.isEmpty else { return [] }
+        return store.licPolicies.filter {
+            $0.policyName.lowercased().contains(cleanQuery) ||
+            $0.insurerName.lowercased().contains(cleanQuery) ||
+            $0.policyNumber.contains(cleanQuery) ||
+            $0.policyType.lowercased().contains(cleanQuery) ||
+            $0.policyHolderName.lowercased().contains(cleanQuery) ||
+            ($0.notes?.lowercased().contains(cleanQuery) ?? false)
+        }
+    }
+    
+    private var docSearchResults: [DocumentRecord] {
+        guard !cleanQuery.isEmpty else { return [] }
+        return store.documents.filter {
+            $0.title.lowercased().contains(cleanQuery) ||
+            $0.documentType.lowercased().contains(cleanQuery) ||
+            $0.documentNumber.lowercased().contains(cleanQuery) ||
+            ($0.notes?.lowercased().contains(cleanQuery) ?? false)
+        }
+    }
+    
+    private var vehicleMatches: Bool {
+        guard !cleanQuery.isEmpty else { return false }
+        let profile = store.vehicleProfile
+        return profile.makeModel.lowercased().contains(cleanQuery) ||
+            profile.registrationNumber.lowercased().contains(cleanQuery) ||
+            profile.fuelType.lowercased().contains(cleanQuery) ||
+            profile.serviceHistory.contains(where: {
+                $0.title.lowercased().contains(cleanQuery) ||
+                $0.serviceCenter.lowercased().contains(cleanQuery) ||
+                $0.itemsReplaced.contains(where: { $0.lowercased().contains(cleanQuery) })
+            })
+    }
+    
+    private var itemSearchResults: [LifeItem] {
+        guard !cleanQuery.isEmpty else { return [] }
         return store.items.filter {
-            $0.title.lowercased().contains(query) ||
-            $0.subtitle.lowercased().contains(query) ||
-            $0.category.displayName.lowercased().contains(query) ||
-            ($0.notes?.lowercased().contains(query) ?? false)
+            $0.title.lowercased().contains(cleanQuery) ||
+            $0.subtitle.lowercased().contains(cleanQuery) ||
+            $0.category.displayName.lowercased().contains(cleanQuery) ||
+            ($0.notes?.lowercased().contains(cleanQuery) ?? false)
         }
     }
     
     private var noteSearchResults: [QuickNote] {
-        guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return [] }
-        let query = searchText.lowercased()
+        guard !cleanQuery.isEmpty else { return [] }
         return store.quickNotes.filter {
-            $0.title.lowercased().contains(query) ||
-            $0.content.lowercased().contains(query)
+            $0.title.lowercased().contains(cleanQuery) ||
+            $0.content.lowercased().contains(cleanQuery)
+        }
+    }
+    
+    private var totalSearchResultsCount: Int {
+        cardSearchResults.count +
+        bankSearchResults.count +
+        loanSearchResults.count +
+        licSearchResults.count +
+        docSearchResults.count +
+        (vehicleMatches ? 1 : 0) +
+        itemSearchResults.count +
+        noteSearchResults.count
+    }
+    
+    private func copyToClipboard(text: String, label: String) {
+        UIPasteboard.general.string = text
+        HapticManager.success()
+        withAnimation {
+            copiedToastText = "Copied \(label)"
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                copiedToastText = nil
+            }
         }
     }
     
@@ -57,6 +163,16 @@ public struct ContentView: View {
                         Spacer()
                         
                         HStack(spacing: 10) {
+                            // ☁️ Google Drive Backup Button
+                            Button(action: {
+                                HapticManager.light()
+                                showingGoogleBackupSheet = true
+                            }) {
+                                Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.cyan)
+                            }
+                            
                             // ⚡ Sudden Quick Note Button
                             Button(action: {
                                 HapticManager.light()
@@ -84,7 +200,7 @@ public struct ContentView: View {
                     HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.secondary)
-                        TextField("Search cards, bills, vehicle, docs...", text: $searchText)
+                        TextField("Search cards, accounts, loans, LIC, vehicle, docs...", text: $searchText)
                             .font(.system(size: 15))
                         if !searchText.isEmpty {
                             Button(action: {
@@ -101,24 +217,337 @@ public struct ContentView: View {
                     .cornerRadius(12)
                     
                     if !searchText.isEmpty {
-                        // Search Results Section
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Search Results (\(searchResults.count + noteSearchResults.count))")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                        // Universal Search Results Section
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("Search Results (\(totalSearchResultsCount) found)")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                Spacer()
+                            }
                             
-                            if searchResults.isEmpty && noteSearchResults.isEmpty {
-                                Text("No items or notes matching '\(searchText)'")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .padding(.vertical, 16)
+                            if totalSearchResultsCount == 0 {
+                                VStack(spacing: 10) {
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 36))
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 16)
+                                    Text("No Details Matching '\(searchText)'")
+                                        .font(.headline)
+                                        .foregroundColor(.primary)
+                                    Text("Searched across cards, bank accounts, loans, LIC policies, vehicle records, documents, notes, and commitments.")
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 24)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 20)
                             } else {
-                                if !searchResults.isEmpty {
+                                // 1. Cards & Bank Accounts
+                                if !cardSearchResults.isEmpty || !bankSearchResults.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("Commitments & Items")
+                                        Text("Cards & Banking (\(cardSearchResults.count + bankSearchResults.count))")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.blue)
+                                        
+                                        ForEach(cardSearchResults) { card in
+                                            HStack(spacing: 12) {
+                                                Image(systemName: card.isDebit ? "creditcard" : "creditcard.fill")
+                                                    .foregroundColor(.blue)
+                                                    .frame(width: 22)
+                                                
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    HStack {
+                                                        Text("\(card.bankName) \(card.cardName)")
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                        Text(card.cardCategory.uppercased())
+                                                            .font(.system(size: 9, weight: .bold))
+                                                            .padding(.horizontal, 6)
+                                                            .padding(.vertical, 2)
+                                                            .background(Color.blue.opacity(0.15))
+                                                            .foregroundColor(.blue)
+                                                            .cornerRadius(4)
+                                                    }
+                                                    
+                                                    Text(card.formattedCardNumber)
+                                                        .font(.system(size: 12, design: .monospaced))
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Button(action: {
+                                                    copyToClipboard(text: card.cardNumber, label: "\(card.cardName) Number")
+                                                }) {
+                                                    Image(systemName: "doc.on.doc")
+                                                        .font(.system(size: 13, weight: .semibold))
+                                                        .foregroundColor(.blue)
+                                                        .padding(6)
+                                                        .background(Color.blue.opacity(0.1))
+                                                        .clipShape(Circle())
+                                                }
+                                            }
+                                            .padding(10)
+                                            .background(Color(UIColor.secondarySystemBackground))
+                                            .cornerRadius(10)
+                                        }
+                                        
+                                        ForEach(bankSearchResults) { bank in
+                                            HStack(spacing: 12) {
+                                                Image(systemName: "building.columns.fill")
+                                                    .foregroundColor(.indigo)
+                                                    .frame(width: 22)
+                                                
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text("\(bank.bankName) • \(bank.accountHolderName)")
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                    Text("A/C: \(bank.formattedAccountNumber) • IFSC: \(bank.ifscCode)")
+                                                        .font(.system(size: 12, design: .monospaced))
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Button(action: {
+                                                    copyToClipboard(text: bank.accountNumber, label: "\(bank.bankName) A/C Number")
+                                                }) {
+                                                    Image(systemName: "doc.on.doc")
+                                                        .font(.system(size: 13, weight: .semibold))
+                                                        .foregroundColor(.indigo)
+                                                        .padding(6)
+                                                        .background(Color.indigo.opacity(0.1))
+                                                        .clipShape(Circle())
+                                                }
+                                            }
+                                            .padding(10)
+                                            .background(Color(UIColor.secondarySystemBackground))
+                                            .cornerRadius(10)
+                                        }
+                                    }
+                                }
+                                
+                                // 2. Loans & EMIs
+                                if !loanSearchResults.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Loans & EMIs (\(loanSearchResults.count))")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.red)
+                                        
+                                        ForEach(loanSearchResults) { loan in
+                                            Button(action: {
+                                                selectedLoanToEdit = loan
+                                            }) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: "indianrupeesign.square.fill")
+                                                        .foregroundColor(.red)
+                                                        .frame(width: 22)
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        HStack {
+                                                            Text("\(loan.lenderName) • \(loan.loanName)")
+                                                                .font(.system(size: 14, weight: .semibold))
+                                                                .foregroundColor(.primary)
+                                                            Text(loan.loanType)
+                                                                .font(.system(size: 9, weight: .bold))
+                                                                .padding(.horizontal, 6)
+                                                                .padding(.vertical, 2)
+                                                                .background(Color.red.opacity(0.15))
+                                                                .foregroundColor(.red)
+                                                                .cornerRadius(4)
+                                                        }
+                                                        
+                                                        Text("EMI: \(formatCurrency(loan.emiAmount))/mo • Due on \(loan.dueDay)th • A/C: \(loan.formattedAccountNumber)")
+                                                            .font(.system(size: 12))
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                    
+                                                    Button(action: {
+                                                        copyToClipboard(text: loan.accountNumber, label: "\(loan.loanName) A/C")
+                                                    }) {
+                                                        Image(systemName: "doc.on.doc")
+                                                            .font(.system(size: 13, weight: .semibold))
+                                                            .foregroundColor(.red)
+                                                            .padding(6)
+                                                            .background(Color.red.opacity(0.1))
+                                                            .clipShape(Circle())
+                                                    }
+                                                }
+                                                .padding(10)
+                                                .background(Color(UIColor.secondarySystemBackground))
+                                                .cornerRadius(10)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
+                                
+                                // 3. LIC & Insurance Policies
+                                if !licSearchResults.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("LIC & Insurance Policies (\(licSearchResults.count))")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.emeraldAccent)
+                                        
+                                        ForEach(licSearchResults) { policy in
+                                            Button(action: {
+                                                selectedPolicyToEdit = policy
+                                            }) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: "shield.lefthalf.filled")
+                                                        .foregroundColor(.emeraldAccent)
+                                                        .frame(width: 22)
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        HStack {
+                                                            Text("\(policy.insurerName) • \(policy.policyName)")
+                                                                .font(.system(size: 14, weight: .semibold))
+                                                                .foregroundColor(.primary)
+                                                            Text(policy.policyType)
+                                                                .font(.system(size: 9, weight: .bold))
+                                                                .padding(.horizontal, 6)
+                                                                .padding(.vertical, 2)
+                                                                .background(Color.emeraldAccent.opacity(0.15))
+                                                                .foregroundColor(.emeraldAccent)
+                                                                .cornerRadius(4)
+                                                        }
+                                                        
+                                                        Text("Cover: \(formatCurrency(policy.sumAssured)) • Prem: \(formatCurrency(policy.premiumAmount)) • Pol: \(policy.formattedPolicyNumber)")
+                                                            .font(.system(size: 12))
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                    
+                                                    Button(action: {
+                                                        copyToClipboard(text: policy.policyNumber, label: "Policy Number")
+                                                    }) {
+                                                        Image(systemName: "doc.on.doc")
+                                                            .font(.system(size: 13, weight: .semibold))
+                                                            .foregroundColor(.emeraldAccent)
+                                                            .padding(6)
+                                                            .background(Color.emeraldAccent.opacity(0.1))
+                                                            .clipShape(Circle())
+                                                    }
+                                                }
+                                                .padding(10)
+                                                .background(Color(UIColor.secondarySystemBackground))
+                                                .cornerRadius(10)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
+                                
+                                // 4. Document Vault Items
+                                if !docSearchResults.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Document Vault (\(docSearchResults.count))")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.teal)
+                                        
+                                        ForEach(docSearchResults) { doc in
+                                            Button(action: {
+                                                selectedDocToEdit = doc
+                                            }) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: "doc.text.fill")
+                                                        .foregroundColor(.teal)
+                                                        .frame(width: 22)
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        HStack {
+                                                            Text(doc.title)
+                                                                .font(.system(size: 14, weight: .semibold))
+                                                                .foregroundColor(.primary)
+                                                            Text(doc.documentType)
+                                                                .font(.system(size: 9, weight: .bold))
+                                                                .padding(.horizontal, 6)
+                                                                .padding(.vertical, 2)
+                                                                .background(Color.teal.opacity(0.15))
+                                                                .foregroundColor(.teal)
+                                                                .cornerRadius(4)
+                                                        }
+                                                        
+                                                        Text("ID: \(doc.documentNumber)")
+                                                            .font(.system(size: 12, design: .monospaced))
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                    
+                                                    Button(action: {
+                                                        copyToClipboard(text: doc.documentNumber, label: "\(doc.title) Number")
+                                                    }) {
+                                                        Image(systemName: "doc.on.doc")
+                                                            .font(.system(size: 13, weight: .semibold))
+                                                            .foregroundColor(.teal)
+                                                            .padding(6)
+                                                            .background(Color.teal.opacity(0.1))
+                                                            .clipShape(Circle())
+                                                    }
+                                                }
+                                                .padding(10)
+                                                .background(Color(UIColor.secondarySystemBackground))
+                                                .cornerRadius(10)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
+                                
+                                // 5. Vehicle Records
+                                if vehicleMatches {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Vehicle Telemetry & Service")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.orange)
+                                        
+                                        NavigationLink(destination: VehicleHubView(store: store)) {
+                                            HStack(spacing: 12) {
+                                                Image(systemName: "car.side.fill")
+                                                    .foregroundColor(.orange)
+                                                    .frame(width: 22)
+                                                
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(store.vehicleProfile.makeModel)
+                                                        .font(.system(size: 14, weight: .semibold))
+                                                        .foregroundColor(.primary)
+                                                    Text("Reg: \(store.vehicleProfile.registrationNumber) • Odo: \(store.vehicleProfile.currentOdometerKm) km • Fuel: \(store.vehicleProfile.fuelType)")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Button(action: {
+                                                    copyToClipboard(text: store.vehicleProfile.registrationNumber, label: "Vehicle Reg Number")
+                                                }) {
+                                                    Image(systemName: "doc.on.doc")
+                                                        .font(.system(size: 13, weight: .semibold))
+                                                        .foregroundColor(.orange)
+                                                        .padding(6)
+                                                        .background(Color.orange.opacity(0.1))
+                                                        .clipShape(Circle())
+                                                }
+                                            }
+                                            .padding(10)
+                                            .background(Color(UIColor.secondarySystemBackground))
+                                            .cornerRadius(10)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                
+                                // 6. Commitments & Bills
+                                if !itemSearchResults.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Commitments & Items (\(itemSearchResults.count))")
                                             .font(.system(size: 12, weight: .bold))
                                             .foregroundColor(.secondary)
                                         
-                                        ForEach(searchResults) { item in
+                                        ForEach(itemSearchResults) { item in
                                             AttentionItemRow(item: item, onComplete: {
                                                 withAnimation {
                                                     store.toggleCompleted(item)
@@ -130,11 +559,12 @@ public struct ContentView: View {
                                     }
                                 }
                                 
+                                // 7. Quick Notes
                                 if !noteSearchResults.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
                                         Text("Quick Notes (\(noteSearchResults.count))")
                                             .font(.system(size: 12, weight: .bold))
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(.amberAccent)
                                         
                                         ForEach(noteSearchResults) { note in
                                             Button(action: {
@@ -382,6 +812,16 @@ public struct ContentView: View {
                                     )
                                 }
                                 
+                                NavigationLink(destination: LoansAndLicHubView(store: store)) {
+                                    PillarCard(
+                                        icon: "building.columns.fill",
+                                        color: .indigo,
+                                        title: "Loans & LIC",
+                                        subtitle: "EMIs & Insurance",
+                                        badgeCount: store.loans.count + store.licPolicies.count
+                                    )
+                                }
+                                
                                 NavigationLink(destination: QuickNotesHubView(store: store)) {
                                     PillarCard(
                                         icon: "square.and.pencil",
@@ -389,6 +829,16 @@ public struct ContentView: View {
                                         title: "Quick Notes",
                                         subtitle: "Sudden Thoughts & Memos",
                                         badgeCount: store.quickNotes.count
+                                    )
+                                }
+                                
+                                NavigationLink(destination: GoogleBackupView(store: store)) {
+                                    PillarCard(
+                                        icon: "arrow.triangle.2.circlepath.circle.fill",
+                                        color: .cyan,
+                                        title: "Google Backup",
+                                        subtitle: "Drive Export & Sync",
+                                        badgeCount: 0
                                     )
                                 }
                             }
@@ -399,6 +849,24 @@ public struct ContentView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 28)
             }
+            .overlay(alignment: .bottom) {
+                if let toast = copiedToastText {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text(toast)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.85))
+                    .clipShape(Capsule())
+                    .shadow(radius: 6)
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
             .navigationBarHidden(true)
             .sheet(isPresented: $showingAddSheet) {
                 AddLifeItemView(store: store)
@@ -406,11 +874,23 @@ public struct ContentView: View {
             .sheet(isPresented: $showingQuickNoteSheet) {
                 NoteEditorSheet(store: store, noteToEdit: nil)
             }
+            .sheet(isPresented: $showingGoogleBackupSheet) {
+                GoogleBackupView(store: store)
+            }
             .sheet(item: $selectedItemToEdit) { item in
                 EditLifeItemSheet(store: store, item: item)
             }
             .sheet(item: $selectedNoteToEdit) { note in
                 NoteEditorSheet(store: store, noteToEdit: note)
+            }
+            .sheet(item: $selectedLoanToEdit) { loan in
+                EditLoanSheet(store: store, loan: loan)
+            }
+            .sheet(item: $selectedPolicyToEdit) { policy in
+                EditInsurancePolicySheet(store: store, policy: policy)
+            }
+            .sheet(item: $selectedDocToEdit) { doc in
+                EditDocumentSheet(store: store, document: doc)
             }
         }
     }

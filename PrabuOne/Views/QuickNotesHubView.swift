@@ -665,4 +665,5 @@ public struct NoteEditorSheet: View {
 // Color helper
 extension Color {
     static let amberAccent = Color(red: 0.95, green: 0.65, blue: 0.1)
+    static let emeraldAccent = Color(red: 0.1, green: 0.7, blue: 0.4)
 }

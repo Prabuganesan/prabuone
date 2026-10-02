@@ -11,6 +11,8 @@ public final class LifeStore: ObservableObject {
     @Published public var items: [LifeItem] = [] { didSet { saveToDisk() } }
     @Published public var creditCards: [CreditCardAccount] = [] { didSet { saveCardsToDisk() } }
     @Published public var bankAccounts: [BankAccount] = [] { didSet { saveBankAccountsToDisk() } }
+    @Published public var loans: [LoanAccount] = [] { didSet { saveLoansToDisk() } }
+    @Published public var licPolicies: [InsurancePolicyRecord] = [] { didSet { savePoliciesToDisk() } }
     @Published public var vehicleProfile: VehicleProfile = VehicleProfile() { didSet { saveVehicleToDisk() } }
     @Published public var documents: [DocumentRecord] = [] { didSet { saveDocumentsToDisk() } }
     @Published public var quickNotes: [QuickNote] = [] { didSet { saveNotesToDisk() } }
@@ -18,6 +20,8 @@ public final class LifeStore: ObservableObject {
     private let itemsFileName = "prabuone_life_items.json"
     private let cardsFileName = "prabuone_credit_cards.json"
     private let bankAccountsFileName = "prabuone_bank_accounts.json"
+    private let loansFileName = "prabuone_loans.json"
+    private let insuranceFileName = "prabuone_insurance.json"
     private let vehicleFileName = "prabuone_vehicle.json"
     private let documentsFileName = "prabuone_documents.json"
     private let notesFileName = "prabuone_notes.json"
@@ -181,6 +185,113 @@ public final class LifeStore: ObservableObject {
     public func deleteBankAccount(_ account: BankAccount) {
         HapticManager.light()
         bankAccounts.removeAll { $0.id == account.id }
+    }
+    
+    // MARK: - Mutations (Loans)
+    
+    public var totalLoanOutstanding: Double {
+        loans.reduce(0) { $0 + $1.remainingPrincipal }
+    }
+    
+    public var totalMonthlyLoanEmi: Double {
+        loans.reduce(0) { $0 + $1.emiAmount }
+    }
+    
+    public func addLoan(_ loan: LoanAccount) {
+        loans.append(loan)
+        HapticManager.success()
+        // Register or sync monthly EMI in attention list
+        let emiItem = LifeItem(
+            title: "\(loan.lenderName) EMI",
+            subtitle: "\(loan.loanName) • Due on \(loan.dueDay)th",
+            category: .loan,
+            dueDate: loan.nextDueDate,
+            amount: loan.emiAmount,
+            repeatFrequency: .monthly
+        )
+        if !items.contains(where: { $0.category == .loan && $0.title.contains(loan.lenderName) && $0.subtitle.contains(loan.loanName) }) {
+            addItem(emiItem)
+        }
+    }
+    
+    public func updateLoan(_ loan: LoanAccount) {
+        if let index = loans.firstIndex(where: { $0.id == loan.id }) {
+            loans[index] = loan
+            HapticManager.success()
+            if let itemIndex = items.firstIndex(where: { $0.category == .loan && $0.title.contains(loan.lenderName) && $0.subtitle.contains(loan.loanName) }) {
+                items[itemIndex].title = "\(loan.lenderName) EMI"
+                items[itemIndex].subtitle = "\(loan.loanName) • Due on \(loan.dueDay)th"
+                items[itemIndex].amount = loan.emiAmount
+                items[itemIndex].dueDate = loan.nextDueDate
+                ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+            }
+        }
+    }
+    
+    public func deleteLoan(_ loan: LoanAccount) {
+        HapticManager.light()
+        loans.removeAll { $0.id == loan.id }
+        items.removeAll { $0.category == .loan && $0.title.contains(loan.lenderName) && $0.subtitle.contains(loan.loanName) }
+    }
+    
+    // MARK: - Mutations (LIC & Insurance)
+    
+    public var totalInsuranceSumAssured: Double {
+        licPolicies.reduce(0) { $0 + $1.sumAssured }
+    }
+    
+    public var totalAnnualInsurancePremiums: Double {
+        licPolicies.reduce(0) { total, policy in
+            switch policy.premiumFrequency.lowercased() {
+            case "monthly": return total + (policy.premiumAmount * 12)
+            case "quarterly": return total + (policy.premiumAmount * 4)
+            case "half-yearly": return total + (policy.premiumAmount * 2)
+            default: return total + policy.premiumAmount
+            }
+        }
+    }
+    
+    public func addInsurancePolicy(_ policy: InsurancePolicyRecord) {
+        licPolicies.append(policy)
+        HapticManager.success()
+        let freq: RepeatFrequency = {
+            switch policy.premiumFrequency.lowercased() {
+            case "monthly": return .monthly
+            case "yearly", "annual": return .yearly
+            default: return .never
+            }
+        }()
+        let policyItem = LifeItem(
+            title: "\(policy.insurerName) Premium",
+            subtitle: "\(policy.policyName) • Pol: \(policy.policyNumber)",
+            category: .insurance,
+            dueDate: policy.nextDueDate,
+            amount: policy.premiumAmount,
+            repeatFrequency: freq
+        )
+        if !items.contains(where: { $0.category == .insurance && $0.subtitle.contains(policy.policyNumber) }) {
+            addItem(policyItem)
+        }
+    }
+    
+    public func updateInsurancePolicy(_ policy: InsurancePolicyRecord) {
+        if let index = licPolicies.firstIndex(where: { $0.id == policy.id }) {
+            licPolicies[index] = policy
+            HapticManager.success()
+            if let itemIndex = items.firstIndex(where: { $0.category == .insurance && $0.subtitle.contains(policy.policyNumber) }) {
+                items[itemIndex].title = "\(policy.insurerName) Premium"
+                items[itemIndex].subtitle = "\(policy.policyName) • Pol: \(policy.policyNumber)"
+                items[itemIndex].amount = policy.premiumAmount
+                items[itemIndex].dueDate = policy.nextDueDate
+                ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+            }
+        }
+    }
+    
+    public func deleteInsurancePolicy(_ policy: InsurancePolicyRecord) {
+        HapticManager.light()
+        licPolicies.removeAll { $0.id == policy.id }
+        items.removeAll { $0.category == .insurance && $0.subtitle.contains(policy.policyNumber) }
     }
     
     // MARK: - Mutations (Vehicle)
@@ -464,6 +575,14 @@ public final class LifeStore: ObservableObject {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(fileName)
     }
     
+    private func saveLoansToDisk() {
+        try? JSONEncoder().encode(loans).write(to: getURL(for: loansFileName), options: .atomic)
+    }
+    
+    private func savePoliciesToDisk() {
+        try? JSONEncoder().encode(licPolicies).write(to: getURL(for: insuranceFileName), options: .atomic)
+    }
+    
     private func saveToDisk() {
         try? JSONEncoder().encode(items).write(to: getURL(for: itemsFileName), options: .atomic)
     }
@@ -527,6 +646,24 @@ public final class LifeStore: ObservableObject {
             self.bankAccounts = []
         }
         
+        let loansURL = getURL(for: loansFileName)
+        if FileManager.default.fileExists(atPath: loansURL.path),
+           let data = try? Data(contentsOf: loansURL),
+           let loaded = try? JSONDecoder().decode([LoanAccount].self, from: data) {
+            self.loans = loaded
+        } else {
+            self.loans = []
+        }
+        
+        let insuranceURL = getURL(for: insuranceFileName)
+        if FileManager.default.fileExists(atPath: insuranceURL.path),
+           let data = try? Data(contentsOf: insuranceURL),
+           let loaded = try? JSONDecoder().decode([InsurancePolicyRecord].self, from: data) {
+            self.licPolicies = loaded
+        } else {
+            self.licPolicies = []
+        }
+        
         let vehicleURL = getURL(for: vehicleFileName)
         if FileManager.default.fileExists(atPath: vehicleURL.path),
            let data = try? Data(contentsOf: vehicleURL),
@@ -555,11 +692,100 @@ public final class LifeStore: ObservableObject {
         }
     }
     
+    // MARK: - Google Backup & Full Archive Export/Restore
+    
+    public func exportBackupArchive() throws -> URL {
+        let archive = PrabuOneBackupArchive(
+            items: self.items,
+            creditCards: self.creditCards,
+            bankAccounts: self.bankAccounts,
+            loans: self.loans,
+            licPolicies: self.licPolicies,
+            vehicleProfile: self.vehicleProfile,
+            documents: self.documents,
+            quickNotes: self.quickNotes
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(archive)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HHmm"
+        let dateStr = formatter.string(from: Date())
+        let fileName = "PrabuOne_Backup_\(dateStr).json"
+        
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try data.write(to: tempURL, options: .atomic)
+        
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "last_google_backup_timestamp")
+        return tempURL
+    }
+    
+    public func restoreFromBackup(url: URL) throws -> (items: Int, cards: Int, banks: Int, loans: Int, policies: Int, docs: Int, notes: Int) {
+        let shouldStopAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if shouldStopAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        let archive: PrabuOneBackupArchive
+        if let decoded = try? decoder.decode(PrabuOneBackupArchive.self, from: data) {
+            archive = decoded
+        } else {
+            archive = try JSONDecoder().decode(PrabuOneBackupArchive.self, from: data)
+        }
+        
+        self.items = archive.items
+        self.creditCards = archive.creditCards
+        self.bankAccounts = archive.bankAccounts
+        self.loans = archive.loans
+        self.licPolicies = archive.licPolicies
+        self.vehicleProfile = archive.vehicleProfile
+        self.documents = archive.documents
+        self.quickNotes = archive.quickNotes
+        
+        saveToDisk()
+        saveCardsToDisk()
+        saveBankAccountsToDisk()
+        saveLoansToDisk()
+        savePoliciesToDisk()
+        saveVehicleToDisk()
+        saveDocumentsToDisk()
+        saveNotesToDisk()
+        
+        ReminderEngine.shared.cancelAllReminders()
+        for item in self.items {
+            ReminderEngine.shared.scheduleReminders(for: item)
+        }
+        for note in self.quickNotes {
+            ReminderEngine.shared.scheduleNoteReminder(for: note)
+        }
+        
+        HapticManager.success()
+        return (
+            archive.items.count,
+            archive.creditCards.count,
+            archive.bankAccounts.count,
+            archive.loans.count,
+            archive.licPolicies.count,
+            archive.documents.count,
+            archive.quickNotes.count
+        )
+    }
+    
     /// Complete purge to reset app data if needed.
     public func clearAllData() {
         self.items = []
         self.creditCards = []
         self.bankAccounts = []
+        self.loans = []
+        self.licPolicies = []
         self.vehicleProfile = VehicleProfile()
         self.documents = []
         self.quickNotes = []
@@ -567,8 +793,48 @@ public final class LifeStore: ObservableObject {
         saveToDisk()
         saveCardsToDisk()
         saveBankAccountsToDisk()
+        saveLoansToDisk()
+        savePoliciesToDisk()
         saveVehicleToDisk()
         saveDocumentsToDisk()
         saveNotesToDisk()
+    }
+}
+
+/// Unified portable snapshot of all Prabu One data for backup to Google Drive / local storage.
+public struct PrabuOneBackupArchive: Codable {
+    public var version: Int = 1
+    public var exportDate: Date = Date()
+    public var items: [LifeItem]
+    public var creditCards: [CreditCardAccount]
+    public var bankAccounts: [BankAccount]
+    public var loans: [LoanAccount]
+    public var licPolicies: [InsurancePolicyRecord]
+    public var vehicleProfile: VehicleProfile
+    public var documents: [DocumentRecord]
+    public var quickNotes: [QuickNote]
+    
+    public init(
+        version: Int = 1,
+        exportDate: Date = Date(),
+        items: [LifeItem],
+        creditCards: [CreditCardAccount],
+        bankAccounts: [BankAccount],
+        loans: [LoanAccount],
+        licPolicies: [InsurancePolicyRecord],
+        vehicleProfile: VehicleProfile,
+        documents: [DocumentRecord],
+        quickNotes: [QuickNote]
+    ) {
+        self.version = version
+        self.exportDate = exportDate
+        self.items = items
+        self.creditCards = creditCards
+        self.bankAccounts = bankAccounts
+        self.loans = loans
+        self.licPolicies = licPolicies
+        self.vehicleProfile = vehicleProfile
+        self.documents = documents
+        self.quickNotes = quickNotes
     }
 }

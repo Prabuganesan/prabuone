@@ -9,6 +9,8 @@ public enum LifeCategory: String, Codable, CaseIterable, Identifiable {
     case birthday = "Birthday & Life"
     case document = "Document Vault"
     case asset = "Asset & Home"
+    case loan = "Loan & EMI"
+    case insurance = "LIC & Insurance"
     case custom = "Personal"
     
     public var id: String { rawValue }
@@ -23,6 +25,8 @@ public enum LifeCategory: String, Codable, CaseIterable, Identifiable {
         case .birthday: return "gift.fill"
         case .document: return "doc.text.fill"
         case .asset: return "house.fill"
+        case .loan: return "building.columns.fill"
+        case .insurance: return "shield.lefthalf.filled"
         case .custom: return "star.fill"
         }
     }

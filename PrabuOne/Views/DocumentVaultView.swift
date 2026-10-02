@@ -164,6 +164,7 @@ struct DocumentCard: View {
         case "Insurance Policy": return "shield.checkerboard"
         case "PUC Certificate": return "leaf.fill"
         case "Aadhaar Card", "PAN Card": return "person.crop.square.filled.and.at.rectangle"
+        case "Others", "Other": return "doc.badge.ellipsis"
         default: return "doc.text.fill"
         }
     }
@@ -326,7 +327,7 @@ struct AddDocumentSheet: View {
     @State private var pendingAttachmentFileType: String? = nil
     @State private var pendingAttachmentOriginalName: String? = nil
     
-    let types = ["RC Book", "Driving License", "Passport", "Aadhaar Card", "PAN Card", "Insurance Policy", "PUC Certificate", "Agreement"]
+    let types = ["RC Book", "Driving License", "Passport", "Aadhaar Card", "PAN Card", "Insurance Policy", "PUC Certificate", "Agreement", "Others"]
     
     var body: some View {
         NavigationStack {
@@ -537,7 +538,7 @@ struct EditDocumentSheet: View {
     @State private var pendingAttachmentFileType: String? = nil
     @State private var pendingAttachmentOriginalName: String? = nil
     
-    let types = ["RC Book", "Driving License", "Passport", "Aadhaar Card", "PAN Card", "Insurance Policy", "PUC Certificate", "Agreement"]
+    let types = ["RC Book", "Driving License", "Passport", "Aadhaar Card", "PAN Card", "Insurance Policy", "PUC Certificate", "Agreement", "Others"]
     
     var body: some View {
         NavigationStack {
