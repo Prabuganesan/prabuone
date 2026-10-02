@@ -127,11 +127,20 @@
 - **Universal Instant Search**: Search across cards, subscriptions, utility bills, vehicle records, documents, birthdays, and quick notes.
 - **Multi-Stage Local Reminders**: Proactive push notifications scheduled automatically at **30 days, 7 days, 3 days, 1 day, and 0 days** prior to due dates.
 
-### 9. 🪞 Car Mirror Utility
-- **Low-Latency Vehicle Mirroring**: Custom `AVSampleBufferDisplayLayer` hardware preview for streaming your iPhone screen to vehicle CarPlay displays.
-- **Keep-Awake Protection**: Prevents display dimming or auto-lock (`isIdleTimerDisabled = true`) while mirroring is active.
-- **Immersion Mode**: Tap on the live viewport to toggle distraction-free edge-to-edge mirroring.
-- **Cross-Platform Compatibility**: Supports both physical hardware via `ScreenCaptureKit` and iOS Simulators via compile-time guards.
+### 9. 🪞 Car Mirror & In-Car Cockpit Display
+- **In-Car Cockpit HUD (Full-Screen Landscape / AMOLED Dark Mode)**:
+  - Specially designed high-contrast cockpit dashboard for car displays (16:9 / 21:9 aspect ratios) with anti-glare styling.
+  - **Live Vehicle Health**: Real-time odometer, distance to next service interval with warning colors (< 1000 km in amber).
+  - **Toll & Compliance**: FASTag balance with low-balance warning, live PUC pollution expiry days remaining, and insurance status.
+  - **Driver Quick Notes**: Directly surfaces your active driver notes (parking bay number, gate pass codes, temporary checklists).
+  - **Emergency Roadside Assistance**: 1-tap direct dial buttons for Highway RSA (1033), Police (112), and Ambulance (108).
+- **AirPlay Screen Mirroring & External Display Support**:
+  - Live auto-detection of external car screens and AirPlay receivers (`UIScreen.didConnectNotification`).
+  - Seamless 1-2-3 guide on mirroring via iOS Control Center -> Screen Mirroring to wireless CarPlay dongles, Android headunits, or AirPlay receivers.
+- **CarPlay Scene Architecture (`CPTemplateApplicationSceneDelegate`)**:
+  - Registered `CPTemplateApplicationSceneSessionRoleApplication` in `Info.plist` with `CarPlaySceneDelegate`.
+  - Native integration with Xcode CarPlay Simulator (`I/O > External Displays > CarPlay`) presenting Vehicle Health, FASTag, and Notes templates.
+- **Keep-Awake Driver Protection**: Prevents display dimming or auto-lock (`isIdleTimerDisabled = true`) while in the Cockpit HUD.
 
 ---
 
