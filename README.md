@@ -33,13 +33,20 @@
 - **Service Records Management**: Add, view, edit (title, date, odometer, cost, service center, replaced parts), or delete maintenance entries.
 - **Fuel Logs & Economy**: Add, view, edit (date, odometer, liters, cost), or delete refuel logs with dynamic fuel economy calculation (`km/L`).
 
-### 2. 💳 Money & Cards Hub (Credit Cards Only)
-- **Dedicated Cards Hub**: Displays your active credit cards, available limit, total credit limit, and current total outstanding with zero tab clutter.
-- **Credit Card Visualizer & Editor**:
-  - Tap pencil button or context menu to edit bank name, card name, last 4 digits, total credit limit, current outstanding, billing statement day, payment due day, and reward points.
-  - Interactive utilization progress bar and available limit tracker.
-  - **One-Tap "Mark as Paid"**: Instantly resets outstanding dues and synchronizes with home attention items.
-  - **Quick Add**: Dedicated "+" button to add credit cards with billing cycles.
+### 2. 💳 Credit Card Vault (Full Card Wallet)
+- **Store All Your Credit Cards**: Digital wallet holding all your physical and virtual credit cards in one secure place on-device.
+- **Full Card Credentials Storage**:
+  - Full 16-digit card number with 4-digit formatted grouping.
+  - CVV security code (3 or 4 digits).
+  - Valid Thru / Expiry date (`MM/YY`).
+  - Cardholder name & auto-detected card network (Visa, Mastercard, RuPay, Amex).
+- **Privacy Masking & 1-Tap Copy Actions**:
+  - **Show / Hide Privacy Toggle**: Tap the eye icon 👁 to toggle masking (`•••• •••• •••• 4821` & `•••`) in public places.
+  - **1-Tap Quick Copy**: Dedicated pill buttons to copy **Card Number**, **CVV**, or **Expiry Date** directly to your clipboard for fast online checkout.
+- **Realistic Card Aesthetics & Themes**:
+  - Realistic card design with EMV chip graphics, contactless wave, and metallic finishes.
+  - 6 curated card themes: Midnight Blue, Obsidian Black, Emerald Green, Titanium Silver, Royal Purple, and Rose Gold.
+- **Optional Tracking**: Optional credit limit and payment due day reminders. No debt or reward clutter.
 
 ### 3. 🔁 Subscriptions Hub (Recurring Subscriptions Only)
 - **Dedicated Subscriptions Hub**: Focused exclusively on recurring services (OTT, Cloud, AI tools, memberships).

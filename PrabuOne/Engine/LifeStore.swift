@@ -128,15 +128,16 @@ public final class LifeStore: ObservableObject {
     public func addCreditCard(_ card: CreditCardAccount) {
         creditCards.append(card)
         HapticManager.success()
-        let cardItem = LifeItem(
-            title: "\(card.bankName) \(card.cardName)",
-            subtitle: "Ending in \(card.lastFourDigits) • Limit ₹\(Int(card.creditLimit))",
-            category: .creditCard,
-            dueDate: nextDateForDay(card.dueDay),
-            amount: card.outstandingAmount,
-            repeatFrequency: .monthly
-        )
-        addItem(cardItem)
+        if let dueDay = card.dueDay {
+            let cardItem = LifeItem(
+                title: "\(card.bankName) \(card.cardName)",
+                subtitle: "Ending in \(card.lastFourDigits) • Exp: \(card.expiryDate)",
+                category: .creditCard,
+                dueDate: nextDateForDay(dueDay),
+                repeatFrequency: .monthly
+            )
+            addItem(cardItem)
+        }
     }
     
     public func deleteCreditCard(_ card: CreditCardAccount) {
@@ -146,33 +147,18 @@ public final class LifeStore: ObservableObject {
         items.removeAll { $0.category == .creditCard && $0.title.contains(card.cardName) }
     }
     
-    public func toggleCardPaid(_ card: CreditCardAccount) {
-        guard let index = creditCards.firstIndex(where: { $0.id == card.id }) else { return }
-        creditCards[index].isPaidThisMonth.toggle()
-        if creditCards[index].isPaidThisMonth {
-            creditCards[index].outstandingAmount = 0
-            HapticManager.success()
-        } else {
-            HapticManager.selection()
-        }
-        
-        // Also sync status with corresponding LifeItem
-        if let itemIndex = items.firstIndex(where: { $0.category == .creditCard && $0.title.contains(card.cardName) }) {
-            items[itemIndex].isCompleted = creditCards[index].isPaidThisMonth
-        }
-    }
-    
     public func updateCreditCard(_ card: CreditCardAccount) {
         guard let index = creditCards.firstIndex(where: { $0.id == card.id }) else { return }
         creditCards[index] = card
         HapticManager.success()
         // Synchronize with LifeItem
-        if let itemIndex = items.firstIndex(where: { $0.category == .creditCard && $0.title.contains(card.cardName) }) {
-            items[itemIndex].title = "\(card.bankName) \(card.cardName)"
-            items[itemIndex].subtitle = "Ending in \(card.lastFourDigits) • Limit ₹\(Int(card.creditLimit))"
-            items[itemIndex].amount = card.outstandingAmount
-            items[itemIndex].dueDate = nextDateForDay(card.dueDay)
-            ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+        if let dueDay = card.dueDay {
+            if let itemIndex = items.firstIndex(where: { $0.category == .creditCard && $0.title.contains(card.cardName) }) {
+                items[itemIndex].title = "\(card.bankName) \(card.cardName)"
+                items[itemIndex].subtitle = "Ending in \(card.lastFourDigits) • Exp: \(card.expiryDate)"
+                items[itemIndex].dueDate = nextDateForDay(dueDay)
+                ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
+            }
         }
     }
     
