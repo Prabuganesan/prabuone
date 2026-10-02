@@ -1,19 +1,20 @@
 import Foundation
 
-/// Specific details for a credit card account stored securely in the digital wallet.
+/// Specific details for a credit or debit card account stored securely in the digital wallet.
 public struct CreditCardAccount: Identifiable, Codable, Equatable {
     public var id: UUID
     public var bankName: String          // e.g. HDFC Bank, ICICI Bank, SBI, Axis
-    public var cardName: String          // e.g. Regalia Gold, Amazon Pay, Coral
+    public var cardName: String          // e.g. Regalia Gold, Amazon Pay, Platinum Debit
     public var cardNumber: String        // Full card number (16 digits)
     public var cardHolderName: String    // e.g. PRABU GANESAN
     public var expiryDate: String        // MM/YY (e.g. "08/29")
     public var cvv: String               // e.g. "123"
-    public var creditLimit: Double       // e.g. 500000 (0 if not entered)
+    public var creditLimit: Double       // e.g. 500000 (0 for debit card or if not entered)
     public var statementDay: Int?        // e.g. 15th
     public var dueDay: Int?              // e.g. 5th
     public var cardNetwork: String       // Visa, Mastercard, RuPay, Amex
     public var cardTheme: String         // midnight, obsidian, emerald, titanium, purple, roseGold
+    public var cardCategory: String      // "Credit" or "Debit"
     
     public init(
         id: UUID = UUID(),
@@ -27,7 +28,8 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         statementDay: Int? = nil,
         dueDay: Int? = nil,
         cardNetwork: String = "Visa",
-        cardTheme: String = "midnight"
+        cardTheme: String = "midnight",
+        cardCategory: String = "Credit"
     ) {
         self.id = id
         self.bankName = bankName
@@ -41,6 +43,11 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         self.dueDay = dueDay
         self.cardNetwork = cardNetwork
         self.cardTheme = cardTheme
+        self.cardCategory = cardCategory
+    }
+    
+    public var isDebit: Bool {
+        cardCategory.lowercased() == "debit"
     }
     
     public var lastFourDigits: String {
@@ -90,7 +97,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, bankName, cardName, cardNumber, cardHolderName, expiryDate, cvv, creditLimit, statementDay, dueDay, cardNetwork, cardTheme
+        case id, bankName, cardName, cardNumber, cardHolderName, expiryDate, cvv, creditLimit, statementDay, dueDay, cardNetwork, cardTheme, cardCategory
         case legacyLastFourDigits = "lastFourDigits"
     }
     
@@ -108,6 +115,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         try container.encodeIfPresent(dueDay, forKey: .dueDay)
         try container.encode(cardNetwork, forKey: .cardNetwork)
         try container.encode(cardTheme, forKey: .cardTheme)
+        try container.encode(cardCategory, forKey: .cardCategory)
     }
     
     public init(from decoder: Decoder) throws {
@@ -128,5 +136,70 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         dueDay = try container.decodeIfPresent(Int.self, forKey: .dueDay)
         cardNetwork = try container.decodeIfPresent(String.self, forKey: .cardNetwork) ?? "Visa"
         cardTheme = try container.decodeIfPresent(String.self, forKey: .cardTheme) ?? "midnight"
+        cardCategory = try container.decodeIfPresent(String.self, forKey: .cardCategory) ?? "Credit"
+    }
+}
+
+/// Secure Bank Account Details stored in the digital financial vault.
+public struct BankAccount: Identifiable, Codable, Equatable {
+    public var id: UUID
+    public var bankName: String          // e.g. HDFC Bank, SBI, ICICI Bank, Axis Bank
+    public var accountHolderName: String // e.g. PRABU GANESAN
+    public var accountNumber: String     // Full Account Number (e.g. "50100432198765")
+    public var ifscCode: String          // e.g. "HDFC0000060"
+    public var accountType: String       // "Savings", "Current", "Salary"
+    public var upiId: String             // e.g. "prabu@okhdfcbank"
+    public var branchName: String        // e.g. "Anna Nagar Branch"
+    public var accountTheme: String      // "blue", "green", "purple", "slate", "amber"
+    
+    public init(
+        id: UUID = UUID(),
+        bankName: String,
+        accountHolderName: String = "PRABU GANESAN",
+        accountNumber: String,
+        ifscCode: String,
+        accountType: String = "Savings",
+        upiId: String = "",
+        branchName: String = "",
+        accountTheme: String = "blue"
+    ) {
+        self.id = id
+        self.bankName = bankName
+        self.accountHolderName = accountHolderName
+        self.accountNumber = accountNumber
+        self.ifscCode = ifscCode.uppercased()
+        self.accountType = accountType
+        self.upiId = upiId
+        self.branchName = branchName
+        self.accountTheme = accountTheme
+    }
+    
+    public var lastFourDigits: String {
+        let clean = accountNumber.filter { $0.isNumber }
+        if clean.count >= 4 {
+            return String(clean.suffix(4))
+        }
+        return clean.isEmpty ? "••••" : clean
+    }
+    
+    public var maskedAccountNumber: String {
+        let clean = accountNumber.filter { $0.isNumber }
+        guard clean.count >= 4 else { return "•••• ••••" }
+        let last4 = String(clean.suffix(4))
+        let prefix = String(repeating: "•", count: max(clean.count - 4, 4))
+        return "\(prefix) \(last4)"
+    }
+    
+    public var formattedAccountNumber: String {
+        let clean = accountNumber.filter { $0.isNumber }
+        guard !clean.isEmpty else { return accountNumber }
+        var result = ""
+        for (index, char) in clean.enumerated() {
+            if index > 0 && index % 4 == 0 {
+                result.append(" ")
+            }
+            result.append(char)
+        }
+        return result
     }
 }

@@ -10,12 +10,14 @@ public final class LifeStore: ObservableObject {
     // Core Collections
     @Published public var items: [LifeItem] = [] { didSet { saveToDisk() } }
     @Published public var creditCards: [CreditCardAccount] = [] { didSet { saveCardsToDisk() } }
+    @Published public var bankAccounts: [BankAccount] = [] { didSet { saveBankAccountsToDisk() } }
     @Published public var vehicleProfile: VehicleProfile = VehicleProfile() { didSet { saveVehicleToDisk() } }
     @Published public var documents: [DocumentRecord] = [] { didSet { saveDocumentsToDisk() } }
     @Published public var quickNotes: [QuickNote] = [] { didSet { saveNotesToDisk() } }
     
     private let itemsFileName = "prabuone_life_items.json"
     private let cardsFileName = "prabuone_credit_cards.json"
+    private let bankAccountsFileName = "prabuone_bank_accounts.json"
     private let vehicleFileName = "prabuone_vehicle.json"
     private let documentsFileName = "prabuone_documents.json"
     private let notesFileName = "prabuone_notes.json"
@@ -160,6 +162,25 @@ public final class LifeStore: ObservableObject {
                 ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
             }
         }
+    }
+    
+    // MARK: - Mutations (Bank Accounts)
+    
+    public func addBankAccount(_ account: BankAccount) {
+        bankAccounts.append(account)
+        HapticManager.success()
+    }
+    
+    public func updateBankAccount(_ account: BankAccount) {
+        if let index = bankAccounts.firstIndex(where: { $0.id == account.id }) {
+            bankAccounts[index] = account
+            HapticManager.success()
+        }
+    }
+    
+    public func deleteBankAccount(_ account: BankAccount) {
+        HapticManager.light()
+        bankAccounts.removeAll { $0.id == account.id }
     }
     
     // MARK: - Mutations (Vehicle)
@@ -451,6 +472,10 @@ public final class LifeStore: ObservableObject {
         try? JSONEncoder().encode(creditCards).write(to: getURL(for: cardsFileName), options: .atomic)
     }
     
+    private func saveBankAccountsToDisk() {
+        try? JSONEncoder().encode(bankAccounts).write(to: getURL(for: bankAccountsFileName), options: .atomic)
+    }
+    
     private func saveVehicleToDisk() {
         try? JSONEncoder().encode(vehicleProfile).write(to: getURL(for: vehicleFileName), options: .atomic)
     }
@@ -493,6 +518,15 @@ public final class LifeStore: ObservableObject {
             self.creditCards = []
         }
         
+        let bankAccountsURL = getURL(for: bankAccountsFileName)
+        if FileManager.default.fileExists(atPath: bankAccountsURL.path),
+           let data = try? Data(contentsOf: bankAccountsURL),
+           let loaded = try? JSONDecoder().decode([BankAccount].self, from: data) {
+            self.bankAccounts = loaded
+        } else {
+            self.bankAccounts = []
+        }
+        
         let vehicleURL = getURL(for: vehicleFileName)
         if FileManager.default.fileExists(atPath: vehicleURL.path),
            let data = try? Data(contentsOf: vehicleURL),
@@ -525,12 +559,14 @@ public final class LifeStore: ObservableObject {
     public func clearAllData() {
         self.items = []
         self.creditCards = []
+        self.bankAccounts = []
         self.vehicleProfile = VehicleProfile()
         self.documents = []
         self.quickNotes = []
         ReminderEngine.shared.cancelAllReminders()
         saveToDisk()
         saveCardsToDisk()
+        saveBankAccountsToDisk()
         saveVehicleToDisk()
         saveDocumentsToDisk()
         saveNotesToDisk()

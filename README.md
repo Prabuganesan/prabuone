@@ -33,20 +33,35 @@
 - **Service Records Management**: Add, view, edit (title, date, odometer, cost, service center, replaced parts), or delete maintenance entries.
 - **Fuel Logs & Economy**: Add, view, edit (date, odometer, liters, cost), or delete refuel logs with dynamic fuel economy calculation (`km/L`).
 
-### 2. 💳 Credit Card Vault (Full Card Wallet)
-- **Store All Your Credit Cards**: Digital wallet holding all your physical and virtual credit cards in one secure place on-device.
-- **Full Card Credentials Storage**:
-  - Full 16-digit card number with 4-digit formatted grouping.
-  - CVV security code (3 or 4 digits).
-  - Valid Thru / Expiry date (`MM/YY`).
-  - Cardholder name & auto-detected card network (Visa, Mastercard, RuPay, Amex).
-- **Privacy Masking & 1-Tap Copy Actions**:
-  - **Show / Hide Privacy Toggle**: Tap the eye icon 👁 to toggle masking (`•••• •••• •••• 4821` & `•••`) in public places.
-  - **1-Tap Quick Copy**: Dedicated pill buttons to copy **Card Number**, **CVV**, or **Expiry Date** directly to your clipboard for fast online checkout.
-- **Realistic Card Aesthetics & Themes**:
-  - Realistic card design with EMV chip graphics, contactless wave, and metallic finishes.
-  - 6 curated card themes: Midnight Blue, Obsidian Black, Emerald Green, Titanium Silver, Royal Purple, and Rose Gold.
-- **Optional Tracking**: Optional credit limit and payment due day reminders. No debt or reward clutter.
+### 2. 💳 Cards & Banking Vault (Credit, Debit & Bank Accounts)
+- **Store Credit & Debit Cards**: Complete digital wallet holding all your physical and virtual credit and debit cards in one secure place on-device.
+  - **Category Badges**: Distinct `CREDIT` and `DEBIT` visual pill tags.
+  - **Full Card Credentials Storage**:
+    - Full 16-digit card number with 4-digit formatted grouping.
+    - CVV security code (3 or 4 digits).
+    - Valid Thru / Expiry date (`MM/YY`).
+    - Cardholder name & auto-detected card network (Visa, Mastercard, RuPay, Amex).
+  - **Privacy Masking & 1-Tap Copy Actions**:
+    - **Show / Hide Privacy Toggle**: Tap the eye icon 👁 to toggle masking (`•••• •••• •••• 4821` & `•••`) in public places.
+    - **1-Tap Quick Copy**: Dedicated pill buttons to copy **Card Number**, **CVV**, or **Expiry Date** directly to your clipboard for fast online checkout.
+  - **Realistic Card Aesthetics & Themes**:
+    - Realistic card design with EMV chip graphics, contactless wave, and metallic finishes.
+    - 6 curated card themes: Midnight Blue, Obsidian Black, Emerald Green, Titanium Silver, Royal Purple, and Rose Gold.
+  - **Credit vs Debit Limits**: Tracks optional credit limits & monthly due dates for credit cards, and daily spend / ATM limits for debit cards.
+
+- **🏦 Bank Accounts Vault**:
+  - **Complete Bank Details Storage**:
+    - Bank Name (with 1-tap quick bank chips for HDFC, ICICI, SBI, Axis, Kotak, Canara, BoB, PNB).
+    - Account Type badge: `SAVINGS`, `CURRENT`, or `SALARY`.
+    - Full Account Number with formatting and privacy masking (`•••••••• 9876`).
+    - IFSC Code with auto-capitalization and monospaced typography.
+    - UPI ID (e.g. `prabu@okhdfcbank`) for instant VPA sharing.
+    - Branch Name & Account Holder Name.
+  - **1-Tap Quick Copy Actions**:
+    - Dedicated quick copy buttons for **Account Number**, **IFSC Code**, and **UPI ID** with tactile haptic feedback and onscreen toast confirmation.
+  - **Passbook Design & Themes**:
+    - Passbook-style bank cards with 5 distinct themes: Royal Blue, Emerald Green, Deep Purple, Obsidian Slate, and Warm Bronze.
+  - **Encrypted Local Persistence**: All account numbers and financial credentials remain 100% encrypted in your local device sandbox.
 
 ### 3. 🔁 Subscriptions Hub (Recurring Subscriptions Only)
 - **Dedicated Subscriptions Hub**: Focused exclusively on recurring services (OTT, Cloud, AI tools, memberships).
