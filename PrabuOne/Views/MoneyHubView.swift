@@ -11,20 +11,23 @@ fileprivate func formatCurrency(_ value: Double) -> String {
 // MARK: - 1. Money & Cards Hub (Cards & Bank Accounts Vault)
 
 public enum MoneyVaultSegment: String, CaseIterable {
-    case cards = "Cards"
+    case creditCards = "Credit Cards"
+    case debitCards = "Debit Cards"
     case bankAccounts = "Bank Accounts"
 }
 
 /// Dedicated Financial Digital Vault.
-/// Stores full 16-digit credit/debit card numbers, CVVs, expiry dates, and full bank account numbers, IFSC codes, and UPI IDs.
+/// Stores full 16-digit credit and debit card numbers, CVVs, expiry dates, ATM PIN, TPIN, and full bank account numbers, IFSC codes, and UPI IDs.
 public struct MoneyHubView: View {
     @ObservedObject var store: LifeStore
-    @State private var selectedSegment: MoneyVaultSegment = .cards
+    @State private var selectedSegment: MoneyVaultSegment = .creditCards
     
     // Card Sheets & Search
     @State private var showingAddCard = false
+    @State private var addCardCategory: String = "Credit"
     @State private var selectedCardToEdit: CreditCardAccount? = nil
-    @State private var cardSearchText = ""
+    @State private var creditSearchText = ""
+    @State private var debitSearchText = ""
     
     // Bank Account Sheets & Search
     @State private var showingAddBankAccount = false
@@ -38,10 +41,6 @@ public struct MoneyHubView: View {
         self.store = store
     }
     
-    private var totalLimit: Double {
-        store.creditCards.reduce(0) { $0 + $1.creditLimit }
-    }
-    
     private var creditCardCount: Int {
         store.creditCards.filter { !$0.isDebit }.count
     }
@@ -50,18 +49,33 @@ public struct MoneyHubView: View {
         store.creditCards.filter { $0.isDebit }.count
     }
     
-    private var filteredCards: [CreditCardAccount] {
-        let query = cardSearchText.trimmingCharacters(in: .whitespaces).lowercased()
-        if query.isEmpty {
-            return store.creditCards
-        }
-        return store.creditCards.filter {
+    private var totalCreditLimit: Double {
+        store.creditCards.filter { !$0.isDebit }.reduce(0) { $0 + $1.creditLimit }
+    }
+    
+    private var filteredCreditCards: [CreditCardAccount] {
+        let cards = store.creditCards.filter { !$0.isDebit }
+        let query = creditSearchText.trimmingCharacters(in: .whitespaces).lowercased()
+        if query.isEmpty { return cards }
+        return cards.filter {
             $0.bankName.lowercased().contains(query) ||
             $0.cardName.lowercased().contains(query) ||
             $0.cardHolderName.lowercased().contains(query) ||
             $0.lastFourDigits.contains(query) ||
-            $0.cardNetwork.lowercased().contains(query) ||
-            $0.cardCategory.lowercased().contains(query)
+            $0.cardNetwork.lowercased().contains(query)
+        }
+    }
+    
+    private var filteredDebitCards: [CreditCardAccount] {
+        let cards = store.creditCards.filter { $0.isDebit }
+        let query = debitSearchText.trimmingCharacters(in: .whitespaces).lowercased()
+        if query.isEmpty { return cards }
+        return cards.filter {
+            $0.bankName.lowercased().contains(query) ||
+            $0.cardName.lowercased().contains(query) ||
+            $0.cardHolderName.lowercased().contains(query) ||
+            $0.lastFourDigits.contains(query) ||
+            $0.cardNetwork.lowercased().contains(query)
         }
     }
     
@@ -81,21 +95,33 @@ public struct MoneyHubView: View {
         }
     }
     
+    private var navigationTitleForSegment: String {
+        switch selectedSegment {
+        case .creditCards: return "Credit Cards"
+        case .debitCards: return "Debit Cards"
+        case .bankAccounts: return "Bank Accounts"
+        }
+    }
+    
     public var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    // Segmented Switcher: Cards vs Bank Accounts
+                    // Segmented Switcher: Credit Cards vs Debit Cards vs Bank Accounts
                     Picker("Vault Category", selection: $selectedSegment) {
-                        Text("Cards (\(store.creditCards.count))").tag(MoneyVaultSegment.cards)
-                        Text("Bank Accounts (\(store.bankAccounts.count))").tag(MoneyVaultSegment.bankAccounts)
+                        Text("Credit (\(creditCardCount))").tag(MoneyVaultSegment.creditCards)
+                        Text("Debit (\(debitCardCount))").tag(MoneyVaultSegment.debitCards)
+                        Text("Bank (\(store.bankAccounts.count))").tag(MoneyVaultSegment.bankAccounts)
                     }
                     .pickerStyle(.segmented)
                     .padding(.top, 4)
                     
-                    if selectedSegment == .cards {
-                        cardsSection
-                    } else {
+                    switch selectedSegment {
+                    case .creditCards:
+                        creditCardsSection
+                    case .debitCards:
+                        debitCardsSection
+                    case .bankAccounts:
                         bankAccountsSection
                     }
                 }
@@ -125,16 +151,25 @@ public struct MoneyHubView: View {
                 }
             }
         }
-        .navigationTitle(selectedSegment == .cards ? "Cards Wallet" : "Bank Accounts")
+        .navigationTitle(navigationTitleForSegment)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button {
                         HapticManager.light()
+                        addCardCategory = "Credit"
                         showingAddCard = true
                     } label: {
-                        Label("Add Card (Credit / Debit)", systemImage: "creditcard")
+                        Label("Add Credit Card", systemImage: "creditcard")
+                    }
+                    
+                    Button {
+                        HapticManager.light()
+                        addCardCategory = "Debit"
+                        showingAddCard = true
+                    } label: {
+                        Label("Add Debit Card", systemImage: "creditcard.fill")
                     }
                     
                     Button {
@@ -150,7 +185,7 @@ public struct MoneyHubView: View {
             }
         }
         .sheet(isPresented: $showingAddCard) {
-            AddCreditCardSheet(store: store)
+            AddCreditCardSheet(store: store, initialCategory: addCardCategory)
         }
         .sheet(item: $selectedCardToEdit) { card in
             EditCreditCardSheet(store: store, card: card)
@@ -163,11 +198,11 @@ public struct MoneyHubView: View {
         }
     }
     
-    // MARK: - Cards Section
+    // MARK: - Credit Cards Section
     @ViewBuilder
-    private var cardsSection: some View {
+    private var creditCardsSection: some View {
         // Vault Header
-        if !store.creditCards.isEmpty {
+        if creditCardCount > 0 {
             VStack(spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -175,27 +210,23 @@ public struct MoneyHubView: View {
                             Image(systemName: "lock.shield.fill")
                                 .font(.system(size: 13))
                                 .foregroundColor(.blue)
-                            Text("CARD WALLET")
+                            Text("CREDIT CARD WALLET")
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(.secondary)
                         }
-                        Text("\(store.creditCards.count) Cards Stored")
+                        Text("\(creditCardCount) Cards Stored")
                             .font(.system(size: 24, weight: .heavy, design: .rounded))
                             .foregroundColor(.primary)
-                        
-                        Text("Credit: \(creditCardCount) • Debit: \(debitCardCount)")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
                     }
                     
                     Spacer()
                     
-                    if totalLimit > 0 {
+                    if totalCreditLimit > 0 {
                         VStack(alignment: .trailing, spacing: 4) {
                             Text("TOTAL LIMIT")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(.secondary)
-                            Text(formatCurrency(totalLimit))
+                            Text(formatCurrency(totalCreditLimit))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundColor(.blue)
                         }
@@ -206,7 +237,7 @@ public struct MoneyHubView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 11))
                         .foregroundColor(.green)
-                    Text("Full 16-digit card numbers, CVVs & expiry dates stored encrypted on-device.")
+                    Text("16-digit card numbers, CVVs, expiry dates, ATM PIN & TPIN encrypted on-device.")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -217,14 +248,14 @@ public struct MoneyHubView: View {
             .cornerRadius(16)
             
             // Search bar
-            if store.creditCards.count >= 2 {
+            if creditCardCount >= 2 {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.secondary)
-                    TextField("Search cards by bank, name, or last 4...", text: $cardSearchText)
+                    TextField("Search credit cards by bank or name...", text: $creditSearchText)
                         .font(.system(size: 14))
-                    if !cardSearchText.isEmpty {
-                        Button(action: { cardSearchText = "" }) {
+                    if !creditSearchText.isEmpty {
+                        Button(action: { creditSearchText = "" }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.secondary)
                         }
@@ -237,16 +268,16 @@ public struct MoneyHubView: View {
         }
         
         // Cards List
-        if store.creditCards.isEmpty {
+        if creditCardCount == 0 {
             VStack(spacing: 12) {
-                Image(systemName: "creditcard.and.123")
+                Image(systemName: "creditcard")
                     .font(.system(size: 46))
                     .foregroundColor(.blue)
                     .padding(.top, 30)
-                Text("No Cards Stored")
+                Text("No Credit Cards Stored")
                     .font(.title3)
                     .fontWeight(.bold)
-                Text("Store all your credit & debit cards with full 16-digit card numbers, CVVs, and expiry dates for instant 1-tap copy during checkout.")
+                Text("Store all your credit cards with full 16-digit numbers, CVVs, expiry dates, and ATM/TPIN for instant 1-tap checkout.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -254,9 +285,10 @@ public struct MoneyHubView: View {
                 
                 Button(action: {
                     HapticManager.light()
+                    addCardCategory = "Credit"
                     showingAddCard = true
                 }) {
-                    Label("Add Credit or Debit Card", systemImage: "plus")
+                    Label("Add Credit Card", systemImage: "plus")
                         .font(.system(size: 15, weight: .bold))
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
@@ -268,7 +300,7 @@ public struct MoneyHubView: View {
             }
             .padding(.vertical, 28)
         } else {
-            ForEach(filteredCards) { card in
+            ForEach(filteredCreditCards) { card in
                 CreditCardView(
                     card: card,
                     onCopy: { text, label in
@@ -299,6 +331,181 @@ public struct MoneyHubView: View {
                             copyText(card.expiryDate, label: "Expiry Date")
                         } label: {
                             Label("Copy Expiry Date", systemImage: "calendar")
+                        }
+                    }
+                    
+                    if !card.atmPin.isEmpty {
+                        Button {
+                            copyText(card.atmPin, label: "ATM PIN")
+                        } label: {
+                            Label("Copy ATM PIN", systemImage: "key.fill")
+                        }
+                    }
+                    
+                    if !card.tpin.isEmpty {
+                        Button {
+                            copyText(card.tpin, label: "TPIN")
+                        } label: {
+                            Label("Copy TPIN", systemImage: "lock.rotation")
+                        }
+                    }
+                    
+                    Button {
+                        selectedCardToEdit = card
+                    } label: {
+                        Label("Edit Card Details", systemImage: "pencil")
+                    }
+                    
+                    Button(role: .destructive) {
+                        withAnimation {
+                            store.deleteCreditCard(card)
+                        }
+                    } label: {
+                        Label("Delete Card", systemImage: "trash")
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Debit Cards Section
+    @ViewBuilder
+    private var debitCardsSection: some View {
+        // Vault Header
+        if debitCardCount > 0 {
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "creditcard.fill")
+                                .font(.system(size: 13))
+                                .foregroundColor(.cyan)
+                            Text("DEBIT CARD WALLET")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.secondary)
+                        }
+                        Text("\(debitCardCount) Debit Cards Stored")
+                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Spacer()
+                }
+                
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(.green)
+                    Text("Debit card numbers, CVVs, ATM PIN & TPIN stored encrypted on-device.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(16)
+            .background(Color(UIColor.secondarySystemBackground))
+            .cornerRadius(16)
+            
+            // Search bar
+            if debitCardCount >= 2 {
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("Search debit cards by bank or name...", text: $debitSearchText)
+                        .font(.system(size: 14))
+                    if !debitSearchText.isEmpty {
+                        Button(action: { debitSearchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(10)
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(10)
+            }
+        }
+        
+        // Debit Cards List
+        if debitCardCount == 0 {
+            VStack(spacing: 12) {
+                Image(systemName: "creditcard.fill")
+                    .font(.system(size: 46))
+                    .foregroundColor(.cyan)
+                    .padding(.top, 30)
+                Text("No Debit Cards Stored")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                Text("Store your bank debit cards with full card numbers, CVVs, ATM PINs & TPINs for safe, fast access.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
+                
+                Button(action: {
+                    HapticManager.light()
+                    addCardCategory = "Debit"
+                    showingAddCard = true
+                }) {
+                    Label("Add Debit Card", systemImage: "plus")
+                        .font(.system(size: 15, weight: .bold))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.cyan)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding(.top, 10)
+            }
+            .padding(.vertical, 28)
+        } else {
+            ForEach(filteredDebitCards) { card in
+                CreditCardView(
+                    card: card,
+                    onCopy: { text, label in
+                        copyText(text, label: label)
+                    },
+                    onEdit: {
+                        selectedCardToEdit = card
+                    }
+                )
+                .contextMenu {
+                    Button {
+                        let cleanDigits = card.cardNumber.filter { $0.isNumber }
+                        copyText(cleanDigits, label: "Card Number")
+                    } label: {
+                        Label("Copy Card Number", systemImage: "doc.on.doc")
+                    }
+                    
+                    if !card.cvv.isEmpty {
+                        Button {
+                            copyText(card.cvv, label: "CVV")
+                        } label: {
+                            Label("Copy CVV", systemImage: "lock")
+                        }
+                    }
+                    
+                    if !card.expiryDate.isEmpty {
+                        Button {
+                            copyText(card.expiryDate, label: "Expiry Date")
+                        } label: {
+                            Label("Copy Expiry Date", systemImage: "calendar")
+                        }
+                    }
+                    
+                    if !card.atmPin.isEmpty {
+                        Button {
+                            copyText(card.atmPin, label: "ATM PIN")
+                        } label: {
+                            Label("Copy ATM PIN", systemImage: "key.fill")
+                        }
+                    }
+                    
+                    if !card.tpin.isEmpty {
+                        Button {
+                            copyText(card.tpin, label: "TPIN")
+                        } label: {
+                            Label("Copy TPIN", systemImage: "lock.rotation")
                         }
                     }
                     
@@ -348,7 +555,7 @@ public struct MoneyHubView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 11))
                         .foregroundColor(.green)
-                    Text("Bank account numbers, IFSC codes & UPI IDs stored encrypted on-device.")
+                    Text("Bank account numbers, IFSC codes, UPI IDs, ATM PIN & TPIN stored encrypted on-device.")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                 }
@@ -388,7 +595,7 @@ public struct MoneyHubView: View {
                 Text("No Bank Accounts Stored")
                     .font(.title3)
                     .fontWeight(.bold)
-                Text("Store your savings, current, and salary bank accounts with IFSC codes and UPI IDs for instant 1-tap copy during bank transfers.")
+                Text("Store your savings, current, and salary bank accounts with IFSC codes, UPI IDs, and PINs for instant 1-tap copy during bank transfers.")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -441,6 +648,22 @@ public struct MoneyHubView: View {
                             copyText(account.upiId, label: "UPI ID")
                         } label: {
                             Label("Copy UPI ID", systemImage: "qrcode")
+                        }
+                    }
+                    
+                    if !account.tpin.isEmpty {
+                        Button {
+                            copyText(account.tpin, label: "TPIN / UPI PIN")
+                        } label: {
+                            Label("Copy TPIN / UPI PIN", systemImage: "lock.rotation")
+                        }
+                    }
+                    
+                    if !account.atmPin.isEmpty {
+                        Button {
+                            copyText(account.atmPin, label: "ATM PIN")
+                        } label: {
+                            Label("Copy ATM PIN", systemImage: "key.fill")
                         }
                     }
                     
@@ -774,6 +997,104 @@ public struct MobileBillsHubView: View {
     }
 }
 
+// MARK: - Vault Theme Colors & Blue Shades
+
+struct VaultThemeOption: Identifiable {
+    let id: String
+    let name: String
+    let previewColor: Color
+    let isBlueShade: Bool
+}
+
+let vaultCardThemes: [VaultThemeOption] = [
+    // Blue Shades (7 rich variations)
+    VaultThemeOption(id: "midnight", name: "Midnight", previewColor: Color(red: 0.14, green: 0.32, blue: 0.58), isBlueShade: true),
+    VaultThemeOption(id: "navy", name: "Deep Navy", previewColor: Color(red: 0.08, green: 0.18, blue: 0.40), isBlueShade: true),
+    VaultThemeOption(id: "sapphire", name: "Sapphire", previewColor: Color(red: 0.12, green: 0.36, blue: 0.82), isBlueShade: true),
+    VaultThemeOption(id: "pacific", name: "Pacific Blue", previewColor: Color(red: 0.10, green: 0.44, blue: 0.68), isBlueShade: true),
+    VaultThemeOption(id: "arctic", name: "Arctic Cyan", previewColor: Color(red: 0.15, green: 0.55, blue: 0.78), isBlueShade: true),
+    VaultThemeOption(id: "steel", name: "Steel Slate", previewColor: Color(red: 0.26, green: 0.36, blue: 0.48), isBlueShade: true),
+    VaultThemeOption(id: "sky", name: "Sky Azure", previewColor: Color(red: 0.25, green: 0.55, blue: 0.90), isBlueShade: true),
+    
+    // Luxury & Classic Shades
+    VaultThemeOption(id: "obsidian", name: "Obsidian", previewColor: Color(red: 0.22, green: 0.22, blue: 0.24), isBlueShade: false),
+    VaultThemeOption(id: "emerald", name: "Emerald", previewColor: Color(red: 0.12, green: 0.42, blue: 0.28), isBlueShade: false),
+    VaultThemeOption(id: "titanium", name: "Titanium", previewColor: Color(red: 0.48, green: 0.52, blue: 0.56), isBlueShade: false),
+    VaultThemeOption(id: "purple", name: "Purple", previewColor: Color(red: 0.46, green: 0.16, blue: 0.68), isBlueShade: false),
+    VaultThemeOption(id: "roseGold", name: "Rose Gold", previewColor: Color(red: 0.62, green: 0.26, blue: 0.36), isBlueShade: false),
+    VaultThemeOption(id: "amber", name: "Warm Bronze", previewColor: Color(red: 0.62, green: 0.38, blue: 0.16), isBlueShade: false)
+]
+
+func vaultCardGradient(for themeId: String) -> LinearGradient {
+    switch themeId {
+    case "navy":
+        return LinearGradient(
+            colors: [Color(red: 0.04, green: 0.08, blue: 0.20), Color(red: 0.08, green: 0.18, blue: 0.40)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "sapphire":
+        return LinearGradient(
+            colors: [Color(red: 0.04, green: 0.18, blue: 0.52), Color(red: 0.12, green: 0.36, blue: 0.82)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "pacific":
+        return LinearGradient(
+            colors: [Color(red: 0.04, green: 0.22, blue: 0.38), Color(red: 0.10, green: 0.44, blue: 0.68)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "arctic":
+        return LinearGradient(
+            colors: [Color(red: 0.06, green: 0.26, blue: 0.42), Color(red: 0.15, green: 0.55, blue: 0.78)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "steel":
+        return LinearGradient(
+            colors: [Color(red: 0.14, green: 0.20, blue: 0.30), Color(red: 0.26, green: 0.36, blue: 0.48)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "sky":
+        return LinearGradient(
+            colors: [Color(red: 0.08, green: 0.30, blue: 0.60), Color(red: 0.25, green: 0.55, blue: 0.90)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "obsidian", "slate":
+        return LinearGradient(
+            colors: [Color(red: 0.12, green: 0.12, blue: 0.14), Color(red: 0.24, green: 0.24, blue: 0.26)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "emerald":
+        return LinearGradient(
+            colors: [Color(red: 0.05, green: 0.22, blue: 0.16), Color(red: 0.12, green: 0.42, blue: 0.28)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "titanium":
+        return LinearGradient(
+            colors: [Color(red: 0.28, green: 0.30, blue: 0.34), Color(red: 0.48, green: 0.52, blue: 0.56)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "purple":
+        return LinearGradient(
+            colors: [Color(red: 0.22, green: 0.08, blue: 0.38), Color(red: 0.46, green: 0.16, blue: 0.68)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "roseGold":
+        return LinearGradient(
+            colors: [Color(red: 0.38, green: 0.14, blue: 0.22), Color(red: 0.62, green: 0.26, blue: 0.36)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    case "amber":
+        return LinearGradient(
+            colors: [Color(red: 0.38, green: 0.22, blue: 0.08), Color(red: 0.62, green: 0.38, blue: 0.16)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    default: // midnight or blue
+        return LinearGradient(
+            colors: [Color(red: 0.08, green: 0.15, blue: 0.32), Color(red: 0.14, green: 0.32, blue: 0.58)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+    }
+}
+
 /// Visual Credit Card Component with Realistic Design, Privacy Masking, and 1-Tap Copy Actions.
 struct CreditCardView: View {
     let card: CreditCardAccount
@@ -783,44 +1104,7 @@ struct CreditCardView: View {
     @State private var isRevealed: Bool = false
     
     private var cardGradient: LinearGradient {
-        switch card.cardTheme {
-        case "obsidian":
-            return LinearGradient(
-                colors: [Color(red: 0.12, green: 0.12, blue: 0.14), Color(red: 0.24, green: 0.24, blue: 0.26)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case "emerald":
-            return LinearGradient(
-                colors: [Color(red: 0.05, green: 0.22, blue: 0.16), Color(red: 0.12, green: 0.42, blue: 0.28)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case "titanium":
-            return LinearGradient(
-                colors: [Color(red: 0.28, green: 0.30, blue: 0.34), Color(red: 0.48, green: 0.52, blue: 0.56)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case "purple":
-            return LinearGradient(
-                colors: [Color(red: 0.22, green: 0.08, blue: 0.38), Color(red: 0.46, green: 0.16, blue: 0.68)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case "roseGold":
-            return LinearGradient(
-                colors: [Color(red: 0.38, green: 0.14, blue: 0.22), Color(red: 0.62, green: 0.26, blue: 0.36)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        default: // midnight
-            return LinearGradient(
-                colors: [Color(red: 0.08, green: 0.15, blue: 0.32), Color(red: 0.14, green: 0.32, blue: 0.58)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+        vaultCardGradient(for: card.cardTheme)
     }
     
     var body: some View {
@@ -990,6 +1274,52 @@ struct CreditCardView: View {
                     }
                     .buttonStyle(.plain)
                 }
+                
+                // Security PINs Row (ATM PIN & TPIN)
+                if !card.atmPin.isEmpty || !card.tpin.isEmpty {
+                    HStack(spacing: 16) {
+                        if !card.atmPin.isEmpty {
+                            Button(action: {
+                                onCopy(card.atmPin, "ATM PIN")
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("ATM PIN:")
+                                        .font(.system(size: 8.5, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.65))
+                                    Text(isRevealed ? card.atmPin : card.maskedAtmPin)
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.white)
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        if !card.tpin.isEmpty {
+                            Button(action: {
+                                onCopy(card.tpin, "TPIN")
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("TPIN:")
+                                        .font(.system(size: 8.5, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.65))
+                                    Text(isRevealed ? card.tpin : card.maskedTpin)
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.white)
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 2)
+                }
             }
             .padding(18)
             .background(cardGradient)
@@ -997,86 +1327,127 @@ struct CreditCardView: View {
             .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 5)
             
             // 1-Tap Copy Action Pills Below Card
-            HStack(spacing: 8) {
-                Button(action: {
-                    let clean = card.cardNumber.filter { $0.isNumber }
-                    onCopy(clean, "Card Number")
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "doc.on.doc.fill")
-                            .font(.system(size: 10))
-                        Text("Copy Number")
-                            .font(.system(size: 11, weight: .bold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .foregroundColor(.blue)
-                    .cornerRadius(8)
-                }
-                .buttonStyle(.plain)
-                
-                if !card.cvv.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
                     Button(action: {
-                        onCopy(card.cvv, "CVV")
+                        let clean = card.cardNumber.filter { $0.isNumber }
+                        onCopy(clean, "Card Number")
                     }) {
                         HStack(spacing: 4) {
-                            Image(systemName: "lock.shield.fill")
+                            Image(systemName: "doc.on.doc.fill")
                                 .font(.system(size: 10))
-                            Text("Copy CVV")
+                            Text("Copy Number")
                                 .font(.system(size: 11, weight: .bold))
                         }
-                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 7)
                         .background(Color(UIColor.secondarySystemBackground))
                         .foregroundColor(.blue)
                         .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
-                }
-                
-                if !card.expiryDate.isEmpty {
-                    Button(action: {
-                        onCopy(card.expiryDate, "Expiry")
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 10))
-                            Text("Copy Expiry")
-                                .font(.system(size: 11, weight: .bold))
+                    
+                    if !card.cvv.isEmpty {
+                        Button(action: {
+                            onCopy(card.cvv, "CVV")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "lock.shield.fill")
+                                    .font(.system(size: 10))
+                                Text("Copy CVV")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.blue)
+                            .cornerRadius(8)
                         }
-                        .frame(maxWidth: .infinity)
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if !card.expiryDate.isEmpty {
+                        Button(action: {
+                            onCopy(card.expiryDate, "Expiry")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 10))
+                                Text("Copy Expiry")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.blue)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if !card.atmPin.isEmpty {
+                        Button(action: {
+                            onCopy(card.atmPin, "ATM PIN")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "key.fill")
+                                    .font(.system(size: 10))
+                                Text("Copy ATM PIN")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.blue)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if !card.tpin.isEmpty {
+                        Button(action: {
+                            onCopy(card.tpin, "TPIN")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "lock.rotation")
+                                    .font(.system(size: 10))
+                                Text("Copy TPIN")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.blue)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if let due = card.dueDay {
+                        HStack(spacing: 4) {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(.orange)
+                            Text("Due \(due)th")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 7)
                         .background(Color(UIColor.secondarySystemBackground))
-                        .foregroundColor(.blue)
                         .cornerRadius(8)
                     }
-                    .buttonStyle(.plain)
-                }
-                
-                if let due = card.dueDay {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bell.fill")
-                            .font(.system(size: 9))
-                            .foregroundColor(.orange)
-                        Text("Due \(due)th")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 7)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(8)
                 }
             }
         }
     }
 }
 
-/// Sheet for adding a new credit or debit card account with full card number, CVV, and expiry date.
+/// Sheet for adding a new credit or debit card account with full card number, CVV, expiry date, and security PINs.
 struct AddCreditCardSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: LifeStore
+    var initialCategory: String = "Credit"
     
     @State private var cardCategory = "Credit"
     @State private var bankName = ""
@@ -1085,21 +1456,14 @@ struct AddCreditCardSheet: View {
     @State private var cardHolderName = "PRABU GANESAN"
     @State private var expiryDate = ""
     @State private var cvv = ""
+    @State private var atmPin = ""
+    @State private var tpin = ""
     @State private var creditLimitText = ""
     @State private var hasDueDay = false
     @State private var dueDay = 5
     @State private var cardTheme = "midnight"
     
     let commonBanks = ["HDFC Bank", "ICICI Bank", "SBI", "Axis Bank", "Kotak", "Amex", "Standard Chartered", "IndusInd"]
-    
-    let themes: [(id: String, name: String, color: Color)] = [
-        ("midnight", "Midnight", Color(red: 0.14, green: 0.32, blue: 0.58)),
-        ("obsidian", "Obsidian", Color(red: 0.22, green: 0.22, blue: 0.24)),
-        ("emerald", "Emerald", Color(red: 0.12, green: 0.42, blue: 0.28)),
-        ("titanium", "Titanium", Color(red: 0.48, green: 0.52, blue: 0.56)),
-        ("purple", "Purple", Color(red: 0.46, green: 0.16, blue: 0.68)),
-        ("roseGold", "Rose Gold", Color(red: 0.62, green: 0.26, blue: 0.36))
-    ]
     
     var body: some View {
         NavigationStack {
@@ -1188,26 +1552,102 @@ struct AddCreditCardSheet: View {
                     }
                 }
                 
-                Section("Card Theme Color") {
-                    HStack(spacing: 16) {
-                        ForEach(themes, id: \.id) { theme in
-                            Button(action: {
-                                HapticManager.selection()
-                                cardTheme = theme.id
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(theme.color)
-                                        .frame(width: 32, height: 32)
-                                    
-                                    if cardTheme == theme.id {
-                                        Circle()
-                                            .stroke(Color.primary, lineWidth: 2.5)
-                                            .frame(width: 38, height: 38)
+                Section("Security PINs (Optional & Encrypted)") {
+                    HStack {
+                        Image(systemName: "key.fill")
+                            .foregroundColor(.blue)
+                            .frame(width: 22)
+                        TextField("ATM PIN (4 digits)", text: $atmPin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: atmPin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                atmPin = String(clean.prefix(4))
+                            }
+                    }
+                    
+                    HStack {
+                        Image(systemName: "lock.rotation")
+                            .foregroundColor(.blue)
+                            .frame(width: 22)
+                        TextField("TPIN / NetBanking PIN (4-6 digits)", text: $tpin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: tpin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                tpin = String(clean.prefix(6))
+                            }
+                    }
+                }
+                
+                Section("Card Theme Color (Blue Shades & More)") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("BLUE SHADES")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.blue)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { $0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if cardTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: cardTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        cardTheme = theme.id
                                     }
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .padding(.vertical, 4)
+                        }
+                        
+                        Divider().padding(.vertical, 2)
+                        
+                        Text("LUXURY & CLASSIC")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.secondary)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { !$0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if cardTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: cardTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        cardTheme = theme.id
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
                     .padding(.vertical, 6)
@@ -1230,6 +1670,9 @@ struct AddCreditCardSheet: View {
             }
             .navigationTitle(cardCategory == "Debit" ? "Add Debit Card" : "Add Credit Card")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                cardCategory = initialCategory
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -1281,6 +1724,8 @@ struct AddCreditCardSheet: View {
             cardHolderName: cardHolderName.trimmingCharacters(in: .whitespaces),
             expiryDate: expiryDate.trimmingCharacters(in: .whitespaces),
             cvv: cvv.trimmingCharacters(in: .whitespaces),
+            atmPin: atmPin.trimmingCharacters(in: .whitespaces),
+            tpin: tpin.trimmingCharacters(in: .whitespaces),
             creditLimit: limit,
             statementDay: nil,
             dueDay: (cardCategory == "Credit" && hasDueDay) ? dueDay : nil,
@@ -1306,19 +1751,12 @@ struct EditCreditCardSheet: View {
     @State private var cardHolderName = ""
     @State private var expiryDate = ""
     @State private var cvv = ""
+    @State private var atmPin = ""
+    @State private var tpin = ""
     @State private var creditLimitText = ""
     @State private var hasDueDay = false
     @State private var dueDay = 5
     @State private var cardTheme = "midnight"
-    
-    let themes: [(id: String, name: String, color: Color)] = [
-        ("midnight", "Midnight", Color(red: 0.14, green: 0.32, blue: 0.58)),
-        ("obsidian", "Obsidian", Color(red: 0.22, green: 0.22, blue: 0.24)),
-        ("emerald", "Emerald", Color(red: 0.12, green: 0.42, blue: 0.28)),
-        ("titanium", "Titanium", Color(red: 0.48, green: 0.52, blue: 0.56)),
-        ("purple", "Purple", Color(red: 0.46, green: 0.16, blue: 0.68)),
-        ("roseGold", "Rose Gold", Color(red: 0.62, green: 0.26, blue: 0.36))
-    ]
     
     var body: some View {
         NavigationStack {
@@ -1384,26 +1822,102 @@ struct EditCreditCardSheet: View {
                     }
                 }
                 
-                Section("Card Theme Color") {
-                    HStack(spacing: 16) {
-                        ForEach(themes, id: \.id) { theme in
-                            Button(action: {
-                                HapticManager.selection()
-                                cardTheme = theme.id
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(theme.color)
-                                        .frame(width: 32, height: 32)
-                                    
-                                    if cardTheme == theme.id {
-                                        Circle()
-                                            .stroke(Color.primary, lineWidth: 2.5)
-                                            .frame(width: 38, height: 38)
+                Section("Security PINs (Optional & Encrypted)") {
+                    HStack {
+                        Image(systemName: "key.fill")
+                            .foregroundColor(.blue)
+                            .frame(width: 22)
+                        TextField("ATM PIN (4 digits)", text: $atmPin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: atmPin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                atmPin = String(clean.prefix(4))
+                            }
+                    }
+                    
+                    HStack {
+                        Image(systemName: "lock.rotation")
+                            .foregroundColor(.blue)
+                            .frame(width: 22)
+                        TextField("TPIN / NetBanking PIN (4-6 digits)", text: $tpin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: tpin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                tpin = String(clean.prefix(6))
+                            }
+                    }
+                }
+                
+                Section("Card Theme Color (Blue Shades & More)") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("BLUE SHADES")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.blue)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { $0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if cardTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: cardTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        cardTheme = theme.id
                                     }
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .padding(.vertical, 4)
+                        }
+                        
+                        Divider().padding(.vertical, 2)
+                        
+                        Text("LUXURY & CLASSIC")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.secondary)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { !$0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if cardTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: cardTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        cardTheme = theme.id
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
                     .padding(.vertical, 6)
@@ -1434,6 +1948,8 @@ struct EditCreditCardSheet: View {
                 cardHolderName = card.cardHolderName
                 expiryDate = card.expiryDate
                 cvv = card.cvv
+                atmPin = card.atmPin
+                tpin = card.tpin
                 creditLimitText = card.creditLimit > 0 ? "\(Int(card.creditLimit))" : ""
                 hasDueDay = card.dueDay != nil
                 dueDay = card.dueDay ?? 5
@@ -1491,6 +2007,8 @@ struct EditCreditCardSheet: View {
         updated.cardHolderName = cardHolderName.trimmingCharacters(in: .whitespaces)
         updated.expiryDate = expiryDate.trimmingCharacters(in: .whitespaces)
         updated.cvv = cvv.trimmingCharacters(in: .whitespaces)
+        updated.atmPin = atmPin.trimmingCharacters(in: .whitespaces)
+        updated.tpin = tpin.trimmingCharacters(in: .whitespaces)
         updated.creditLimit = limit
         updated.dueDay = (cardCategory == "Credit" && hasDueDay) ? dueDay : nil
         updated.cardNetwork = network
@@ -1512,38 +2030,7 @@ struct BankAccountCardView: View {
     @State private var isRevealed: Bool = false
     
     private var accountGradient: LinearGradient {
-        switch account.accountTheme {
-        case "emerald":
-            return LinearGradient(
-                colors: [Color(red: 0.06, green: 0.28, blue: 0.18), Color(red: 0.12, green: 0.48, blue: 0.32)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case "purple":
-            return LinearGradient(
-                colors: [Color(red: 0.24, green: 0.08, blue: 0.38), Color(red: 0.44, green: 0.18, blue: 0.64)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case "slate":
-            return LinearGradient(
-                colors: [Color(red: 0.16, green: 0.18, blue: 0.22), Color(red: 0.32, green: 0.34, blue: 0.40)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case "amber":
-            return LinearGradient(
-                colors: [Color(red: 0.38, green: 0.22, blue: 0.08), Color(red: 0.62, green: 0.38, blue: 0.16)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        default: // blue
-            return LinearGradient(
-                colors: [Color(red: 0.08, green: 0.20, blue: 0.42), Color(red: 0.14, green: 0.36, blue: 0.65)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+        vaultCardGradient(for: account.accountTheme)
     }
     
     var body: some View {
@@ -1705,6 +2192,52 @@ struct BankAccountCardView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                
+                // Security PINs Row (TPIN & ATM PIN)
+                if !account.tpin.isEmpty || !account.atmPin.isEmpty {
+                    HStack(spacing: 16) {
+                        if !account.tpin.isEmpty {
+                            Button(action: {
+                                onCopy(account.tpin, "TPIN / UPI PIN")
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("TPIN / UPI PIN:")
+                                        .font(.system(size: 8.5, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.65))
+                                    Text(isRevealed ? account.tpin : account.maskedTpin)
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.white)
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        if !account.atmPin.isEmpty {
+                            Button(action: {
+                                onCopy(account.atmPin, "ATM PIN")
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("ATM PIN:")
+                                        .font(.system(size: 8.5, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.65))
+                                    Text(isRevealed ? account.atmPin : account.maskedAtmPin)
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.white)
+                                    Image(systemName: "doc.on.doc")
+                                        .font(.system(size: 9))
+                                        .foregroundColor(.white.opacity(0.6))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 2)
+                }
             }
             .padding(18)
             .background(accountGradient)
@@ -1712,61 +2245,101 @@ struct BankAccountCardView: View {
             .shadow(color: Color.black.opacity(0.22), radius: 10, x: 0, y: 5)
             
             // 1-Tap Copy Quick Action Pills
-            HStack(spacing: 8) {
-                Button(action: {
-                    let clean = account.accountNumber.filter { $0.isNumber }
-                    onCopy(clean.isEmpty ? account.accountNumber : clean, "Account Number")
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "doc.on.doc.fill")
-                            .font(.system(size: 10))
-                        Text("Copy A/C No")
-                            .font(.system(size: 11, weight: .bold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 7)
-                    .background(Color(UIColor.secondarySystemBackground))
-                    .foregroundColor(.teal)
-                    .cornerRadius(8)
-                }
-                .buttonStyle(.plain)
-                
-                if !account.ifscCode.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
                     Button(action: {
-                        onCopy(account.ifscCode, "IFSC Code")
+                        let clean = account.accountNumber.filter { $0.isNumber }
+                        onCopy(clean.isEmpty ? account.accountNumber : clean, "Account Number")
                     }) {
                         HStack(spacing: 4) {
-                            Image(systemName: "building.columns.fill")
+                            Image(systemName: "doc.on.doc.fill")
                                 .font(.system(size: 10))
-                            Text("Copy IFSC")
+                            Text("Copy A/C No")
                                 .font(.system(size: 11, weight: .bold))
                         }
-                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 10)
                         .padding(.vertical, 7)
                         .background(Color(UIColor.secondarySystemBackground))
                         .foregroundColor(.teal)
                         .cornerRadius(8)
                     }
                     .buttonStyle(.plain)
-                }
-                
-                if !account.upiId.isEmpty {
-                    Button(action: {
-                        onCopy(account.upiId, "UPI ID")
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "qrcode")
-                                .font(.system(size: 10))
-                            Text("Copy UPI")
-                                .font(.system(size: 11, weight: .bold))
+                    
+                    if !account.ifscCode.isEmpty {
+                        Button(action: {
+                            onCopy(account.ifscCode, "IFSC Code")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "building.columns.fill")
+                                    .font(.system(size: 10))
+                                Text("Copy IFSC")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.teal)
+                            .cornerRadius(8)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 7)
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .foregroundColor(.teal)
-                        .cornerRadius(8)
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    
+                    if !account.upiId.isEmpty {
+                        Button(action: {
+                            onCopy(account.upiId, "UPI ID")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "qrcode")
+                                    .font(.system(size: 10))
+                                Text("Copy UPI")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.teal)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if !account.tpin.isEmpty {
+                        Button(action: {
+                            onCopy(account.tpin, "TPIN / UPI PIN")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "lock.rotation")
+                                    .font(.system(size: 10))
+                                Text("Copy TPIN")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.teal)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    if !account.atmPin.isEmpty {
+                        Button(action: {
+                            onCopy(account.atmPin, "ATM PIN")
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "key.fill")
+                                    .font(.system(size: 10))
+                                Text("Copy ATM PIN")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .foregroundColor(.teal)
+                            .cornerRadius(8)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }
@@ -1785,18 +2358,12 @@ struct AddBankAccountSheet: View {
     @State private var accountType = "Savings"
     @State private var upiId = ""
     @State private var branchName = ""
-    @State private var accountTheme = "blue"
+    @State private var tpin = ""
+    @State private var atmPin = ""
+    @State private var accountTheme = "midnight"
     
     let commonBanks = ["HDFC Bank", "ICICI Bank", "SBI", "Axis Bank", "Kotak", "Canara Bank", "Bank of Baroda", "PNB"]
     let accountTypes = ["Savings", "Current", "Salary"]
-    
-    let themes: [(id: String, name: String, color: Color)] = [
-        ("blue", "Royal Blue", Color(red: 0.14, green: 0.36, blue: 0.65)),
-        ("emerald", "Emerald", Color(red: 0.12, green: 0.48, blue: 0.32)),
-        ("purple", "Purple", Color(red: 0.44, green: 0.18, blue: 0.64)),
-        ("slate", "Obsidian Slate", Color(red: 0.32, green: 0.34, blue: 0.40)),
-        ("amber", "Warm Bronze", Color(red: 0.62, green: 0.38, blue: 0.16))
-    ]
     
     var body: some View {
         NavigationStack {
@@ -1851,33 +2418,107 @@ struct AddBankAccountSheet: View {
                         }
                 }
                 
-                Section("UPI ID (Optional)") {
+                Section("UPI ID & Security PINs (Optional)") {
                     TextField("UPI ID (e.g. name@okhdfcbank)", text: $upiId)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                         .keyboardType(.emailAddress)
+                    
+                    HStack {
+                        Image(systemName: "lock.rotation")
+                            .foregroundColor(.teal)
+                            .frame(width: 22)
+                        TextField("TPIN / UPI PIN (4-6 digits)", text: $tpin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: tpin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                tpin = String(clean.prefix(6))
+                            }
+                    }
+                    
+                    HStack {
+                        Image(systemName: "key.fill")
+                            .foregroundColor(.teal)
+                            .frame(width: 22)
+                        TextField("ATM PIN (4 digits)", text: $atmPin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: atmPin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                atmPin = String(clean.prefix(4))
+                            }
+                    }
                 }
                 
-                Section("Theme Color") {
-                    HStack(spacing: 16) {
-                        ForEach(themes, id: \.id) { theme in
-                            Button(action: {
-                                HapticManager.selection()
-                                accountTheme = theme.id
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(theme.color)
-                                        .frame(width: 32, height: 32)
-                                    
-                                    if accountTheme == theme.id {
-                                        Circle()
-                                            .stroke(Color.primary, lineWidth: 2.5)
-                                            .frame(width: 38, height: 38)
+                Section("Account Theme Color (Blue Shades & More)") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("BLUE SHADES")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.blue)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { $0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if accountTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: accountTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        accountTheme = theme.id
                                     }
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .padding(.vertical, 4)
+                        }
+                        
+                        Divider().padding(.vertical, 2)
+                        
+                        Text("LUXURY & CLASSIC")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.secondary)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { !$0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if accountTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: accountTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        accountTheme = theme.id
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
                     .padding(.vertical, 6)
@@ -1910,7 +2551,9 @@ struct AddBankAccountSheet: View {
             accountType: accountType,
             upiId: upiId.trimmingCharacters(in: .whitespaces),
             branchName: branchName.trimmingCharacters(in: .whitespaces),
-            accountTheme: accountTheme
+            accountTheme: accountTheme,
+            tpin: tpin.trimmingCharacters(in: .whitespaces),
+            atmPin: atmPin.trimmingCharacters(in: .whitespaces)
         )
         store.addBankAccount(account)
         dismiss()
@@ -1930,18 +2573,12 @@ struct EditBankAccountSheet: View {
     @State private var accountType = "Savings"
     @State private var upiId = ""
     @State private var branchName = ""
-    @State private var accountTheme = "blue"
+    @State private var tpin = ""
+    @State private var atmPin = ""
+    @State private var accountTheme = "midnight"
     
     let commonBanks = ["HDFC Bank", "ICICI Bank", "SBI", "Axis Bank", "Kotak", "Canara Bank", "Bank of Baroda", "PNB"]
     let accountTypes = ["Savings", "Current", "Salary"]
-    
-    let themes: [(id: String, name: String, color: Color)] = [
-        ("blue", "Royal Blue", Color(red: 0.14, green: 0.36, blue: 0.65)),
-        ("emerald", "Emerald", Color(red: 0.12, green: 0.48, blue: 0.32)),
-        ("purple", "Purple", Color(red: 0.44, green: 0.18, blue: 0.64)),
-        ("slate", "Obsidian Slate", Color(red: 0.32, green: 0.34, blue: 0.40)),
-        ("amber", "Warm Bronze", Color(red: 0.62, green: 0.38, blue: 0.16))
-    ]
     
     var body: some View {
         NavigationStack {
@@ -1973,33 +2610,107 @@ struct EditBankAccountSheet: View {
                         }
                 }
                 
-                Section("UPI ID (Optional)") {
+                Section("UPI ID & Security PINs (Optional)") {
                     TextField("UPI ID", text: $upiId)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                         .keyboardType(.emailAddress)
+                    
+                    HStack {
+                        Image(systemName: "lock.rotation")
+                            .foregroundColor(.teal)
+                            .frame(width: 22)
+                        TextField("TPIN / UPI PIN (4-6 digits)", text: $tpin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: tpin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                tpin = String(clean.prefix(6))
+                            }
+                    }
+                    
+                    HStack {
+                        Image(systemName: "key.fill")
+                            .foregroundColor(.teal)
+                            .frame(width: 22)
+                        TextField("ATM PIN (4 digits)", text: $atmPin)
+                            .keyboardType(.numberPad)
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: atmPin) { newValue in
+                                let clean = newValue.filter { $0.isNumber }
+                                atmPin = String(clean.prefix(4))
+                            }
+                    }
                 }
                 
-                Section("Theme Color") {
-                    HStack(spacing: 16) {
-                        ForEach(themes, id: \.id) { theme in
-                            Button(action: {
-                                HapticManager.selection()
-                                accountTheme = theme.id
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(theme.color)
-                                        .frame(width: 32, height: 32)
-                                    
-                                    if accountTheme == theme.id {
-                                        Circle()
-                                            .stroke(Color.primary, lineWidth: 2.5)
-                                            .frame(width: 38, height: 38)
+                Section("Account Theme Color (Blue Shades & More)") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("BLUE SHADES")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.blue)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { $0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if accountTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: accountTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        accountTheme = theme.id
                                     }
                                 }
                             }
-                            .buttonStyle(.plain)
+                            .padding(.vertical, 4)
+                        }
+                        
+                        Divider().padding(.vertical, 2)
+                        
+                        Text("LUXURY & CLASSIC")
+                            .font(.system(size: 10.5, weight: .bold))
+                            .foregroundColor(.secondary)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(vaultCardThemes.filter { !$0.isBlueShade }) { theme in
+                                    VStack(spacing: 4) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(theme.previewColor)
+                                                .frame(width: 34, height: 34)
+                                            
+                                            if accountTheme == theme.id {
+                                                Circle()
+                                                    .stroke(Color.primary, lineWidth: 2.5)
+                                                    .frame(width: 40, height: 40)
+                                            }
+                                        }
+                                        Text(theme.name)
+                                            .font(.system(size: 9.5, weight: accountTheme == theme.id ? .bold : .regular))
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    .onTapGesture {
+                                        HapticManager.selection()
+                                        accountTheme = theme.id
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
                     .padding(.vertical, 6)
@@ -2015,6 +2726,8 @@ struct EditBankAccountSheet: View {
                 accountType = account.accountType
                 upiId = account.upiId
                 branchName = account.branchName
+                tpin = account.tpin
+                atmPin = account.atmPin
                 accountTheme = account.accountTheme
             }
             .toolbar {
@@ -2043,6 +2756,8 @@ struct EditBankAccountSheet: View {
         updated.upiId = upiId.trimmingCharacters(in: .whitespaces)
         updated.branchName = branchName.trimmingCharacters(in: .whitespaces)
         updated.accountTheme = accountTheme
+        updated.tpin = tpin.trimmingCharacters(in: .whitespaces)
+        updated.atmPin = atmPin.trimmingCharacters(in: .whitespaces)
         
         store.updateBankAccount(updated)
         dismiss()

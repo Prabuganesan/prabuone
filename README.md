@@ -34,21 +34,32 @@
 - **Fuel Logs & Economy**: Add, view, edit (date, odometer, liters, cost), or delete refuel logs with dynamic fuel economy calculation (`km/L`).
 
 ### 2. 💳 Cards & Banking Vault (Credit, Debit & Bank Accounts)
-- **Store Credit & Debit Cards**: Complete digital wallet holding all your physical and virtual credit and debit cards in one secure place on-device.
-  - **Category Badges**: Distinct `CREDIT` and `DEBIT` visual pill tags.
-  - **Full Card Credentials Storage**:
-    - Full 16-digit card number with 4-digit formatted grouping.
-    - CVV security code (3 or 4 digits).
-    - Valid Thru / Expiry date (`MM/YY`).
-    - Cardholder name & auto-detected card network (Visa, Mastercard, RuPay, Amex).
-  - **Privacy Masking & 1-Tap Copy Actions**:
-    - **Show / Hide Privacy Toggle**: Tap the eye icon 👁 to toggle masking (`•••• •••• •••• 4821` & `•••`) in public places.
-    - **1-Tap Quick Copy**: Dedicated pill buttons to copy **Card Number**, **CVV**, or **Expiry Date** directly to your clipboard for fast online checkout.
-  - **Realistic Card Aesthetics & Themes**:
-    - Realistic card design with EMV chip graphics, contactless wave, and metallic finishes.
-    - 6 curated card themes: Midnight Blue, Obsidian Black, Emerald Green, Titanium Silver, Royal Purple, and Rose Gold.
-  - **Credit vs Debit Limits**: Tracks optional credit limits & monthly due dates for credit cards, and daily spend / ATM limits for debit cards.
-
+- **Separate Dedicated Tabs**:
+  - **Credit Cards Tab**: Dedicated view for credit cards with total credit limit tracking and payment due day reminders.
+  - **Debit Cards Tab**: Dedicated view for daily bank debit cards with spend/ATM limit tracking.
+  - **Bank Accounts Tab**: Dedicated view for savings, current, and salary bank accounts with IFSC codes and UPI VPAs.
+- **Full Card Credentials Storage**:
+  - Full 16-digit card number with 4-digit formatted grouping.
+  - CVV security code (3 or 4 digits).
+  - Valid Thru / Expiry date (`MM/YY`).
+  - Cardholder name & auto-detected card network (Visa, Mastercard, RuPay, Amex).
+- **Security PINs (ATM PIN & TPIN)**:
+  - **ATM PIN (4 digits)**: Securely stored on-device for physical cash withdrawals and merchant PIN verification.
+  - **TPIN / NetBanking PIN (4-6 digits)**: Transaction PIN for mobile banking, demat/CDSL verification, and online transactions.
+  - **1-Tap Quick Copy Actions**: Tap "Copy ATM PIN" or "Copy TPIN" to instantly copy credentials with haptic feedback.
+- **Privacy Masking & Instant Access**:
+  - **Show / Hide Privacy Toggle**: Tap the eye icon 👁 to toggle masking for card numbers, CVVs, ATM PINs, and TPINs.
+  - **1-Tap Quick Copy Bar**: Horizontal scrollable action bar with quick copy for **Card Number**, **CVV**, **Expiry Date**, **ATM PIN**, and **TPIN**.
+- **Expanded Blue Shade Color Themes & Luxury Finishes**:
+  - **7 Tailored Blue Shades**:
+    - 🌌 **Midnight**: Midnight Cobalt
+    - ⚓ **Deep Navy**: Executive Corporate Navy
+    - 💎 **Sapphire**: Electric Royal Sapphire
+    - 🌊 **Pacific Blue**: Deep Ocean Cyan-Blue
+    - 🧊 **Arctic Cyan**: Crisp Glacier Ice-Blue
+    - 🏙️ **Steel Slate**: Sleek Industrial Slate-Blue
+    - 🌤️ **Sky Azure**: Modern Vibrant Azure
+  - **Classic & Luxury Shades**: Obsidian Black, Emerald Green, Titanium Silver, Royal Purple, Rose Gold, and Warm Bronze.
 - **🏦 Bank Accounts Vault**:
   - **Complete Bank Details Storage**:
     - Bank Name (with 1-tap quick bank chips for HDFC, ICICI, SBI, Axis, Kotak, Canara, BoB, PNB).
@@ -56,12 +67,13 @@
     - Full Account Number with formatting and privacy masking (`•••••••• 9876`).
     - IFSC Code with auto-capitalization and monospaced typography.
     - UPI ID (e.g. `prabu@okhdfcbank`) for instant VPA sharing.
+    - TPIN / UPI PIN and ATM PIN storage with 1-tap copy.
     - Branch Name & Account Holder Name.
   - **1-Tap Quick Copy Actions**:
-    - Dedicated quick copy buttons for **Account Number**, **IFSC Code**, and **UPI ID** with tactile haptic feedback and onscreen toast confirmation.
+    - Dedicated quick copy buttons for **Account Number**, **IFSC Code**, **UPI ID**, **TPIN**, and **ATM PIN** with tactile haptic feedback and onscreen toast confirmation.
   - **Passbook Design & Themes**:
-    - Passbook-style bank cards with 5 distinct themes: Royal Blue, Emerald Green, Deep Purple, Obsidian Slate, and Warm Bronze.
-  - **Encrypted Local Persistence**: All account numbers and financial credentials remain 100% encrypted in your local device sandbox.
+    - Passbook-style bank cards styled with your choice of the 7 blue shades or luxury finishes.
+  - **Encrypted Local Persistence**: All credentials remain 100% encrypted in your local device sandbox with zero cloud transmission.
 
 ### 3. 🔁 Subscriptions Hub (Recurring Subscriptions Only)
 - **Dedicated Subscriptions Hub**: Focused exclusively on recurring services (OTT, Cloud, AI tools, memberships).

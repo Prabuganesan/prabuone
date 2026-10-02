@@ -9,11 +9,13 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
     public var cardHolderName: String    // e.g. PRABU GANESAN
     public var expiryDate: String        // MM/YY (e.g. "08/29")
     public var cvv: String               // e.g. "123"
+    public var atmPin: String            // 4-digit ATM PIN
+    public var tpin: String              // Transaction PIN / TPIN
     public var creditLimit: Double       // e.g. 500000 (0 for debit card or if not entered)
     public var statementDay: Int?        // e.g. 15th
     public var dueDay: Int?              // e.g. 5th
     public var cardNetwork: String       // Visa, Mastercard, RuPay, Amex
-    public var cardTheme: String         // midnight, obsidian, emerald, titanium, purple, roseGold
+    public var cardTheme: String         // midnight, navy, sapphire, pacific, arctic, steel, sky, obsidian, emerald, titanium, purple, roseGold
     public var cardCategory: String      // "Credit" or "Debit"
     
     public init(
@@ -24,6 +26,8 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         cardHolderName: String = "PRABU GANESAN",
         expiryDate: String = "",
         cvv: String = "",
+        atmPin: String = "",
+        tpin: String = "",
         creditLimit: Double = 0,
         statementDay: Int? = nil,
         dueDay: Int? = nil,
@@ -38,6 +42,8 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         self.cardHolderName = cardHolderName
         self.expiryDate = expiryDate
         self.cvv = cvv
+        self.atmPin = atmPin
+        self.tpin = tpin
         self.creditLimit = creditLimit
         self.statementDay = statementDay
         self.dueDay = dueDay
@@ -82,6 +88,14 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         String(repeating: "•", count: max(cvv.count, 3))
     }
     
+    public var maskedAtmPin: String {
+        String(repeating: "•", count: max(atmPin.count, 4))
+    }
+    
+    public var maskedTpin: String {
+        String(repeating: "•", count: max(tpin.count, 4))
+    }
+    
     public static func detectNetwork(from number: String) -> String {
         let clean = number.filter { $0.isNumber }
         if clean.hasPrefix("4") {
@@ -97,7 +111,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, bankName, cardName, cardNumber, cardHolderName, expiryDate, cvv, creditLimit, statementDay, dueDay, cardNetwork, cardTheme, cardCategory
+        case id, bankName, cardName, cardNumber, cardHolderName, expiryDate, cvv, atmPin, tpin, creditLimit, statementDay, dueDay, cardNetwork, cardTheme, cardCategory
         case legacyLastFourDigits = "lastFourDigits"
     }
     
@@ -110,6 +124,8 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         try container.encode(cardHolderName, forKey: .cardHolderName)
         try container.encode(expiryDate, forKey: .expiryDate)
         try container.encode(cvv, forKey: .cvv)
+        try container.encode(atmPin, forKey: .atmPin)
+        try container.encode(tpin, forKey: .tpin)
         try container.encode(creditLimit, forKey: .creditLimit)
         try container.encodeIfPresent(statementDay, forKey: .statementDay)
         try container.encodeIfPresent(dueDay, forKey: .dueDay)
@@ -131,6 +147,8 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         cardHolderName = try container.decodeIfPresent(String.self, forKey: .cardHolderName) ?? "PRABU GANESAN"
         expiryDate = try container.decodeIfPresent(String.self, forKey: .expiryDate) ?? ""
         cvv = try container.decodeIfPresent(String.self, forKey: .cvv) ?? ""
+        atmPin = try container.decodeIfPresent(String.self, forKey: .atmPin) ?? ""
+        tpin = try container.decodeIfPresent(String.self, forKey: .tpin) ?? ""
         creditLimit = try container.decodeIfPresent(Double.self, forKey: .creditLimit) ?? 0
         statementDay = try container.decodeIfPresent(Int.self, forKey: .statementDay)
         dueDay = try container.decodeIfPresent(Int.self, forKey: .dueDay)
@@ -150,7 +168,9 @@ public struct BankAccount: Identifiable, Codable, Equatable {
     public var accountType: String       // "Savings", "Current", "Salary"
     public var upiId: String             // e.g. "prabu@okhdfcbank"
     public var branchName: String        // e.g. "Anna Nagar Branch"
-    public var accountTheme: String      // "blue", "green", "purple", "slate", "amber"
+    public var accountTheme: String      // midnight, navy, sapphire, pacific, arctic, steel, sky, emerald, purple, slate, amber
+    public var tpin: String              // e.g. TPIN / UPI PIN
+    public var atmPin: String            // e.g. Associated ATM PIN
     
     public init(
         id: UUID = UUID(),
@@ -161,7 +181,9 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         accountType: String = "Savings",
         upiId: String = "",
         branchName: String = "",
-        accountTheme: String = "blue"
+        accountTheme: String = "midnight",
+        tpin: String = "",
+        atmPin: String = ""
     ) {
         self.id = id
         self.bankName = bankName
@@ -172,6 +194,8 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         self.upiId = upiId
         self.branchName = branchName
         self.accountTheme = accountTheme
+        self.tpin = tpin
+        self.atmPin = atmPin
     }
     
     public var lastFourDigits: String {
@@ -190,6 +214,14 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         return "\(prefix) \(last4)"
     }
     
+    public var maskedTpin: String {
+        String(repeating: "•", count: max(tpin.count, 4))
+    }
+    
+    public var maskedAtmPin: String {
+        String(repeating: "•", count: max(atmPin.count, 4))
+    }
+    
     public var formattedAccountNumber: String {
         let clean = accountNumber.filter { $0.isNumber }
         guard !clean.isEmpty else { return accountNumber }
@@ -202,4 +234,39 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         }
         return result
     }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, bankName, accountHolderName, accountNumber, ifscCode, accountType, upiId, branchName, accountTheme, tpin, atmPin
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(bankName, forKey: .bankName)
+        try container.encode(accountHolderName, forKey: .accountHolderName)
+        try container.encode(accountNumber, forKey: .accountNumber)
+        try container.encode(ifscCode, forKey: .ifscCode)
+        try container.encode(accountType, forKey: .accountType)
+        try container.encode(upiId, forKey: .upiId)
+        try container.encode(branchName, forKey: .branchName)
+        try container.encode(accountTheme, forKey: .accountTheme)
+        try container.encode(tpin, forKey: .tpin)
+        try container.encode(atmPin, forKey: .atmPin)
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        bankName = try container.decode(String.self, forKey: .bankName)
+        accountHolderName = try container.decodeIfPresent(String.self, forKey: .accountHolderName) ?? "PRABU GANESAN"
+        accountNumber = try container.decode(String.self, forKey: .accountNumber)
+        ifscCode = try container.decode(String.self, forKey: .ifscCode)
+        accountType = try container.decodeIfPresent(String.self, forKey: .accountType) ?? "Savings"
+        upiId = try container.decodeIfPresent(String.self, forKey: .upiId) ?? ""
+        branchName = try container.decodeIfPresent(String.self, forKey: .branchName) ?? ""
+        accountTheme = try container.decodeIfPresent(String.self, forKey: .accountTheme) ?? "midnight"
+        tpin = try container.decodeIfPresent(String.self, forKey: .tpin) ?? ""
+        atmPin = try container.decodeIfPresent(String.self, forKey: .atmPin) ?? ""
+    }
 }
+
