@@ -139,48 +139,83 @@ public struct ContentView: View {
         }
     }
     
+    private var timeGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        if hour < 12 {
+            return "Good Morning"
+        } else if hour < 17 {
+            return "Good Afternoon"
+        } else {
+            return "Good Evening"
+        }
+    }
+    
+    private var formattedTodayDate: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, d MMM"
+        return formatter.string(from: Date())
+    }
+    
     public var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    // Header Brand Card
-                    HStack(spacing: 14) {
+                VStack(spacing: 18) {
+                    // Modern Command Header
+                    HStack(spacing: 12) {
                         Image("Logo")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 48, height: 48)
+                            .frame(width: 44, height: 44)
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.15), radius: 5, x: 0, y: 2)
+                            .shadow(color: Color.black.opacity(0.12), radius: 5, x: 0, y: 2)
                         
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Prabu One")
-                                .font(.system(size: 26, weight: .bold, design: .rounded))
-                            Text("Personal Life OS")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
+                            Text("\(timeGreeting), Prabu")
+                                .font(.system(size: 21, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                            
+                            HStack(spacing: 6) {
+                                Text(formattedTodayDate)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("•")
+                                    .foregroundColor(.secondary.opacity(0.5))
+                                    .font(.system(size: 10))
+                                
+                                Text("Life OS")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.blue)
+                            }
                         }
                         
                         Spacer()
                         
-                        HStack(spacing: 10) {
-                            // ☁️ Google Drive Backup Button
-                            Button(action: {
-                                HapticManager.light()
-                                showingGoogleBackupSheet = true
-                            }) {
-                                Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                                    .font(.system(size: 30))
-                                    .foregroundColor(.cyan)
-                            }
-                            
+                        HStack(spacing: 8) {
                             // ⚡ Sudden Quick Note Button
                             Button(action: {
                                 HapticManager.light()
                                 showingQuickNoteSheet = true
                             }) {
-                                Image(systemName: "square.and.pencil.circle.fill")
-                                    .font(.system(size: 30))
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 14, weight: .bold))
                                     .foregroundColor(.amberAccent)
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.amberAccent.opacity(0.15))
+                                    .clipShape(Circle())
+                            }
+                            
+                            // ☁️ Google Drive Backup Button
+                            Button(action: {
+                                HapticManager.light()
+                                showingGoogleBackupSheet = true
+                            }) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.cyan)
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.cyan.opacity(0.15))
+                                    .clipShape(Circle())
                             }
                             
                             // + Quick Add Life Commitment
@@ -188,20 +223,26 @@ public struct ContentView: View {
                                 HapticManager.light()
                                 showingAddSheet = true
                             }) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 30))
-                                    .foregroundColor(.blue)
+                                Image(systemName: "plus")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 36, height: 36)
+                                    .background(LinearGradient(colors: [Color.blue, Color(red: 0.1, green: 0.45, blue: 0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .clipShape(Circle())
+                                    .shadow(color: Color.blue.opacity(0.35), radius: 4, x: 0, y: 2)
                             }
                         }
                     }
                     .padding(.horizontal, 4)
+                    .padding(.top, 2)
                     
-                    // 🔍 Search Bar
+                    // 🔍 Modern Floating Search Bar
                     HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(.secondary)
-                        TextField("Search cards, accounts, loans, LIC, vehicle, docs...", text: $searchText)
-                            .font(.system(size: 15))
+                            .font(.system(size: 15, weight: .medium))
+                        TextField("Search all 9 pillars, cards, accounts, loans, docs...", text: $searchText)
+                            .font(.system(size: 14))
                         if !searchText.isEmpty {
                             Button(action: {
                                 HapticManager.light()
@@ -212,9 +253,14 @@ public struct ContentView: View {
                             }
                         }
                     }
-                    .padding(12)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
                     .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(12)
+                    .cornerRadius(14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+                    )
                     
                     if !searchText.isEmpty {
                         // Universal Search Results Section
@@ -614,18 +660,101 @@ public struct ContentView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
-                        // 🔴 Attention Engine Card
+                        // 💰 Executive Pulse Command Card
+                        VStack(spacing: 14) {
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 6) {
+                                        Circle()
+                                            .fill(Color.blue)
+                                            .frame(width: 7, height: 7)
+                                        Text("MONTHLY COMMITMENT PULSE")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundColor(.white.opacity(0.75))
+                                            .tracking(0.6)
+                                    }
+                                    
+                                    Text(formatCurrency(store.thisMonthCommitmentTotal))
+                                        .font(.system(size: 32, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.white)
+                                }
+                                
+                                Spacer()
+                                
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text("\(store.thisMonthRenewalsCount) Upcoming")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .padding(.horizontal, 9)
+                                        .padding(.vertical, 4)
+                                        .background(Color.white.opacity(0.18))
+                                        .foregroundColor(.white)
+                                        .clipShape(Capsule())
+                                    
+                                    Text("This Month")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.white.opacity(0.65))
+                                }
+                            }
+                            
+                            Divider().background(Color.white.opacity(0.2))
+                            
+                            // 3 Key Pulse Metric Tiles
+                            HStack(spacing: 8) {
+                                microMetricPill(
+                                    icon: "indianrupeesign.square.fill",
+                                    color: .orange,
+                                    label: "Monthly EMIs",
+                                    value: formatCurrency(store.totalMonthlyLoanEmi)
+                                )
+                                
+                                microMetricPill(
+                                    icon: "shield.lefthalf.filled",
+                                    color: .emeraldAccent,
+                                    label: "Life Cover",
+                                    value: formatCurrency(store.totalInsuranceSumAssured)
+                                )
+                                
+                                microMetricPill(
+                                    icon: "creditcard.fill",
+                                    color: .cyan,
+                                    label: "Cards & A/Cs",
+                                    value: "\(store.creditCards.count + store.bankAccounts.count) Total"
+                                )
+                            }
+                        }
+                        .padding(18)
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.08, green: 0.14, blue: 0.32),
+                                    Color(red: 0.04, green: 0.07, blue: 0.18)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(20)
+                        .shadow(color: Color.black.opacity(0.16), radius: 10, x: 0, y: 5)
+                        
+                        // 🔴 Attention Radar Banner
                         let attentionItems = store.itemsNeedingAttention
                         if !attentionItems.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 HStack {
-                                    Text("🔴 \(attentionItems.count) Things Need Attention")
-                                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                                        .foregroundColor(.red)
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.red)
+                                        Text("\(attentionItems.count) Action\(attentionItems.count > 1 ? "s" : "") Need Attention")
+                                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                                            .foregroundColor(.red)
+                                    }
                                     Spacer()
+                                    Text("Due Soon")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.red.opacity(0.8))
                                 }
                                 
-                                VStack(spacing: 10) {
+                                VStack(spacing: 8) {
                                     ForEach(attentionItems.prefix(3)) { item in
                                         AttentionItemRow(item: item, onComplete: {
                                             withAnimation {
@@ -637,146 +766,121 @@ public struct ContentView: View {
                                     }
                                 }
                             }
-                            .padding(16)
+                            .padding(14)
                             .background(Color.red.opacity(0.08))
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.red.opacity(0.25), lineWidth: 1)
+                                    .stroke(Color.red.opacity(0.22), lineWidth: 1)
                             )
                         } else {
-                            // 🟢 All Clear Banner
                             HStack(spacing: 12) {
-                                Image(systemName: "checkmark.seal.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.green)
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.green.opacity(0.18))
+                                        .frame(width: 38, height: 38)
+                                    Image(systemName: "checkmark.shield.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.green)
+                                }
+                                
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("All Clear")
-                                        .font(.system(size: 15, weight: .bold))
-                                    Text(store.items.isEmpty ? "Tap + to add your cards, vehicle, and bills" : "No urgent payments or renewals due")
+                                    Text("All Commitments On Track")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(.primary)
+                                    Text("No bills or renewals are overdue. Your personal OS is clean.")
                                         .font(.system(size: 12))
                                         .foregroundColor(.secondary)
                                 }
                                 Spacer()
                             }
-                            .padding(14)
-                            .background(Color.green.opacity(0.08))
-                            .cornerRadius(14)
+                            .padding(12)
+                            .background(Color.green.opacity(0.07))
+                            .cornerRadius(16)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 14)
+                                RoundedRectangle(cornerRadius: 16)
                                     .stroke(Color.green.opacity(0.2), lineWidth: 1)
                             )
                         }
                         
-                        // 💰 Monthly Outflow Overview Card
-                        HStack {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("THIS MONTH'S OUTFLOW")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.secondary)
-                                
-                                Text(formatCurrency(store.thisMonthCommitmentTotal))
-                                    .font(.system(size: 28, weight: .heavy, design: .rounded))
-                                    .foregroundColor(.primary)
-                                
-                                Text("\(store.thisMonthRenewalsCount) upcoming renewals & commitments")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Spacer()
-                            
-                            ZStack {
-                                Circle()
-                                    .fill(Color.blue.opacity(0.12))
-                                    .frame(width: 52, height: 52)
-                                Image(systemName: "indianrupeesign.circle.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        .padding(18)
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .cornerRadius(18)
-                        
-                        // 🧰 Active Utilities (Car Mirror)
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Active Utilities")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
-                            
+                        // 🚀 Quick Launchpad Bar
+                        HStack(spacing: 10) {
                             NavigationLink(destination: CarMirrorView(captureManager: captureManager)) {
-                                HStack(spacing: 16) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .fill(LinearGradient(
-                                                colors: [Color.blue, Color.cyan],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ))
-                                            .frame(width: 50, height: 50)
-                                        
-                                        Image(systemName: "car.side.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.white)
-                                    }
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        HStack {
-                                            Text("Car Mirror")
-                                                .font(.system(size: 17, weight: .semibold))
-                                                .foregroundColor(.primary)
-                                            
-                                            if captureManager.stats.isCapturing {
-                                                Text("LIVE \(String(format: "%.0f", captureManager.stats.fps)) FPS")
-                                                    .font(.system(size: 10, weight: .black, design: .monospaced))
-                                                    .padding(.horizontal, 6)
-                                                    .padding(.vertical, 2)
-                                                    .background(Color.green)
-                                                    .foregroundColor(.white)
-                                                    .cornerRadius(4)
-                                            }
-                                        }
-                                        
-                                        Text("Screen mirroring for vehicle CarPlay display")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(Color.secondary.opacity(0.6))
-                                }
-                                .padding(14)
-                                .background(Color(UIColor.secondarySystemBackground))
-                                .cornerRadius(16)
+                                launchpadButton(
+                                    icon: "car.side.fill",
+                                    color: .orange,
+                                    label: "Car Mirror",
+                                    badge: captureManager.stats.isCapturing ? "LIVE" : nil
+                                )
                             }
+                            .buttonStyle(.plain)
+                            
+                            Button(action: {
+                                HapticManager.light()
+                                showingQuickNoteSheet = true
+                            }) {
+                                launchpadButton(
+                                    icon: "square.and.pencil",
+                                    color: .amberAccent,
+                                    label: "Quick Note",
+                                    badge: "\(store.quickNotes.count)"
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            
+                            NavigationLink(destination: DocumentVaultView(store: store)) {
+                                launchpadButton(
+                                    icon: "doc.text.fill",
+                                    color: .teal,
+                                    label: "Vault Scan",
+                                    badge: "\(store.documents.count)"
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            
+                            Button(action: {
+                                HapticManager.light()
+                                showingGoogleBackupSheet = true
+                            }) {
+                                launchpadButton(
+                                    icon: "arrow.triangle.2.circlepath",
+                                    color: .cyan,
+                                    label: "Cloud Sync",
+                                    badge: nil
+                                )
+                            }
+                            .buttonStyle(.plain)
                         }
                         
-                        // 🏛️ Life Pillars Grid
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Life Pillars")
-                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                        // 💳 Section 1: Financial Command Pillars
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Financial Command")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                Spacer()
+                                Text("Banking & Wealth")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.secondary)
+                            }
                             
                             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                                NavigationLink(destination: VehicleHubView(store: store)) {
-                                    PillarCard(
-                                        icon: "car.side.fill",
-                                        color: .orange,
-                                        title: "Vehicles",
-                                        subtitle: "Kia Sonet & Service",
-                                        badgeCount: store.items(for: .vehicle).filter { !$0.isCompleted }.count
-                                    )
-                                }
-                                
                                 NavigationLink(destination: MoneyHubView(store: store)) {
                                     PillarCard(
                                         icon: "creditcard.fill",
                                         color: .blue,
                                         title: "Money & Cards",
-                                        subtitle: "Cards & Payments",
+                                        subtitle: "\(store.creditCards.count) Cards • \(store.bankAccounts.count) A/Cs",
                                         badgeCount: store.creditCards.count + store.bankAccounts.count
+                                    )
+                                }
+                                
+                                NavigationLink(destination: LoansAndLicHubView(store: store)) {
+                                    PillarCard(
+                                        icon: "building.columns.fill",
+                                        color: .indigo,
+                                        title: "Loans & LIC",
+                                        subtitle: "\(store.loans.count) Loans • \(store.licPolicies.count) Policies",
+                                        badgeCount: store.loans.count + store.licPolicies.count
                                     )
                                 }
                                 
@@ -785,7 +889,7 @@ public struct ContentView: View {
                                         icon: "arrow.triangle.2.circlepath.circle.fill",
                                         color: .purple,
                                         title: "Subscriptions",
-                                        subtitle: "OTT, AI & Cloud",
+                                        subtitle: "\(store.items(for: .subscription).count) OTT, AI & Cloud",
                                         badgeCount: store.items(for: .subscription).filter { !$0.isCompleted }.count
                                     )
                                 }
@@ -795,18 +899,32 @@ public struct ContentView: View {
                                         icon: "iphone.gen3",
                                         color: .green,
                                         title: "Mobile & Bills",
-                                        subtitle: "SIM & Utility Plans",
+                                        subtitle: "\(store.items(for: .mobileBill).count) SIM & Utility Plans",
                                         badgeCount: store.items(for: .mobileBill).filter { !$0.isCompleted }.count
                                     )
                                 }
-                                
-                                NavigationLink(destination: LifeDatesHubView(store: store)) {
+                            }
+                        }
+                        
+                        // 🛡️ Section 2: Vault, Identity & Life
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("Vault & Personal Assets")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                Spacer()
+                                Text("Protection & Telemetry")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                                NavigationLink(destination: VehicleHubView(store: store)) {
                                     PillarCard(
-                                        icon: "gift.fill",
-                                        color: .pink,
-                                        title: "Birthdays & Life",
-                                        subtitle: "Family & Events",
-                                        badgeCount: store.items(for: .birthday).filter { !$0.isCompleted }.count
+                                        icon: "car.side.fill",
+                                        color: .orange,
+                                        title: "Vehicles",
+                                        subtitle: store.vehicleProfile.makeModel.isEmpty ? "Kia Sonet & Service" : "\(store.vehicleProfile.makeModel)",
+                                        badgeCount: store.items(for: .vehicle).filter { !$0.isCompleted }.count
                                     )
                                 }
                                 
@@ -815,18 +933,18 @@ public struct ContentView: View {
                                         icon: "doc.text.fill",
                                         color: .teal,
                                         title: "Document Vault",
-                                        subtitle: "RC, PUC & IDs",
+                                        subtitle: "\(store.documents.count) Docs • \(store.documents.filter { $0.hasAttachment }.count) Files",
                                         badgeCount: store.documents.count
                                     )
                                 }
                                 
-                                NavigationLink(destination: LoansAndLicHubView(store: store)) {
+                                NavigationLink(destination: LifeDatesHubView(store: store)) {
                                     PillarCard(
-                                        icon: "building.columns.fill",
-                                        color: .indigo,
-                                        title: "Loans & LIC",
-                                        subtitle: "EMIs & Insurance",
-                                        badgeCount: store.loans.count + store.licPolicies.count
+                                        icon: "gift.fill",
+                                        color: .pink,
+                                        title: "Birthdays & Life",
+                                        subtitle: "\(store.items(for: .birthday).count) Family Milestones",
+                                        badgeCount: store.items(for: .birthday).filter { !$0.isCompleted }.count
                                     )
                                 }
                                 
@@ -835,17 +953,17 @@ public struct ContentView: View {
                                         icon: "square.and.pencil",
                                         color: .amberAccent,
                                         title: "Quick Notes",
-                                        subtitle: "Sudden Thoughts & Memos",
+                                        subtitle: "\(store.quickNotes.count) Memos • \(store.quickNotes.filter { $0.isPinned }.count) Pinned",
                                         badgeCount: store.quickNotes.count
                                     )
                                 }
                                 
                                 NavigationLink(destination: GoogleBackupView(store: store)) {
                                     PillarCard(
-                                        icon: "arrow.triangle.2.circlepath.circle.fill",
+                                        icon: "cloud.fill",
                                         color: .cyan,
                                         title: "Google Backup",
-                                        subtitle: "Drive Export & Sync",
+                                        subtitle: "Drive Export & Restore",
                                         badgeCount: 0
                                     )
                                 }
@@ -901,6 +1019,63 @@ public struct ContentView: View {
                 EditDocumentSheet(store: store, document: doc)
             }
         }
+    }
+    
+    private func microMetricPill(icon: String, color: Color, label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                    .foregroundColor(color)
+                Text(label)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            Text(value)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(Color.white.opacity(0.08))
+        .cornerRadius(10)
+    }
+    
+    private func launchpadButton(icon: String, color: Color, label: String, badge: String?) -> some View {
+        VStack(spacing: 6) {
+            ZStack(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(color.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 19))
+                    .foregroundColor(color)
+                    .frame(width: 44, height: 44)
+                
+                if let badge = badge {
+                    Text(badge)
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(badge == "LIVE" ? Color.green : color)
+                        .cornerRadius(4)
+                        .offset(x: 4, y: -4)
+                }
+            }
+            
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(14)
     }
     
     private func formatCurrency(_ value: Double) -> String {
@@ -1001,35 +1176,52 @@ struct PillarCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            HStack(alignment: .center) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(color.opacity(0.15))
-                        .frame(width: 36, height: 36)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [color.opacity(0.22), color.opacity(0.08)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(color.opacity(0.2), lineWidth: 1)
+                        )
+                        .frame(width: 40, height: 40)
+                    
                     Image(systemName: icon)
-                        .font(.system(size: 18))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(color)
                 }
                 
                 Spacer()
                 
-                if badgeCount > 0 {
-                    Text("\(badgeCount)")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 2)
-                        .background(color.opacity(0.2))
-                        .foregroundColor(color)
-                        .clipShape(Capsule())
+                HStack(spacing: 4) {
+                    if badgeCount > 0 {
+                        Text("\(badgeCount)")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2.5)
+                            .background(color.opacity(0.18))
+                            .foregroundColor(color)
+                            .clipShape(Capsule())
+                    }
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color.secondary.opacity(0.5))
                 }
             }
             
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                 Text(subtitle)
-                    .font(.system(size: 11))
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }
@@ -1037,8 +1229,12 @@ struct PillarCard: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(UIColor.secondarySystemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
 }
 
