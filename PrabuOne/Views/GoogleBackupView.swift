@@ -90,6 +90,7 @@ public struct GoogleBackupView: View {
                                 snapshotTile(icon: "indianrupeesign.square.fill", color: .red, title: "Loans & EMIs", count: "\(store.loans.count)")
                                 snapshotTile(icon: "shield.lefthalf.filled", color: .emeraldAccent, title: "LIC Policies", count: "\(store.licPolicies.count)")
                                 snapshotTile(icon: "doc.text.fill", color: .teal, title: "Documents", count: "\(store.documents.count)")
+                                snapshotTile(icon: "paperclip", color: .cyan, title: "Attachments", count: "\(store.documents.filter { $0.hasAttachment }.count)")
                                 snapshotTile(icon: "square.and.pencil", color: .amberAccent, title: "Quick Notes", count: "\(store.quickNotes.count)")
                                 snapshotTile(icon: "bell.badge.fill", color: .purple, title: "Commitments", count: "\(store.items.count)")
                                 snapshotTile(icon: "car.side.fill", color: .orange, title: "Vehicle", count: store.vehicleProfile.registrationNumber.isEmpty ? "Configured" : store.vehicleProfile.registrationNumber)
@@ -259,7 +260,7 @@ public struct GoogleBackupView: View {
                 archive = try JSONDecoder().decode(PrabuOneBackupArchive.self, from: data)
             }
             
-            self.pendingArchiveSummary = "• \(archive.creditCards.count) Cards\n• \(archive.bankAccounts.count) Bank Accounts\n• \(archive.loans.count) Loans\n• \(archive.licPolicies.count) LIC Policies\n• \(archive.documents.count) Documents\n• \(archive.quickNotes.count) Quick Notes\n• \(archive.items.count) Commitments"
+            self.pendingArchiveSummary = "• \(archive.creditCards.count) Cards\n• \(archive.bankAccounts.count) Bank Accounts\n• \(archive.loans.count) Loans\n• \(archive.licPolicies.count) LIC Policies\n• \(archive.documents.count) Documents\n• \(archive.attachments.count) Attached Files (PDFs/Scans)\n• \(archive.quickNotes.count) Quick Notes\n• \(archive.items.count) Commitments"
             self.pendingRestoreURL = url
             self.showingRestoreConfirmation = true
         } catch {
@@ -270,7 +271,7 @@ public struct GoogleBackupView: View {
     private func finalizeRestore(from url: URL) {
         do {
             let counts = try store.restoreFromBackup(url: url)
-            showToast("Restored \(counts.cards) cards, \(counts.loans) loans, \(counts.policies) policies, \(counts.docs) docs!")
+            showToast("Restored \(counts.cards) cards, \(counts.loans) loans, \(counts.policies) policies, \(counts.docs) docs & \(counts.attachments) files!")
             HapticManager.success()
         } catch {
             errorMessage = "Restore failed: \(error.localizedDescription)"

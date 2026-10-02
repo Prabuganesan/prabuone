@@ -695,6 +695,23 @@ public final class LifeStore: ObservableObject {
     // MARK: - Google Backup & Full Archive Export/Restore
     
     public func exportBackupArchive() throws -> URL {
+        // Collect and embed all vault attachment files into the backup archive
+        var backupAttachments: [BackupAttachmentPayload] = []
+        for doc in self.documents {
+            if let fileName = doc.attachmentFileName,
+               let fileURL = doc.attachmentURL,
+               FileManager.default.fileExists(atPath: fileURL.path),
+               let data = try? Data(contentsOf: fileURL) {
+                let payload = BackupAttachmentPayload(
+                    fileName: fileName,
+                    fileType: doc.attachmentFileType ?? "file",
+                    originalName: doc.attachmentOriginalName,
+                    base64Data: data.base64EncodedString()
+                )
+                backupAttachments.append(payload)
+            }
+        }
+        
         let archive = PrabuOneBackupArchive(
             items: self.items,
             creditCards: self.creditCards,
@@ -703,7 +720,8 @@ public final class LifeStore: ObservableObject {
             licPolicies: self.licPolicies,
             vehicleProfile: self.vehicleProfile,
             documents: self.documents,
-            quickNotes: self.quickNotes
+            quickNotes: self.quickNotes,
+            attachments: backupAttachments
         )
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -722,7 +740,7 @@ public final class LifeStore: ObservableObject {
         return tempURL
     }
     
-    public func restoreFromBackup(url: URL) throws -> (items: Int, cards: Int, banks: Int, loans: Int, policies: Int, docs: Int, notes: Int) {
+    public func restoreFromBackup(url: URL) throws -> (items: Int, cards: Int, banks: Int, loans: Int, policies: Int, docs: Int, notes: Int, attachments: Int) {
         let shouldStopAccessing = url.startAccessingSecurityScopedResource()
         defer {
             if shouldStopAccessing {
@@ -750,6 +768,17 @@ public final class LifeStore: ObservableObject {
         self.documents = archive.documents
         self.quickNotes = archive.quickNotes
         
+        // Restore all document attachments to vault_attachments directory
+        let dir = self.vaultAttachmentsDirectoryURL
+        var restoredAttachmentCount = 0
+        for attachment in archive.attachments {
+            if let attachmentData = Data(base64Encoded: attachment.base64Data) {
+                let targetURL = dir.appendingPathComponent(attachment.fileName)
+                try? attachmentData.write(to: targetURL, options: .atomic)
+                restoredAttachmentCount += 1
+            }
+        }
+        
         saveToDisk()
         saveCardsToDisk()
         saveBankAccountsToDisk()
@@ -775,7 +804,8 @@ public final class LifeStore: ObservableObject {
             archive.loans.count,
             archive.licPolicies.count,
             archive.documents.count,
-            archive.quickNotes.count
+            archive.quickNotes.count,
+            restoredAttachmentCount
         )
     }
     
@@ -798,6 +828,25 @@ public final class LifeStore: ObservableObject {
         saveVehicleToDisk()
         saveDocumentsToDisk()
         saveNotesToDisk()
+        
+        // Remove attachments directory
+        let dir = vaultAttachmentsDirectoryURL
+        try? FileManager.default.removeItem(at: dir)
+    }
+}
+
+/// Raw file attachment payload encoded into portable base64 for cloud backup.
+public struct BackupAttachmentPayload: Codable {
+    public var fileName: String
+    public var fileType: String
+    public var originalName: String?
+    public var base64Data: String
+    
+    public init(fileName: String, fileType: String, originalName: String? = nil, base64Data: String) {
+        self.fileName = fileName
+        self.fileType = fileType
+        self.originalName = originalName
+        self.base64Data = base64Data
     }
 }
 
@@ -813,6 +862,7 @@ public struct PrabuOneBackupArchive: Codable {
     public var vehicleProfile: VehicleProfile
     public var documents: [DocumentRecord]
     public var quickNotes: [QuickNote]
+    public var attachments: [BackupAttachmentPayload]
     
     public init(
         version: Int = 1,
@@ -824,7 +874,8 @@ public struct PrabuOneBackupArchive: Codable {
         licPolicies: [InsurancePolicyRecord],
         vehicleProfile: VehicleProfile,
         documents: [DocumentRecord],
-        quickNotes: [QuickNote]
+        quickNotes: [QuickNote],
+        attachments: [BackupAttachmentPayload] = []
     ) {
         self.version = version
         self.exportDate = exportDate
@@ -836,5 +887,25 @@ public struct PrabuOneBackupArchive: Codable {
         self.vehicleProfile = vehicleProfile
         self.documents = documents
         self.quickNotes = quickNotes
+        self.attachments = attachments
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case version, exportDate, items, creditCards, bankAccounts, loans, licPolicies, vehicleProfile, documents, quickNotes, attachments
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        exportDate = try container.decodeIfPresent(Date.self, forKey: .exportDate) ?? Date()
+        items = try container.decodeIfPresent([LifeItem].self, forKey: .items) ?? []
+        creditCards = try container.decodeIfPresent([CreditCardAccount].self, forKey: .creditCards) ?? []
+        bankAccounts = try container.decodeIfPresent([BankAccount].self, forKey: .bankAccounts) ?? []
+        loans = try container.decodeIfPresent([LoanAccount].self, forKey: .loans) ?? []
+        licPolicies = try container.decodeIfPresent([InsurancePolicyRecord].self, forKey: .licPolicies) ?? []
+        vehicleProfile = try container.decodeIfPresent(VehicleProfile.self, forKey: .vehicleProfile) ?? VehicleProfile()
+        documents = try container.decodeIfPresent([DocumentRecord].self, forKey: .documents) ?? []
+        quickNotes = try container.decodeIfPresent([QuickNote].self, forKey: .quickNotes) ?? []
+        attachments = try container.decodeIfPresent([BackupAttachmentPayload].self, forKey: .attachments) ?? []
     }
 }

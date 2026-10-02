@@ -251,77 +251,85 @@ public struct ContentView: View {
                                             .foregroundColor(.blue)
                                         
                                         ForEach(cardSearchResults) { card in
-                                            HStack(spacing: 12) {
-                                                Image(systemName: card.isDebit ? "creditcard" : "creditcard.fill")
-                                                    .foregroundColor(.blue)
-                                                    .frame(width: 22)
-                                                
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    HStack {
-                                                        Text("\(card.bankName) \(card.cardName)")
-                                                            .font(.system(size: 14, weight: .semibold))
-                                                        Text(card.cardCategory.uppercased())
-                                                            .font(.system(size: 9, weight: .bold))
-                                                            .padding(.horizontal, 6)
-                                                            .padding(.vertical, 2)
-                                                            .background(Color.blue.opacity(0.15))
-                                                            .foregroundColor(.blue)
-                                                            .cornerRadius(4)
+                                            NavigationLink(destination: MoneyHubView(store: store)) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: card.isDebit ? "creditcard" : "creditcard.fill")
+                                                        .foregroundColor(.blue)
+                                                        .frame(width: 22)
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        HStack {
+                                                            Text("\(card.bankName) \(card.cardName)")
+                                                                .font(.system(size: 14, weight: .semibold))
+                                                                .foregroundColor(.primary)
+                                                            Text(card.cardCategory.uppercased())
+                                                                .font(.system(size: 9, weight: .bold))
+                                                                .padding(.horizontal, 6)
+                                                                .padding(.vertical, 2)
+                                                                .background(Color.blue.opacity(0.15))
+                                                                .foregroundColor(.blue)
+                                                                .cornerRadius(4)
+                                                        }
+                                                        
+                                                        Text(card.formattedCardNumber)
+                                                            .font(.system(size: 12, design: .monospaced))
+                                                            .foregroundColor(.secondary)
                                                     }
                                                     
-                                                    Text(card.formattedCardNumber)
-                                                        .font(.system(size: 12, design: .monospaced))
-                                                        .foregroundColor(.secondary)
+                                                    Spacer()
+                                                    
+                                                    Button(action: {
+                                                        copyToClipboard(text: card.cardNumber, label: "\(card.cardName) Number")
+                                                    }) {
+                                                        Image(systemName: "doc.on.doc")
+                                                            .font(.system(size: 13, weight: .semibold))
+                                                            .foregroundColor(.blue)
+                                                            .padding(6)
+                                                            .background(Color.blue.opacity(0.1))
+                                                            .clipShape(Circle())
+                                                    }
                                                 }
-                                                
-                                                Spacer()
-                                                
-                                                Button(action: {
-                                                    copyToClipboard(text: card.cardNumber, label: "\(card.cardName) Number")
-                                                }) {
-                                                    Image(systemName: "doc.on.doc")
-                                                        .font(.system(size: 13, weight: .semibold))
-                                                        .foregroundColor(.blue)
-                                                        .padding(6)
-                                                        .background(Color.blue.opacity(0.1))
-                                                        .clipShape(Circle())
-                                                }
+                                                .padding(10)
+                                                .background(Color(UIColor.secondarySystemBackground))
+                                                .cornerRadius(10)
                                             }
-                                            .padding(10)
-                                            .background(Color(UIColor.secondarySystemBackground))
-                                            .cornerRadius(10)
+                                            .buttonStyle(.plain)
                                         }
                                         
                                         ForEach(bankSearchResults) { bank in
-                                            HStack(spacing: 12) {
-                                                Image(systemName: "building.columns.fill")
-                                                    .foregroundColor(.indigo)
-                                                    .frame(width: 22)
-                                                
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    Text("\(bank.bankName) • \(bank.accountHolderName)")
-                                                        .font(.system(size: 14, weight: .semibold))
-                                                    Text("A/C: \(bank.formattedAccountNumber) • IFSC: \(bank.ifscCode)")
-                                                        .font(.system(size: 12, design: .monospaced))
-                                                        .foregroundColor(.secondary)
-                                                }
-                                                
-                                                Spacer()
-                                                
-                                                Button(action: {
-                                                    copyToClipboard(text: bank.accountNumber, label: "\(bank.bankName) A/C Number")
-                                                }) {
-                                                    Image(systemName: "doc.on.doc")
-                                                        .font(.system(size: 13, weight: .semibold))
+                                            NavigationLink(destination: MoneyHubView(store: store)) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: "building.columns.fill")
                                                         .foregroundColor(.indigo)
-                                                        .padding(6)
-                                                        .background(Color.indigo.opacity(0.1))
-                                                        .clipShape(Circle())
+                                                        .frame(width: 22)
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text("\(bank.bankName) • \(bank.accountHolderName)")
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                            .foregroundColor(.primary)
+                                                        Text("A/C: \(bank.formattedAccountNumber) • IFSC: \(bank.ifscCode)")
+                                                            .font(.system(size: 12, design: .monospaced))
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                    
+                                                    Button(action: {
+                                                        copyToClipboard(text: bank.accountNumber, label: "\(bank.bankName) A/C Number")
+                                                    }) {
+                                                        Image(systemName: "doc.on.doc")
+                                                            .font(.system(size: 13, weight: .semibold))
+                                                            .foregroundColor(.indigo)
+                                                            .padding(6)
+                                                            .background(Color.indigo.opacity(0.1))
+                                                            .clipShape(Circle())
+                                                    }
                                                 }
+                                                .padding(10)
+                                                .background(Color(UIColor.secondarySystemBackground))
+                                                .cornerRadius(10)
                                             }
-                                            .padding(10)
-                                            .background(Color(UIColor.secondarySystemBackground))
-                                            .cornerRadius(10)
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                 }
@@ -768,7 +776,7 @@ public struct ContentView: View {
                                         color: .blue,
                                         title: "Money & Cards",
                                         subtitle: "Cards & Payments",
-                                        badgeCount: store.creditCards.count
+                                        badgeCount: store.creditCards.count + store.bankAccounts.count
                                     )
                                 }
                                 
