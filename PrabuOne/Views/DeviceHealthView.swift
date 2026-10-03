@@ -2,15 +2,22 @@ import SwiftUI
 import UIKit
 import AVFoundation
 
-/// Full Phone Details, Battery Health, Storage, RAM & Hardware Diagnostics Menu.
+/// Full Phone Details, Battery Health, Storage, RAM & Comprehensive Hardware Diagnostics Hub.
 public struct DeviceHealthView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var manager = DeviceHealthManager.shared
     
-    // Interactive Diagnostic Sheet states
+    // Interactive Diagnostic Modal states
     @State private var showingPixelTest = false
+    @State private var showingTouchDigitizerTest = false
     @State private var showingHapticTester = false
-    @State private var isFlashlightOn = false
+    @State private var showingGyroLevel = false
+    @State private var showingDecibelMeter = false
+    
+    // Flashlight state
+    @State private var torchBrightness: Float = 0.5
+    
+    // Toast Notification
     @State private var toastMessage: String? = nil
     
     public init() {}
@@ -25,22 +32,22 @@ public struct DeviceHealthView: View {
                     // MARK: - Hero Battery & Power Health Card
                     batteryHealthCard
                     
-                    // MARK: - Storage & RAM Memory Cards
+                    // MARK: - Comprehensive Hardware Diagnostic Suite
+                    hardwareDiagnosticsSuite
+                    
+                    // MARK: - Storage & Memory (RAM) Breakdown + Cache Cleaner
                     storageAndMemoryCard
                     
-                    // MARK: - Processor & System Specs
+                    // MARK: - Hardware & Processor Specs
                     processorAndSystemCard
                     
-                    // MARK: - Display & Retina Specs
+                    // MARK: - Super Retina Display Specs
                     displaySpecsCard
                     
-                    // MARK: - Network & Connectivity
+                    // MARK: - Network, Latency & Connectivity
                     networkSpecsCard
                     
-                    // MARK: - Interactive Hardware Diagnostics Tools
-                    hardwareDiagnosticsCard
-                    
-                    // MARK: - Battery Preservation & Longevity Tips
+                    // MARK: - Battery Longevity & Care Guidelines
                     batteryLongevityTipsCard
                 }
                 .padding(.horizontal, 16)
@@ -48,7 +55,7 @@ public struct DeviceHealthView: View {
                 .padding(.bottom, 36)
             }
             .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("Phone Details & Battery")
+            .navigationTitle("Phone Info & Diagnostics")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -94,8 +101,17 @@ public struct DeviceHealthView: View {
             .fullScreenCover(isPresented: $showingPixelTest) {
                 PixelUniformityTestView()
             }
+            .fullScreenCover(isPresented: $showingTouchDigitizerTest) {
+                TouchDigitizerTestView()
+            }
             .sheet(isPresented: $showingHapticTester) {
                 HapticDiagnosticsSheet(manager: manager)
+            }
+            .sheet(isPresented: $showingGyroLevel) {
+                GyroLevelModalView(manager: manager)
+            }
+            .sheet(isPresented: $showingDecibelMeter) {
+                DecibelMeterModalView(manager: manager)
             }
             .onAppear {
                 manager.refreshAll()
@@ -172,7 +188,6 @@ public struct DeviceHealthView: View {
     
     private var batteryHealthCard: some View {
         VStack(spacing: 16) {
-            // Header
             HStack {
                 HStack(spacing: 8) {
                     Image(systemName: "battery.100.bolt")
@@ -198,9 +213,8 @@ public struct DeviceHealthView: View {
                 .clipShape(Capsule())
             }
             
-            // Big Battery Progress & Status
+            // Big Circular Progress Ring & Status
             HStack(spacing: 20) {
-                // Circular Ring Gauge
                 ZStack {
                     Circle()
                         .stroke(Color.secondary.opacity(0.15), lineWidth: 10)
@@ -236,13 +250,10 @@ public struct DeviceHealthView: View {
                     }
                 }
                 
-                // Key Power Stats
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 6) {
-                        Text(manager.batteryStateDescription)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.primary)
-                    }
+                    Text(manager.batteryStateDescription)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.primary)
                     
                     if manager.isLowPowerMode {
                         HStack(spacing: 5) {
@@ -254,7 +265,7 @@ public struct DeviceHealthView: View {
                         }
                     }
                     
-                    Text("Thermal health is optimal. Battery operates within normal temperature ranges.")
+                    Text("Thermal health is nominal. Power management is operating at peak performance capacity.")
                         .font(.system(size: 12))
                         .foregroundColor(.secondary)
                         .lineLimit(2)
@@ -287,7 +298,7 @@ public struct DeviceHealthView: View {
                 HStack {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 13))
-                    Text("Open Battery Health & Cycles in iOS Settings")
+                    Text("View Battery Health & Cycles in iOS Settings")
                         .font(.system(size: 13, weight: .semibold))
                     Spacer()
                     Image(systemName: "arrow.up.right")
@@ -341,6 +352,246 @@ public struct DeviceHealthView: View {
         .cornerRadius(10)
     }
     
+    // MARK: - Comprehensive Hardware Diagnostic Suite
+    
+    private var hardwareDiagnosticsSuite: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: "wrench.and.screwdriver.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.emeraldAccent)
+                Text("Hardware Diagnostic Suite")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+            }
+            
+            Text("Interactive diagnostic utilities to test sensors, display, speakers, microphone, and motors.")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+            
+            VStack(spacing: 10) {
+                // 1. Touch Digitizer Dead Zone Matrix Test
+                diagnosticActionRow(
+                    icon: "hand.draw.fill",
+                    color: .teal,
+                    title: "Screen Multi-Touch Matrix Test",
+                    subtitle: "Wipe screen to detect touchscreen dead spots",
+                    action: { showingTouchDigitizerTest = true }
+                )
+                
+                // 2. Dead Pixel & Tint Inspection
+                diagnosticActionRow(
+                    icon: "checkerboard.rectangle",
+                    color: .blue,
+                    title: "Dead Pixel & Tint Inspection",
+                    subtitle: "Cycles full-screen RGBW to check pixel health",
+                    action: { showingPixelTest = true }
+                )
+                
+                // 3. Dual Stereo Speaker Frequency Test
+                VStack(spacing: 6) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.orange.opacity(0.12))
+                                .frame(width: 38, height: 38)
+                            Image(systemName: "speaker.wave.3.fill")
+                                .foregroundColor(.orange)
+                                .font(.system(size: 17))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Stereo Speaker Balance Test")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                            Text(manager.activeToneDescription ?? "Check earpiece vs bottom speaker volume")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Button("Test Left (Ear)") {
+                            HapticManager.selection()
+                            manager.playSpeakerTone(channel: .leftEarpiece)
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.vertical, 7)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.orange.opacity(0.14))
+                        .foregroundColor(.orange)
+                        .cornerRadius(8)
+                        
+                        Button("Test Right (Bottom)") {
+                            HapticManager.selection()
+                            manager.playSpeakerTone(channel: .rightBottom)
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.vertical, 7)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.orange.opacity(0.14))
+                        .foregroundColor(.orange)
+                        .cornerRadius(8)
+                        
+                        Button("Stereo") {
+                            HapticManager.selection()
+                            manager.playSpeakerTone(channel: .stereo)
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.vertical, 7)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.orange.opacity(0.14))
+                        .foregroundColor(.orange)
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(10)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .cornerRadius(12)
+                
+                // 4. Water Ejection & Dust Cleaner Tone
+                diagnosticActionRow(
+                    icon: "drop.triangle.fill",
+                    color: .cyan,
+                    title: "Water Eject & Dust Cleaner",
+                    subtitle: "165Hz acoustic pulsation to shake trapped moisture",
+                    action: {
+                        HapticManager.success()
+                        manager.startWaterEjectSound()
+                    }
+                )
+                
+                // 5. Microphone Live Decibel (dB) Sound Level Meter
+                diagnosticActionRow(
+                    icon: "mic.fill",
+                    color: .red,
+                    title: "Microphone Live Decibel Meter",
+                    subtitle: "Measure ambient audio levels & test microphone",
+                    action: { showingDecibelMeter = true }
+                )
+                
+                // 6. 3-Axis Gyroscope & Spirit Bubble Level
+                diagnosticActionRow(
+                    icon: "circle.grid.cross.fill",
+                    color: .green,
+                    title: "Gyroscope & Spirit Bubble Level",
+                    subtitle: "Live pitch, roll, yaw & surface tilt angles",
+                    action: { showingGyroLevel = true }
+                )
+                
+                // 7. Taptic Engine Vibration Test
+                diagnosticActionRow(
+                    icon: "hand.tap.fill",
+                    color: .purple,
+                    title: "Taptic Engine Vibration Test",
+                    subtitle: "Test selection, impact, rigid, and warning pulses",
+                    action: { showingHapticTester = true }
+                )
+                
+                // 8. Flashlight Multi-Level & SOS Morse Strobe
+                VStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.yellow.opacity(0.15))
+                                .frame(width: 38, height: 38)
+                            Image(systemName: "flashlight.on.fill")
+                                .foregroundColor(.yellow)
+                                .font(.system(size: 17))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Flashlight Multi-Intensity & SOS")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.primary)
+                            Text("Variable brightness levels and emergency strobe")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                    }
+                    
+                    HStack(spacing: 8) {
+                        Button(manager.torchLevel > 0 ? "Turn Off" : "Torch 25%") {
+                            HapticManager.selection()
+                            manager.setTorchLevel(manager.torchLevel > 0 ? 0.0 : 0.25)
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.vertical, 7)
+                        .frame(maxWidth: .infinity)
+                        .background(manager.torchLevel > 0 ? Color.yellow.opacity(0.25) : Color.yellow.opacity(0.12))
+                        .foregroundColor(.primary)
+                        .cornerRadius(8)
+                        
+                        Button("Torch 100%") {
+                            HapticManager.selection()
+                            manager.setTorchLevel(1.0)
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.vertical, 7)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.yellow.opacity(0.12))
+                        .foregroundColor(.primary)
+                        .cornerRadius(8)
+                        
+                        Button(manager.isSOSActive ? "Stop SOS" : "SOS Strobe") {
+                            HapticManager.selection()
+                            manager.toggleSOSStrobe()
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .padding(.vertical, 7)
+                        .frame(maxWidth: .infinity)
+                        .background(manager.isSOSActive ? Color.red.opacity(0.25) : Color.red.opacity(0.12))
+                        .foregroundColor(manager.isSOSActive ? .red : .primary)
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(10)
+                .background(Color(UIColor.tertiarySystemGroupedBackground))
+                .cornerRadius(12)
+            }
+        }
+        .padding(18)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+    }
+    
+    private func diagnosticActionRow(icon: String, color: Color, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: {
+            HapticManager.selection()
+            action()
+        }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(color.opacity(0.12))
+                        .frame(width: 38, height: 38)
+                    Image(systemName: icon)
+                        .foregroundColor(color)
+                        .font(.system(size: 18))
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                    Text(subtitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            .padding(10)
+            .background(Color(UIColor.tertiarySystemGroupedBackground))
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+    }
+    
     // MARK: - Storage & RAM Memory Card
     
     private var storageAndMemoryCard: some View {
@@ -350,7 +601,7 @@ public struct DeviceHealthView: View {
                     Image(systemName: "internaldrive.fill")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.purple)
-                    Text("Storage & Memory (RAM)")
+                    Text("Storage & Physical RAM")
                         .font(.system(size: 16, weight: .bold, design: .rounded))
                 }
                 Spacer()
@@ -396,6 +647,33 @@ public struct DeviceHealthView: View {
                         .foregroundColor(.secondary)
                 }
             }
+            
+            // App Cache Cleaner Action
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("App Temporary Cache")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("\(manager.formatBytes(manager.appCacheSizeBytes)) temporary files")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Button("Clean Cache") {
+                    HapticManager.selection()
+                    manager.cleanAppTempCache { freed in
+                        showToast("Cleaned \(manager.formatBytes(freed)) cache")
+                    }
+                }
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.purple)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.purple.opacity(0.12))
+                .cornerRadius(8)
+            }
+            .padding(10)
+            .background(Color(UIColor.tertiarySystemGroupedBackground))
+            .cornerRadius(12)
             
             Divider()
             
@@ -496,16 +774,40 @@ public struct DeviceHealthView: View {
         .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
     
-    // MARK: - Network & Connectivity
+    // MARK: - Network & Connectivity + Ping Tester
     
     private var networkSpecsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Image(systemName: "antenna.radiowaves.left.and.right")
-                    .font(.system(size: 18, weight: .bold))
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.blue)
+                    Text("Wireless & DNS Latency")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                }
+                Spacer()
+                
+                Button(action: {
+                    HapticManager.selection()
+                    manager.runPingLatencyTest()
+                }) {
+                    HStack(spacing: 4) {
+                        if manager.isTestingPing {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                        } else {
+                            Image(systemName: "bolt.horizontal.fill")
+                        }
+                        Text(manager.pingLatencyMs != nil ? "\(manager.pingLatencyMs!) ms" : "Test Ping")
+                    }
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.blue)
-                Text("Wireless & Network")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.blue.opacity(0.12))
+                    .clipShape(Capsule())
+                }
             }
             
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -543,98 +845,6 @@ public struct DeviceHealthView: View {
         .padding(10)
         .background(Color(UIColor.tertiarySystemGroupedBackground))
         .cornerRadius(12)
-    }
-    
-    // MARK: - Interactive Hardware Diagnostics Tools
-    
-    private var hardwareDiagnosticsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Image(systemName: "wrench.and.screwdriver.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.emeraldAccent)
-                Text("Hardware Diagnostics")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-            }
-            
-            Text("Interactive tests to verify your phone's display pixels, haptic motor, and flashlight.")
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-            
-            VStack(spacing: 10) {
-                // Pixel Test
-                Button(action: {
-                    HapticManager.selection()
-                    showingPixelTest = true
-                }) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.blue.opacity(0.12))
-                                .frame(width: 38, height: 38)
-                            Image(systemName: "checkerboard.rectangle")
-                                .foregroundColor(.blue)
-                                .font(.system(size: 18))
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Screen Pixel & Tint Inspection")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.primary)
-                            Text("Cycles RGBW fullscreen to detect dead pixels")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(10)
-                    .background(Color(UIColor.tertiarySystemGroupedBackground))
-                    .cornerRadius(12)
-                }
-                .buttonStyle(.plain)
-                
-                // Haptic Motor Test
-                Button(action: {
-                    HapticManager.selection()
-                    showingHapticTester = true
-                }) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.purple.opacity(0.12))
-                                .frame(width: 38, height: 38)
-                            Image(systemName: "hand.tap.fill")
-                                .foregroundColor(.purple)
-                                .font(.system(size: 18))
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Taptic Engine Vibration Test")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.primary)
-                            Text("Test subtle, rigid, and warning feedback waveforms")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(10)
-                    .background(Color(UIColor.tertiarySystemGroupedBackground))
-                    .cornerRadius(12)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(18)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .cornerRadius(20)
-        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
     
     // MARK: - Battery Longevity Tips
@@ -696,6 +906,103 @@ public struct DeviceHealthView: View {
     }
 }
 
+// MARK: - Multi-Touch Screen Digitizer Matrix Test View
+
+struct TouchDigitizerTestView: View {
+    @Environment(\.dismiss) private var dismiss
+    
+    private let columns = 7
+    private let rows = 12
+    @State private var touchedBlocks: Set<Int> = []
+    
+    private var totalBlocks: Int { columns * rows }
+    private var progressPercent: Int {
+        Int((Double(touchedBlocks.count) / Double(totalBlocks)) * 100)
+    }
+    
+    var body: some View {
+        GeometryReader { geo in
+            let blockWidth = geo.size.width / CGFloat(columns)
+            let blockHeight = geo.size.height / CGFloat(rows)
+            
+            ZStack {
+                Color.black.ignoresSafeArea()
+                
+                // Grid of blocks
+                VStack(spacing: 2) {
+                    ForEach(0..<rows, id: \.self) { r in
+                        HStack(spacing: 2) {
+                            ForEach(0..<columns, id: \.self) { c in
+                                let index = r * columns + c
+                                let isTouched = touchedBlocks.contains(index)
+                                
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(isTouched ? Color.green : Color.white.opacity(0.12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(isTouched ? Color.green.opacity(0.8) : Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                            }
+                        }
+                    }
+                }
+                .padding(4)
+                
+                // Top Instructions Overlay
+                VStack {
+                    HStack {
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(.white)
+                        }
+                        
+                        Spacer()
+                        
+                        Text("Touch Coverage: \(progressPercent)%")
+                            .font(.system(size: 14, weight: .heavy, design: .rounded))
+                            .foregroundColor(progressPercent == 100 ? .green : .white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(Color.black.opacity(0.65))
+                            .clipShape(Capsule())
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    
+                    Spacer()
+                    
+                    Text("Swipe across all tiles to verify digitizer responsiveness")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.8))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.75))
+                        .clipShape(Capsule())
+                        .padding(.bottom, 24)
+                }
+            }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let location = value.location
+                        let c = Int(location.x / blockWidth)
+                        let r = Int(location.y / blockHeight)
+                        if c >= 0 && c < columns && r >= 0 && r < rows {
+                            let idx = r * columns + c
+                            if !touchedBlocks.contains(idx) {
+                                touchedBlocks.insert(idx)
+                                HapticManager.light()
+                            }
+                        }
+                    }
+            )
+        }
+    }
+}
+
 // MARK: - Interactive Pixel & Color Uniformity Screen
 
 struct PixelUniformityTestView: View {
@@ -753,6 +1060,190 @@ struct PixelUniformityTestView: View {
         .onTapGesture {
             HapticManager.light()
             colorIndex = (colorIndex + 1) % testColors.count
+        }
+    }
+}
+
+// MARK: - Gyroscope & Spirit Bubble Level Modal
+
+struct GyroLevelModalView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var manager: DeviceHealthManager
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                // Interactive Bubble Level Target
+                ZStack {
+                    Circle()
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 2)
+                        .frame(width: 240, height: 240)
+                    
+                    Circle()
+                        .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
+                        .frame(width: 140, height: 140)
+                    
+                    Circle()
+                        .stroke(Color.green.opacity(0.4), lineWidth: 2)
+                        .frame(width: 50, height: 50)
+                    
+                    // Crosshair lines
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.2))
+                        .frame(width: 240, height: 1)
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.2))
+                        .frame(width: 1, height: 240)
+                    
+                    // Floating Bubble
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.green, Color.cyan],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 42, height: 42)
+                        .shadow(color: Color.green.opacity(0.5), radius: 8)
+                        .offset(
+                            x: CGFloat(min(100, max(-100, manager.rollDegrees * 2.5))),
+                            y: CGFloat(min(100, max(-100, manager.pitchDegrees * 2.5)))
+                        )
+                }
+                .padding(.top, 20)
+                
+                // Live Readings
+                HStack(spacing: 16) {
+                    readingTile(label: "Pitch", value: String(format: "%.1f°", manager.pitchDegrees))
+                    readingTile(label: "Roll", value: String(format: "%.1f°", manager.rollDegrees))
+                    readingTile(label: "Pressure", value: String(format: "%.1f hPa", manager.pressureHPa))
+                }
+                .padding(.horizontal, 20)
+                
+                Text("Tilt your phone to test the 3-axis motion gyroscope and barometer.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+                
+                Spacer()
+            }
+            .navigationTitle("Gyroscope & Spirit Level")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        manager.stopMotionUpdates()
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                manager.startMotionUpdates()
+            }
+            .onDisappear {
+                manager.stopMotionUpdates()
+            }
+        }
+    }
+    
+    private func readingTile(label: String, value: String) -> some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+            Text(value)
+                .font(.system(size: 17, weight: .heavy, design: .rounded))
+                .foregroundColor(.primary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Decibel Meter Modal View
+
+struct DecibelMeterModalView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var manager: DeviceHealthManager
+    
+    private var normalizedLevel: Double {
+        // -60 dB to 0 dB mapped to 0.0 ... 1.0
+        let clamped = max(-60.0, min(0.0, manager.currentDecibels))
+        return Double((clamped + 60.0) / 60.0)
+    }
+    
+    private var decibelRating: String {
+        let db = manager.currentDecibels + 90 // approximate SPL
+        if db < 40 { return "Whisper Quiet" }
+        else if db < 60 { return "Normal Conversation" }
+        else if db < 75 { return "Busy Ambient" }
+        else { return "Loud Environment" }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                ZStack {
+                    Circle()
+                        .stroke(Color.secondary.opacity(0.15), lineWidth: 14)
+                        .frame(width: 200, height: 200)
+                    
+                    Circle()
+                        .trim(from: 0.0, to: CGFloat(normalizedLevel))
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.green, Color.yellow, Color.red],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            style: StrokeStyle(lineWidth: 14, lineCap: .round)
+                        )
+                        .frame(width: 200, height: 200)
+                        .rotationEffect(.degrees(-90))
+                    
+                    VStack(spacing: 4) {
+                        Image(systemName: "mic.fill")
+                            .font(.system(size: 26))
+                            .foregroundColor(.red)
+                        Text(String(format: "%.1f dB", manager.currentDecibels))
+                            .font(.system(size: 28, weight: .heavy, design: .rounded))
+                            .foregroundColor(.primary)
+                        Text(decibelRating)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding(.top, 30)
+                
+                Text("Speak into the microphone to inspect audio input sensitivity and diaphragm responsiveness.")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+                
+                Spacer()
+            }
+            .navigationTitle("Microphone Sound Meter")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        manager.stopDecibelMeter()
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                manager.startDecibelMeter()
+            }
+            .onDisappear {
+                manager.stopDecibelMeter()
+            }
         }
     }
 }

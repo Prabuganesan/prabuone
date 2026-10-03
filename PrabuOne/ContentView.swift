@@ -168,13 +168,21 @@ public struct ContentView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     // Modern Command Header
-                    HStack(spacing: 12) {
-                        Image("Logo")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 44, height: 44)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .shadow(color: Color.black.opacity(0.12), radius: 5, x: 0, y: 2)
+                    HStack(alignment: .center, spacing: 14) {
+                        ZStack(alignment: .bottomTrailing) {
+                            Image("Logo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 44, height: 44)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .shadow(color: Color.black.opacity(0.12), radius: 5, x: 0, y: 2)
+                            
+                            Circle()
+                                .fill(Color.emeraldAccent)
+                                .frame(width: 10, height: 10)
+                                .overlay(Circle().stroke(Color(UIColor.systemBackground), lineWidth: 2))
+                                .offset(x: 2, y: 2)
+                        }
                         
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(timeGreeting), Prabu")
@@ -198,58 +206,98 @@ public struct ContentView: View {
                         
                         Spacer()
                         
-                        HStack(spacing: 8) {
-                            // ⚡ QR & Barcode Scanner Button
+                        HStack(spacing: 10) {
+                            // 🔋 Phone Info & Battery Status Chip (1-Tap opens Device Health)
                             Button(action: {
                                 HapticManager.light()
-                                showingQRScanner = true
+                                showingDeviceHealth = true
                             }) {
-                                Image(systemName: "qrcode.viewfinder")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.cyan)
-                                    .frame(width: 36, height: 36)
-                                    .background(Color.cyan.opacity(0.15))
-                                    .clipShape(Circle())
+                                HStack(spacing: 5) {
+                                    Image(systemName: deviceManager.batteryState == .charging ? "bolt.batteryblock.fill" : (deviceManager.isLowPowerMode ? "battery.50percent" : "battery.100.bolt"))
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(deviceManager.batteryPercentage <= 20 ? .red : (deviceManager.isLowPowerMode ? .yellow : .green))
+                                    
+                                    Text("\(deviceManager.batteryPercentage)%")
+                                        .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.primary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 7)
+                                .background(Color(UIColor.secondarySystemBackground))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule()
+                                        .stroke(Color.secondary.opacity(0.14), lineWidth: 1)
+                                )
                             }
+                            .buttonStyle(.plain)
                             
-                            // ⚡ Sudden Quick Note Button
-                            Button(action: {
-                                HapticManager.light()
-                                showingQuickNoteSheet = true
-                            }) {
-                                Image(systemName: "square.and.pencil")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.amberAccent)
-                                    .frame(width: 36, height: 36)
-                                    .background(Color.amberAccent.opacity(0.15))
-                                    .clipShape(Circle())
-                            }
-                            
-                            // ☁️ Google Drive Backup Button
-                            Button(action: {
-                                HapticManager.light()
-                                showingGoogleBackupSheet = true
-                            }) {
-                                Image(systemName: "arrow.triangle.2.circlepath")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.cyan)
-                                    .frame(width: 36, height: 36)
-                                    .background(Color.cyan.opacity(0.15))
-                                    .clipShape(Circle())
-                            }
-                            
-                            // + Quick Add Life Commitment
-                            Button(action: {
-                                HapticManager.light()
-                                showingAddSheet = true
-                            }) {
-                                Image(systemName: "plus")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 36, height: 36)
-                                    .background(LinearGradient(colors: [Color.blue, Color(red: 0.1, green: 0.45, blue: 0.9)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .clipShape(Circle())
-                                    .shadow(color: Color.blue.opacity(0.35), radius: 4, x: 0, y: 2)
+                            // ⚡ Universal Quick Actions Menu (+ Button)
+                            Menu {
+                                Section("Quick Add") {
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingAddSheet = true
+                                    }) {
+                                        Label("Add Commitment / Bill", systemImage: "plus.circle.fill")
+                                    }
+                                    
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingQuickNoteSheet = true
+                                    }) {
+                                        Label("Sudden Quick Note", systemImage: "square.and.pencil")
+                                    }
+                                }
+                                
+                                Section("Hardware & Scanners") {
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingQRScanner = true
+                                    }) {
+                                        Label("QR & UPI Scanner", systemImage: "qrcode.viewfinder")
+                                    }
+                                    
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingDocumentScanner = true
+                                    }) {
+                                        Label("Scan Document (PDF)", systemImage: "doc.viewfinder.fill")
+                                    }
+                                    
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingDeviceHealth = true
+                                    }) {
+                                        Label("Phone Info & Diagnostics", systemImage: "iphone.gen3")
+                                    }
+                                }
+                                
+                                Section("Sync & Backup") {
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingGoogleBackupSheet = true
+                                    }) {
+                                        Label("Google Drive Cloud Backup", systemImage: "arrow.triangle.2.circlepath")
+                                    }
+                                }
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.blue, Color(red: 0.1, green: 0.45, blue: 0.9)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .frame(width: 38, height: 38)
+                                        .shadow(color: Color.blue.opacity(0.35), radius: 5, x: 0, y: 2)
+                                    
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
                             }
                         }
                     }
