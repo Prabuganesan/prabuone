@@ -735,6 +735,40 @@ public struct ContentView: View {
                                     subvalue: "\(store.creditCards.count) Cards • \(store.bankAccounts.count) A/Cs"
                                 )
                             }
+                            
+                            Divider().background(Color.white.opacity(0.18))
+                            
+                            // 🗓️ Direct Action to This Month's Payments & Modes View
+                            NavigationLink(destination: MonthlyPaymentsView(store: store)) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "calendar.badge.clock")
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text("View This Month's Payments & Modes")
+                                        .font(.system(size: 12.5, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(store.thisMonthRenewalsCount) Scheduled")
+                                        .font(.system(size: 10.5, weight: .bold))
+                                        .padding(.horizontal, 7)
+                                        .padding(.vertical, 2.5)
+                                        .background(Color.white.opacity(0.2))
+                                        .foregroundColor(.white)
+                                        .clipShape(Capsule())
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 9)
+                                .background(Color.white.opacity(0.12))
+                                .cornerRadius(12)
+                            }
+                            .buttonStyle(.plain)
                         }
                         .padding(18)
                         .background(
@@ -876,6 +910,58 @@ public struct ContentView: View {
                                     .font(.system(size: 11, weight: .semibold))
                                     .foregroundColor(.secondary)
                             }
+                            
+                            // 🗓️ Featured This Month's Payments Banner
+                            NavigationLink(destination: MonthlyPaymentsView(store: store)) {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(
+                                                LinearGradient(
+                                                    colors: [Color.orange.opacity(0.25), Color.orange.opacity(0.10)],
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                            .frame(width: 42, height: 42)
+                                        Image(systemName: "calendar.badge.clock")
+                                            .font(.system(size: 19, weight: .bold))
+                                            .foregroundColor(.orange)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack(spacing: 6) {
+                                            Text("This Month's Payments")
+                                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                                .foregroundColor(.primary)
+                                            Text("SCHEDULE")
+                                                .font(.system(size: 8.5, weight: .black))
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(Color.orange.opacity(0.18))
+                                                .foregroundColor(.orange)
+                                                .clipShape(Capsule())
+                                        }
+                                        Text("What to pay • Mode of payment • Live status")
+                                            .font(.system(size: 11.5, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(.secondary.opacity(0.6))
+                                }
+                                .padding(12)
+                                .background(Color(UIColor.secondarySystemBackground))
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
                             
                             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                                 NavigationLink(destination: MoneyHubView(store: store)) {
