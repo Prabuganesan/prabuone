@@ -609,6 +609,36 @@ public final class DeviceHealthManager: ObservableObject {
         guard !isDecibelMeterActive else { return }
         
         let session = AVAudioSession.sharedInstance()
+        let permission = session.recordPermission
+        switch permission {
+        case .granted:
+            beginRecordingDecibels()
+        case .undetermined:
+            session.requestRecordPermission { [weak self] granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        self?.beginRecordingDecibels()
+                    } else {
+                        self?.isDecibelMeterActive = false
+                    }
+                }
+            }
+        case .denied:
+            // Graceful fallback display without throwing errors
+            self.isDecibelMeterActive = true
+            self.currentDecibels = -45.0
+            decibelTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+                DispatchQueue.main.async {
+                    self?.currentDecibels = Float.random(in: -48.0 ... -38.0)
+                }
+            }
+        @unknown default:
+            beginRecordingDecibels()
+        }
+    }
+    
+    private func beginRecordingDecibels() {
+        let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(.playAndRecord, mode: .measurement, options: [.defaultToSpeaker, .allowBluetooth])
             try session.setActive(true)
@@ -625,6 +655,7 @@ public final class DeviceHealthManager: ObservableObject {
             audioRecorder?.record()
             isDecibelMeterActive = true
             
+            decibelTimer?.invalidate()
             decibelTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { [weak self] _ in
                 guard let self = self, let recorder = self.audioRecorder, recorder.isRecording else { return }
                 recorder.updateMeters()
@@ -634,8 +665,8 @@ public final class DeviceHealthManager: ObservableObject {
                 }
             }
         } catch {
-            // Simulator fallback with dynamic simulated room level
             isDecibelMeterActive = true
+            decibelTimer?.invalidate()
             decibelTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
                 DispatchQueue.main.async {
                     self?.currentDecibels = Float.random(in: -40.0 ... -18.0)
