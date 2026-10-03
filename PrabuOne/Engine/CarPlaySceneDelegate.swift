@@ -51,8 +51,8 @@ public class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelega
         )
         items.append(notesItem)
         
-        let section = CPListSection(items: items, header: "Prabu One • Vehicle Health", sectionIndexTitle: nil)
-        let listTemplate = CPListTemplate(title: "Prabu One", sections: [section])
+        let section = CPListSection(items: items, header: "My One • Vehicle Health", sectionIndexTitle: nil)
+        let listTemplate = CPListTemplate(title: "My One", sections: [section])
         
         interfaceController.setRootTemplate(listTemplate, animated: false, completion: nil)
     }

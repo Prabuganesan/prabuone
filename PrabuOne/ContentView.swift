@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Main Attention-Driven Dashboard for Prabu One — Personal Life OS.
+/// Main Attention-Driven Dashboard for My One — Personal Life OS.
 /// Surfacing what needs immediate attention, monthly commitments, and life pillars.
 public struct ContentView: View {
     @StateObject private var store = LifeStore.shared
@@ -1374,7 +1374,8 @@ public struct ContentView: View {
     }
     
     private func handleIncomingURL(_ url: URL) {
-        guard url.scheme?.lowercased() == "prabuone" else { return }
+        let scheme = url.scheme?.lowercased() ?? ""
+        guard scheme == "myone" || scheme == "prabuone" else { return }
         let host = url.host?.lowercased() ?? ""
         if host == "log-expense" || host == "expense" || host == "track" {
             if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),

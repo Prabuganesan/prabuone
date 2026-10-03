@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Universal Document Picker and Linker component.
-/// Connects documents from Document Vault to any entity in Prabu One (Vehicles, Loans, LIC, Cards, Subscriptions).
+/// Connects documents from Document Vault to any entity in My One (Vehicles, Loans, LIC, Cards, Subscriptions).
 public struct UniversalDocumentPickerRow: View {
     let title: String
     @Binding var documentId: UUID?

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Dedicated Executive Expense Tracker Hub for Prabu One.
+/// Dedicated Executive Expense Tracker Hub for My One.
 /// Tracks transactions via background iOS Shortcuts (SMS/push automations),
 /// Gmail bank alert sync, clipboard parsing, and manual entries.
 public struct ExpenseTrackerHubView: View {
@@ -987,7 +987,7 @@ public struct ShortcutsAutomationGuideModal: View {
     @Environment(\.dismiss) private var dismiss
     @State private var copiedURL: Bool = false
     
-    private let sampleURLScheme = "prabuone://log-expense?text=[ShortcutInput]"
+    private let sampleURLScheme = "myone://log-expense?text=[ShortcutInput]"
     
     public var body: some View {
         NavigationStack {
@@ -1008,7 +1008,7 @@ public struct ShortcutsAutomationGuideModal: View {
                             .font(.system(size: 18, weight: .bold, design: .rounded))
                             .multilineTextAlignment(.center)
                         
-                        Text("iOS personal automations allow your iPhone to capture bank SMS in real-time as they arrive and automatically record the expense into Prabu One.")
+                        Text("iOS personal automations allow your iPhone to capture bank SMS in real-time as they arrive and automatically record the expense into My One.")
                             .font(.system(size: 12.5))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -1045,7 +1045,7 @@ public struct ShortcutsAutomationGuideModal: View {
                         guideStepRow(
                             stepNumber: "4",
                             title: "Add App Action",
-                            detail: "Search for 'Prabu One' -> select 'Log Bank Expense from SMS', and pass 'Shortcut Input' into the text parameter."
+                            detail: "Search for 'My One' -> select 'Log Bank Expense from SMS', and pass 'Shortcut Input' into the text parameter."
                         )
                     }
                     .padding(16)

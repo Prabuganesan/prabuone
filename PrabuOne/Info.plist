@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Prabu One</string>
+	<string>My One</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -26,9 +26,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.prabuone.app</string>
+			<string>com.myone.app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>myone</string>
 				<string>prabuone</string>
 			</array>
 		</dict>
@@ -68,14 +69,14 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Prabu One uses your camera to scan QR codes, UPI payment codes, and capture multi-page documents for your digital vault.</string>
+	<string>My One uses your camera to scan QR codes, UPI payment codes, and capture multi-page documents for your digital vault.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Prabu One accesses your photo library to import documents, receipts, and QR codes for scanning and vault backup.</string>
+	<string>My One accesses your photo library to import documents, receipts, and QR codes for scanning and vault backup.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Prabu One uses your microphone for the live decibel sound meter to diagnose microphone input and inspect ambient noise levels.</string>
+	<string>My One uses your microphone for the live decibel sound meter to diagnose microphone input and inspect ambient noise levels.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>Prabu One uses motion sensors to test your phone's gyroscope, surface level angles, and barometer telemetry.</string>
+	<string>My One uses motion sensors to test your phone's gyroscope, surface level angles, and barometer telemetry.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Prabu One uses Face ID to diagnose and authenticate your biometric hardware security.</string>
+	<string>My One uses Face ID to diagnose and authenticate your biometric hardware security.</string>
 </dict>
 </plist>

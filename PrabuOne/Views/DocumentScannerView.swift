@@ -757,7 +757,7 @@ public struct DocumentScannerView: View {
                     .font: UIFont.systemFont(ofSize: 14, weight: .regular),
                     .foregroundColor: UIColor.gray
                 ]
-                "Document Section #\(i + 1) — Certified and Verified Record of Prabu One Personal Vault.".draw(at: CGPoint(x: 50, y: y - 22), withAttributes: rowAttrs)
+                "Document Section #\(i + 1) — Certified and Verified Record of My One Personal Vault.".draw(at: CGPoint(x: 50, y: y - 22), withAttributes: rowAttrs)
             }
             
             // Official Stamp
@@ -769,7 +769,7 @@ public struct DocumentScannerView: View {
                 .font: UIFont.systemFont(ofSize: 15, weight: .bold),
                 .foregroundColor: UIColor(red: 0.1, green: 0.5, blue: 0.3, alpha: 1.0)
             ]
-            "VERIFIED ORIGINAL\nPRABU ONE VAULT".draw(in: CGRect(x: 535, y: 940, width: 190, height: 50), withAttributes: stampAttrs)
+            "VERIFIED ORIGINAL\nMY ONE VAULT".draw(in: CGRect(x: 535, y: 940, width: 190, height: 50), withAttributes: stampAttrs)
         }
     }
 }

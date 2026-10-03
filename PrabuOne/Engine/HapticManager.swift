@@ -1,6 +1,6 @@
 import UIKit
 
-/// Haptic Feedback Manager providing tactile response across Prabu One.
+/// Haptic Feedback Manager providing tactile response across My One.
 public enum HapticManager {
     public static func selection() {
         let generator = UISelectionFeedbackGenerator()

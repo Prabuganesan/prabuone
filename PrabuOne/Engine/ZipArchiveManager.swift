@@ -1,7 +1,7 @@
 import Foundation
 import zlib
 
-/// Native lightweight ZIP archive creation and extraction engine for Prabu One backups.
+/// Native lightweight ZIP archive creation and extraction engine for My One backups.
 /// Packages full database JSON and physical scanned attachments/PDFs into a single .zip file.
 public enum ZipArchiveManager {
     

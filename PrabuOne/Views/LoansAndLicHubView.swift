@@ -1038,7 +1038,7 @@ struct AddLoanSheet: View {
                 } header: {
                     Text("Timeline & Auto-Calculation")
                 } footer: {
-                    Text("Prabu One calculates EMIs paid, remaining payments, and loan closure date automatically from the start date.")
+                    Text("My One calculates EMIs paid, remaining payments, and loan closure date automatically from the start date.")
                 }
                 
                 Section("Financial Details (₹)") {
@@ -1352,7 +1352,7 @@ struct EditLoanSheet: View {
                 } header: {
                     Text("Timeline & Auto-Calculation")
                 } footer: {
-                    Text("Prabu One calculates EMIs paid, remaining payments, and loan closure date automatically from the start date.")
+                    Text("My One calculates EMIs paid, remaining payments, and loan closure date automatically from the start date.")
                 }
                 
                 Section("Financial Details (₹)") {

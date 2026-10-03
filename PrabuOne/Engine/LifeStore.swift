@@ -980,7 +980,7 @@ public final class LifeStore: ObservableObject {
         
         let fileManager = FileManager.default
         let stagingFolderURL = fileManager.temporaryDirectory
-            .appendingPathComponent("PrabuOne_Backup_\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent("MyOne_Backup_\(UUID().uuidString)", isDirectory: true)
         let docsSubdirURL = stagingFolderURL.appendingPathComponent("documents", isDirectory: true)
         
         try fileManager.createDirectory(at: docsSubdirURL, withIntermediateDirectories: true)
@@ -1024,7 +1024,7 @@ public final class LifeStore: ObservableObject {
         
         // 3. Write manifest.json
         let manifest: [String: Any] = [
-            "appName": "PrabuOne",
+            "appName": "MyOne",
             "backupVersion": 2,
             "exportDate": ISO8601DateFormatter().string(from: Date()),
             "itemsCount": self.items.count,
@@ -1043,7 +1043,7 @@ public final class LifeStore: ObservableObject {
         }
         
         // 4. Zip the entire staging directory into a portable .zip archive for Google Drive
-        let outputZipName = "PrabuOne_Full_Backup_\(dateStr).zip"
+        let outputZipName = "MyOne_Full_Backup_\(dateStr).zip"
         let outputZipURL = fileManager.temporaryDirectory.appendingPathComponent(outputZipName)
         
         let finalZipURL = try ZipArchiveManager.createZip(from: stagingFolderURL, destinationZipURL: outputZipURL)
@@ -1269,7 +1269,7 @@ public struct BackupAttachmentPayload: Codable {
     }
 }
 
-/// Unified portable snapshot of all Prabu One data for backup to Google Drive / local storage.
+/// Unified portable snapshot of all My One data for backup to Google Drive / local storage.
 public struct PrabuOneBackupArchive: Codable {
     public var version: Int = 2
     public var exportDate: Date = Date()
@@ -1336,3 +1336,5 @@ public struct PrabuOneBackupArchive: Codable {
         expenses = try container.decodeIfPresent([ExpenseTransaction].self, forKey: .expenses) ?? []
     }
 }
+
+public typealias MyOneBackupArchive = PrabuOneBackupArchive

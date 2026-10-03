@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Dedicated Google Drive Backup and Cloud Restore View for Prabu One.
+/// Dedicated Google Drive Backup and Cloud Restore View for My One.
 public struct GoogleBackupView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: LifeStore
@@ -250,7 +250,7 @@ public struct GoogleBackupView: View {
             self.pendingRestoreURL = url
             self.showingRestoreConfirmation = true
         } catch {
-            errorMessage = "Invalid Prabu One backup archive: \(error.localizedDescription)"
+            errorMessage = "Invalid My One backup archive: \(error.localizedDescription)"
         }
     }
     

@@ -2,7 +2,7 @@ import Foundation
 import UserNotifications
 import os
 
-/// The Universal Reminder Engine for Prabu One.
+/// The Universal Reminder Engine for My One.
 /// Schedules multi-stage local notifications (30d, 7d, 3d, 1d, 0d) for any LifeItem without external servers.
 public final class ReminderEngine: NSObject {
     public static let shared = ReminderEngine()
