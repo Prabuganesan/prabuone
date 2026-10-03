@@ -699,141 +699,479 @@ public struct MoneyHubView: View {
     }
 }
 
-// MARK: - 2. Subscriptions Hub (Subscriptions Only)
+// MARK: - 2. Subscriptions Hub (Dedicated OTT & Digital Subscriptions)
 
-/// Dedicated Subscriptions Hub.
-/// Displays monthly recurring burn rate, yearly run-rate, and individual subscriptions.
+public struct SubscriptionPresetPlan: Identifiable {
+    public var id: String { name }
+    public let name: String
+    public let price: Double
+    public let frequency: RepeatFrequency
+}
+
+public struct OTTServicePreset: Identifiable {
+    public let id: String
+    public let name: String
+    public let icon: String
+    public let brandColor: Color
+    public let hexColor: String
+    public let category: String
+    public let plans: [SubscriptionPresetPlan]
+}
+
+public let popularSubscriptionPresets: [OTTServicePreset] = [
+    OTTServicePreset(
+        id: "netflix",
+        name: "Netflix",
+        icon: "tv.fill",
+        brandColor: Color(red: 0.90, green: 0.04, blue: 0.08),
+        hexColor: "#E50914",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Mobile", price: 149, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Basic 720p", price: 199, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Standard 1080p", price: 499, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Premium 4K UHD", price: 649, frequency: .monthly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "prime",
+        name: "Amazon Prime Video",
+        icon: "play.rectangle.fill",
+        brandColor: Color(red: 0.0, green: 0.65, blue: 0.88),
+        hexColor: "#00A8E1",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Prime Annual", price: 1499, frequency: .yearly),
+            SubscriptionPresetPlan(name: "Prime Monthly", price: 299, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Prime Lite Annual", price: 799, frequency: .yearly),
+            SubscriptionPresetPlan(name: "Prime Shopping Edition", price: 399, frequency: .yearly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "hotstar",
+        name: "Disney+ Hotstar",
+        icon: "star.fill",
+        brandColor: Color(red: 0.07, green: 0.24, blue: 0.81),
+        hexColor: "#113CCF",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Super Annual (Full HD)", price: 899, frequency: .yearly),
+            SubscriptionPresetPlan(name: "Premium Annual (4K UHD)", price: 1499, frequency: .yearly),
+            SubscriptionPresetPlan(name: "Premium Monthly", price: 299, frequency: .monthly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "youtube",
+        name: "YouTube Premium",
+        icon: "play.rectangle.on.rectangle.fill",
+        brandColor: Color(red: 1.0, green: 0.0, blue: 0.0),
+        hexColor: "#FF0000",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Individual Monthly", price: 149, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Family Monthly (5 users)", price: 299, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Individual Annual", price: 1490, frequency: .yearly),
+            SubscriptionPresetPlan(name: "Student Monthly", price: 89, frequency: .monthly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "spotify",
+        name: "Spotify",
+        icon: "music.note",
+        brandColor: Color(red: 0.11, green: 0.73, blue: 0.33),
+        hexColor: "#1DB954",
+        category: "Music",
+        plans: [
+            SubscriptionPresetPlan(name: "Individual Monthly", price: 119, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Duo Monthly", price: 149, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Family Monthly", price: 179, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Individual Annual", price: 1189, frequency: .yearly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "apple",
+        name: "Apple One / TV+",
+        icon: "applelogo",
+        brandColor: Color(red: 0.55, green: 0.55, blue: 0.58),
+        hexColor: "#8E8E93",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Apple One Individual", price: 195, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Apple One Family", price: 365, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Apple TV+ Only", price: 99, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Apple Music Individual", price: 99, frequency: .monthly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "chatgpt",
+        name: "ChatGPT / Claude AI",
+        icon: "cpu.fill",
+        brandColor: Color(red: 0.06, green: 0.64, blue: 0.50),
+        hexColor: "#10A37F",
+        category: "AI & Cloud",
+        plans: [
+            SubscriptionPresetPlan(name: "ChatGPT Plus ($20)", price: 1999, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Claude Pro ($20)", price: 1999, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Perplexity Pro", price: 1999, frequency: .monthly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "googleone",
+        name: "Google One / Cloud",
+        icon: "cloud.fill",
+        brandColor: Color(red: 0.26, green: 0.52, blue: 0.96),
+        hexColor: "#4285F4",
+        category: "AI & Cloud",
+        plans: [
+            SubscriptionPresetPlan(name: "Basic 100GB Monthly", price: 130, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Standard 200GB Monthly", price: 210, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Premium 2TB Monthly", price: 650, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Basic 100GB Annual", price: 1300, frequency: .yearly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "sonyliv",
+        name: "Sony LIV",
+        icon: "play.tv.fill",
+        brandColor: Color(red: 1.0, green: 0.40, blue: 0.0),
+        hexColor: "#FF6600",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Premium Annual", price: 999, frequency: .yearly),
+            SubscriptionPresetPlan(name: "Premium 6-Months", price: 699, frequency: .halfYearly),
+            SubscriptionPresetPlan(name: "Mobile Only Annual", price: 599, frequency: .yearly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "zee5",
+        name: "Zee5",
+        icon: "film.fill",
+        brandColor: Color(red: 0.51, green: 0.19, blue: 0.78),
+        hexColor: "#8230C6",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Premium Annual", price: 899, frequency: .yearly),
+            SubscriptionPresetPlan(name: "Premium 4K Annual", price: 1199, frequency: .yearly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "jiocinema",
+        name: "JioCinema Premium",
+        icon: "video.fill",
+        brandColor: Color(red: 0.90, green: 0.0, blue: 0.49),
+        hexColor: "#E5007D",
+        category: "OTT / Video",
+        plans: [
+            SubscriptionPresetPlan(name: "Premium Monthly", price: 29, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Family Monthly (4 screens)", price: 89, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Annual VIP", price: 299, frequency: .yearly)
+        ]
+    ),
+    OTTServicePreset(
+        id: "custom",
+        name: "Other / Custom",
+        icon: "arrow.triangle.2.circlepath.circle.fill",
+        brandColor: Color.purple,
+        hexColor: "#9333EA",
+        category: "Utilities",
+        plans: [
+            SubscriptionPresetPlan(name: "Custom Monthly", price: 499, frequency: .monthly),
+            SubscriptionPresetPlan(name: "Custom Annual", price: 4999, frequency: .yearly)
+        ]
+    )
+]
+
+/// Dedicated Subscriptions Hub with OTT presets, effective monthly burn rate, and rich management.
 public struct SubscriptionsHubView: View {
     @ObservedObject var store: LifeStore
     @State private var showingAddSubscription = false
     @State private var selectedItemToEdit: LifeItem? = nil
+    @State private var selectedFilter: String = "All"
+    @State private var searchQuery: String = ""
+    @State private var copiedFeedback: String? = nil
     
     public init(store: LifeStore) {
         self.store = store
     }
     
-    private var subs: [LifeItem] {
+    private var allSubs: [LifeItem] {
         store.items(for: .subscription)
     }
     
-    private var monthlySum: Double {
-        subs.compactMap { $0.amount }.reduce(0, +)
+    private var filteredSubs: [LifeItem] {
+        var items = allSubs
+        
+        let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        if !q.isEmpty {
+            items = items.filter {
+                $0.title.lowercased().contains(q) ||
+                $0.subtitle.lowercased().contains(q) ||
+                ($0.planTier?.lowercased().contains(q) ?? false) ||
+                ($0.paymentMethod?.lowercased().contains(q) ?? false) ||
+                ($0.accountEmail?.lowercased().contains(q) ?? false) ||
+                ($0.notes?.lowercased().contains(q) ?? false)
+            }
+        }
+        
+        switch selectedFilter {
+        case "OTT / Video":
+            return items.filter { item in
+                let t = item.title.lowercased()
+                return t.contains("netflix") || t.contains("prime") || t.contains("hotstar") ||
+                       t.contains("youtube") || t.contains("apple") || t.contains("sony") ||
+                       t.contains("zee") || t.contains("jio") || t.contains("hbo") || t.contains("ott")
+            }
+        case "Music":
+            return items.filter { item in
+                let t = item.title.lowercased()
+                return t.contains("spotify") || t.contains("music") || t.contains("wynk") || t.contains("gaana")
+            }
+        case "AI & Cloud":
+            return items.filter { item in
+                let t = item.title.lowercased()
+                return t.contains("chatgpt") || t.contains("claude") || t.contains("google") ||
+                       t.contains("icloud") || t.contains("cloud") || t.contains("ai") || t.contains("drive")
+            }
+        case "Annual":
+            return items.filter { $0.repeatFrequency == .yearly }
+        case "Auto-Debit":
+            return items.filter { $0.autoRenew == true }
+        default:
+            return items
+        }
     }
     
-    private var yearlySum: Double {
-        monthlySum * 12
+    private var monthlyBurn: Double {
+        allSubs.filter { !$0.isCompleted }.reduce(0) { $0 + $1.normalizedMonthlyAmount }
+    }
+    
+    private var yearlyRunRate: Double {
+        monthlyBurn * 12.0
+    }
+    
+    private var activeCount: Int {
+        allSubs.filter { !$0.isCompleted }.count
+    }
+    
+    private var autoDebitCount: Int {
+        allSubs.filter { $0.autoRenew == true }.count
     }
     
     public var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                // Analytics Summary
+            VStack(spacing: 16) {
+                // 📊 Analytics KPI Cards
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("MONTHLY RECURRING")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                        Text(formatCurrency(monthlySum))
+                        HStack(spacing: 4) {
+                            Circle().fill(Color.purple).frame(width: 6, height: 6)
+                            Text("MONTHLY BURN")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.secondary)
+                        }
+                        Text(formatCurrency(monthlyBurn))
                             .font(.system(size: 22, weight: .heavy, design: .rounded))
                             .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text("\(activeCount) Active Subscriptions")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(14)
                     .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(14)
+                    .cornerRadius(16)
                     
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("YEARLY RUN-RATE")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                        Text(formatCurrency(yearlySum))
+                        HStack(spacing: 4) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .font(.system(size: 10))
+                                .foregroundColor(.indigo)
+                            Text("YEARLY RUN-RATE")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.secondary)
+                        }
+                        Text(formatCurrency(yearlyRunRate))
                             .font(.system(size: 22, weight: .heavy, design: .rounded))
-                            .foregroundColor(.purple)
+                            .foregroundColor(.indigo)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        Text("\(autoDebitCount) on Auto-Debit")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(14)
                     .background(Color(UIColor.secondarySystemBackground))
-                    .cornerRadius(14)
+                    .cornerRadius(16)
                 }
                 
-                // List of Subscriptions
-                if subs.isEmpty {
-                    VStack(spacing: 10) {
-                        Image(systemName: "arrow.triangle.2.circlepath.circle")
-                            .font(.system(size: 40))
-                            .foregroundColor(.purple.opacity(0.7))
-                            .padding(.top, 24)
-                        Text("No Subscriptions Tracked")
-                            .font(.headline)
-                        Text("Track OTT, Cloud, AI tools, memberships, and renewal dates.")
-                            .font(.subheadline)
+                // 🔍 Search Bar
+                HStack(spacing: 10) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 14))
+                    TextField("Search Netflix, Prime, Hotstar, Plans...", text: $searchQuery)
+                        .font(.system(size: 14))
+                    if !searchQuery.isEmpty {
+                        Button {
+                            searchQuery = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 14))
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(12)
+                
+                // 🏷️ Category Filter Chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(["All", "OTT / Video", "Music", "AI & Cloud", "Annual", "Auto-Debit"], id: \.self) { filter in
+                            Button {
+                                HapticManager.selection()
+                                selectedFilter = filter
+                            } label: {
+                                Text(filter)
+                                    .font(.system(size: 12, weight: selectedFilter == filter ? .bold : .medium))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(selectedFilter == filter ? Color.purple : Color(UIColor.secondarySystemBackground))
+                                    .foregroundColor(selectedFilter == filter ? .white : .primary)
+                                    .clipShape(Capsule())
+                            }
+                        }
+                    }
+                }
+                
+                // 📋 Subscriptions List / Empty State
+                if filteredSubs.isEmpty {
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.purple.opacity(0.12))
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "play.tv.fill")
+                                .font(.system(size: 36))
+                                .foregroundColor(.purple)
+                        }
+                        .padding(.top, 24)
+                        
+                        Text(allSubs.isEmpty ? "Track All Your OTT & Subscriptions" : "No Matching Subscriptions")
+                            .font(.system(size: 18, weight: .bold, design: .rounded))
+                        
+                        Text(allSubs.isEmpty ? "Manage Netflix, Prime, Disney+ Hotstar, YouTube, Spotify, and cloud plans with renewal countdowns and effective monthly burn tracking." : "Try adjusting your search query or selected filter.")
+                            .font(.system(size: 13))
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                            .padding(.horizontal, 24)
                         
-                        Button(action: {
+                        // Preset Quick-Tap Pills in Empty State
+                        if allSubs.isEmpty {
+                            VStack(spacing: 8) {
+                                Text("POPULAR PRESETS")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.secondary)
+                                
+                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                                    ForEach(popularSubscriptionPresets.prefix(4)) { preset in
+                                        Button {
+                                            HapticManager.light()
+                                            showingAddSubscription = true
+                                        } label: {
+                                            HStack(spacing: 6) {
+                                                Image(systemName: preset.icon)
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(preset.brandColor)
+                                                Text(preset.name)
+                                                    .font(.system(size: 12, weight: .semibold))
+                                                    .lineLimit(1)
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 8)
+                                            .background(Color(UIColor.secondarySystemBackground))
+                                            .cornerRadius(10)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            .padding(.top, 4)
+                        }
+                        
+                        Button {
                             HapticManager.light()
                             showingAddSubscription = true
-                        }) {
+                        } label: {
                             Label("Add Subscription", systemImage: "plus")
-                                .font(.system(size: 14, weight: .bold))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
+                                .font(.system(size: 15, weight: .bold))
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
                                 .background(Color.purple)
                                 .foregroundColor(.white)
-                                .cornerRadius(10)
+                                .cornerRadius(12)
                         }
                         .padding(.top, 8)
                     }
-                    .padding(.vertical, 32)
+                    .padding(.vertical, 24)
                 } else {
-                    VStack(spacing: 10) {
-                        ForEach(subs) { item in
-                            HStack {
-                                LifeItemRow(item: item, onTogglePaid: {
+                    VStack(spacing: 12) {
+                        ForEach(filteredSubs) { item in
+                            SubscriptionCardRow(
+                                item: item,
+                                onTogglePaid: {
                                     withAnimation {
                                         HapticManager.success()
                                         store.toggleCompleted(item)
                                     }
-                                })
-                                
-                                Button(action: {
+                                },
+                                onEdit: {
                                     selectedItemToEdit = item
-                                }) {
-                                    Image(systemName: "pencil.circle")
-                                        .foregroundColor(.secondary)
-                                        .font(.system(size: 18))
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            .padding(12)
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(14)
-                            .contextMenu {
-                                Button {
-                                    selectedItemToEdit = item
-                                } label: {
-                                    Label("Edit Subscription", systemImage: "pencil")
-                                }
-                                
-                                Button(role: .destructive) {
+                                },
+                                onDelete: {
                                     withAnimation {
                                         store.deleteItem(item)
                                     }
-                                } label: {
-                                    Label("Delete Subscription", systemImage: "trash")
+                                },
+                                onCopyEmail: { email in
+                                    UIPasteboard.general.string = email
+                                    HapticManager.success()
+                                    withAnimation {
+                                        copiedFeedback = "Copied \(email)"
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                        withAnimation { copiedFeedback = nil }
+                                    }
                                 }
-                            }
+                            )
                         }
                     }
                 }
             }
             .padding(.horizontal)
             .padding(.top, 8)
-            .padding(.bottom, 24)
+            .padding(.bottom, 32)
         }
         .navigationTitle("Subscriptions")
         .navigationBarTitleDisplayMode(.inline)
+        .overlay(alignment: .bottom) {
+            if let feedback = copiedFeedback {
+                Text(feedback)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.85))
+                    .clipShape(Capsule())
+                    .padding(.bottom, 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: {
@@ -846,10 +1184,640 @@ public struct SubscriptionsHubView: View {
             }
         }
         .sheet(isPresented: $showingAddSubscription) {
-            AddLifeItemView(store: store, initialCategory: .subscription)
+            AddSubscriptionSheet(store: store)
         }
         .sheet(item: $selectedItemToEdit) { item in
-            EditLifeItemSheet(store: store, item: item)
+            EditSubscriptionSheet(store: store, item: item)
+        }
+    }
+}
+
+/// Custom visual card row for OTT and digital subscriptions.
+public struct SubscriptionCardRow: View {
+    let item: LifeItem
+    let onTogglePaid: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    let onCopyEmail: (String) -> Void
+    
+    private var preset: OTTServicePreset? {
+        let t = item.title.lowercased()
+        let b = (item.serviceBrand ?? "").lowercased()
+        return popularSubscriptionPresets.first {
+            $0.name.lowercased() == t ||
+            $0.id.lowercased() == b ||
+            t.contains($0.name.lowercased())
+        }
+    }
+    
+    private var brandColor: Color {
+        preset?.brandColor ?? Color.purple
+    }
+    
+    private var iconName: String {
+        preset?.icon ?? "play.tv.fill"
+    }
+    
+    private var billingCycleLabel: String {
+        switch item.repeatFrequency {
+        case .monthly: return "Monthly"
+        case .quarterly: return "Quarterly"
+        case .halfYearly: return "Half-Yearly"
+        case .yearly: return "Annual"
+        case .never: return "One-Time"
+        }
+    }
+    
+    public var body: some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .top, spacing: 14) {
+                // Brand Icon Container
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [brandColor.opacity(0.25), brandColor.opacity(0.10)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(brandColor.opacity(0.3), lineWidth: 1)
+                        )
+                        .frame(width: 46, height: 46)
+                    
+                    Image(systemName: iconName)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(brandColor)
+                }
+                
+                // Subscription Info
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(item.title)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        if let plan = item.planTier, !plan.isEmpty {
+                            Text(plan)
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(brandColor.opacity(0.18))
+                                .foregroundColor(brandColor)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    
+                    // Renewal Countdown & Date
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 10))
+                        Text("\(item.daysRemainingText) • Due \(item.formattedDueDate)")
+                            .font(.system(size: 11.5, weight: .medium))
+                    }
+                    .foregroundColor(item.urgency <= .in3Days ? .orange : .secondary)
+                    
+                    // Account ID & Sharing
+                    if let email = item.accountEmail, !email.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.crop.circle")
+                                .font(.system(size: 10))
+                            Text(email)
+                                .font(.system(size: 11))
+                                .lineLimit(1)
+                            
+                            if let shared = item.sharedWith, !shared.isEmpty {
+                                Text("• \(shared)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                // Pricing & Action
+                VStack(alignment: .trailing, spacing: 4) {
+                    if let amount = item.amount {
+                        Text(formatCurrency(amount))
+                            .font(.system(size: 16, weight: .heavy, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        Text(billingCycleLabel)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.secondary)
+                        
+                        if item.repeatFrequency == .yearly {
+                            Text("(\(formatCurrency(amount / 12.0))/mo)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.secondary)
+                        } else if item.repeatFrequency == .quarterly {
+                            Text("(\(formatCurrency(amount / 3.0))/mo)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    Button(action: onTogglePaid) {
+                        Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 20))
+                            .foregroundColor(item.isCompleted ? .green : .secondary.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
+                }
+            }
+            
+            // Bottom Metadata Bar (Payment Method & Auto-Debit status)
+            if item.paymentMethod != nil || item.autoRenew == true {
+                Divider().background(Color.primary.opacity(0.06))
+                
+                HStack(spacing: 8) {
+                    if let payment = item.paymentMethod, !payment.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "creditcard.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(.blue)
+                            Text(payment)
+                                .font(.system(size: 10.5, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    if item.autoRenew == true {
+                        HStack(spacing: 3) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 9))
+                            Text("Auto-Debit Active")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundColor(.emeraldAccent)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.emeraldAccent.opacity(0.12))
+                        .clipShape(Capsule())
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(16)
+        .contextMenu {
+            Button {
+                onEdit()
+            } label: {
+                Label("Edit Subscription", systemImage: "pencil")
+            }
+            
+            Button {
+                onTogglePaid()
+            } label: {
+                Label("Mark Renewed (Advance Cycle)", systemImage: "arrow.triangle.2.circlepath")
+            }
+            
+            if let email = item.accountEmail, !email.isEmpty {
+                Button {
+                    onCopyEmail(email)
+                } label: {
+                    Label("Copy Login ID (\(email))", systemImage: "doc.on.doc")
+                }
+            }
+            
+            Divider()
+            
+            Button(role: .destructive) {
+                onDelete()
+            } label: {
+                Label("Delete Subscription", systemImage: "trash")
+            }
+        }
+    }
+}
+
+/// Comprehensive sheet specifically crafted for adding OTT and digital subscriptions.
+public struct AddSubscriptionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    
+    @State private var selectedPreset: OTTServicePreset? = popularSubscriptionPresets.first
+    @State private var title: String = "Netflix"
+    @State private var planTier: String = "Premium 4K UHD"
+    @State private var billingCycle: RepeatFrequency = .monthly
+    @State private var amountText: String = "649"
+    @State private var dueDate: Date = Date().addingTimeInterval(86400 * 30)
+    @State private var paymentMethod: String = "HDFC Credit Card"
+    @State private var accountEmail: String = ""
+    @State private var sharedWith: String = "4 Screens • Family"
+    @State private var autoRenew: Bool = true
+    @State private var reminderDays: [Int] = [7, 3, 1]
+    @State private var notes: String = ""
+    
+    public init(store: LifeStore) {
+        self.store = store
+    }
+    
+    private var effectiveMonthlyBurn: Double {
+        let val = Double(amountText.replacingOccurrences(of: ",", with: "")) ?? 0
+        switch billingCycle {
+        case .monthly: return val
+        case .quarterly: return val / 3.0
+        case .halfYearly: return val / 6.0
+        case .yearly: return val / 12.0
+        case .never: return val
+        }
+    }
+    
+    private var isFormValid: Bool {
+        !title.trimmingCharacters(in: .whitespaces).isEmpty &&
+        (Double(amountText.replacingOccurrences(of: ",", with: "")) ?? 0) > 0
+    }
+    
+    public var body: some View {
+        NavigationStack {
+            Form {
+                // 1. Quick Presets Carousel
+                Section("Popular OTT & Digital Services") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(popularSubscriptionPresets) { preset in
+                                Button {
+                                    HapticManager.selection()
+                                    selectPreset(preset)
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: preset.icon)
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundColor(preset.brandColor)
+                                        Text(preset.name)
+                                            .font(.system(size: 12, weight: selectedPreset?.id == preset.id ? .bold : .medium))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(selectedPreset?.id == preset.id ? preset.brandColor.opacity(0.18) : Color(UIColor.secondarySystemBackground))
+                                    .foregroundColor(selectedPreset?.id == preset.id ? preset.brandColor : .primary)
+                                    .clipShape(Capsule())
+                                    .overlay(
+                                        Capsule().stroke(selectedPreset?.id == preset.id ? preset.brandColor : Color.clear, lineWidth: 1.5)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                
+                // 2. Service & Plan
+                Section("Service & Plan Details") {
+                    TextField("Service Name (e.g. Netflix, Prime Video)", text: $title)
+                    
+                    if let preset = selectedPreset, !preset.plans.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Recommended Plans")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.secondary)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(preset.plans) { plan in
+                                        Button {
+                                            HapticManager.selection()
+                                            planTier = plan.name
+                                            amountText = "\(Int(plan.price))"
+                                            billingCycle = plan.frequency
+                                        } label: {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(plan.name)
+                                                    .font(.system(size: 11, weight: .bold))
+                                                Text("₹\(Int(plan.price)) • \(plan.frequency.rawValue)")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            .padding(.horizontal, 10)
+                                            .padding(.vertical, 6)
+                                            .background(planTier == plan.name ? Color.purple.opacity(0.15) : Color(UIColor.secondarySystemBackground))
+                                            .foregroundColor(planTier == plan.name ? .purple : .primary)
+                                            .cornerRadius(8)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(planTier == plan.name ? Color.purple : Color.clear, lineWidth: 1)
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    TextField("Plan Tier (e.g. Premium 4K, Family, Annual VIP)", text: $planTier)
+                }
+                
+                // 3. Pricing & Billing Frequency
+                Section("Billing Cycle & Pricing") {
+                    Picker("Billing Frequency", selection: $billingCycle) {
+                        Text("Monthly").tag(RepeatFrequency.monthly)
+                        Text("Quarterly (3m)").tag(RepeatFrequency.quarterly)
+                        Text("Half-Yearly (6m)").tag(RepeatFrequency.halfYearly)
+                        Text("Annual (1yr)").tag(RepeatFrequency.yearly)
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    HStack {
+                        Text("₹")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        TextField("Price (e.g. 649 or 1499)", text: $amountText)
+                            .keyboardType(.numberPad)
+                    }
+                    
+                    // Effective Monthly Burn Indicator Callout
+                    if effectiveMonthlyBurn > 0 {
+                        HStack(spacing: 8) {
+                            Image(systemName: "flame.fill")
+                                .foregroundColor(.purple)
+                                .font(.system(size: 14))
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Effective Monthly Burn: \(formatCurrency(effectiveMonthlyBurn))/month")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.purple)
+                                Text("Normalized monthly cost based on \(billingCycle.rawValue.lowercased()) cycle")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+                
+                // 4. Renewal Timeline & Auto-Debit
+                Section("Renewal & Auto-Debit") {
+                    DatePicker("Next Renewal Date", selection: $dueDate, displayedComponents: [.date])
+                    
+                    Toggle(isOn: $autoRenew) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "bolt.shield.fill")
+                                .foregroundColor(.emeraldAccent)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Auto-Debit Active")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("Recurring e-mandate on card or UPI")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                }
+                
+                // 5. Payment Source & Account Details
+                Section("Payment Method & Login") {
+                    // Quick Payment Selection
+                    TextField("Payment Source (e.g. HDFC Regalia, UPI AutoPay)", text: $paymentMethod)
+                    
+                    // Quick Fill Pills from User's Cards & Banks
+                    if !store.creditCards.isEmpty || !store.bankAccounts.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(store.creditCards) { card in
+                                    Button {
+                                        paymentMethod = "\(card.bankName) \(card.cardName)"
+                                    } label: {
+                                        Text("💳 \(card.bankName) (...\(card.lastFourDigits))")
+                                            .font(.system(size: 10.5, weight: .medium))
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color(UIColor.secondarySystemBackground))
+                                            .cornerRadius(6)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                
+                                Button {
+                                    paymentMethod = "UPI AutoPay"
+                                } label: {
+                                    Text("📲 UPI AutoPay")
+                                        .font(.system(size: 10.5, weight: .medium))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color(UIColor.secondarySystemBackground))
+                                        .cornerRadius(6)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button {
+                                    paymentMethod = "Apple In-App"
+                                } label: {
+                                    Text("🍎 Apple In-App")
+                                        .font(.system(size: 10.5, weight: .medium))
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color(UIColor.secondarySystemBackground))
+                                        .cornerRadius(6)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    
+                    TextField("Registered Email / Phone ID (e.g. prabu@gmail.com)", text: $accountEmail)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                    
+                    TextField("Profile / Screens (e.g. 4 Screens • Family)", text: $sharedWith)
+                }
+                
+                // 6. Notes & Hints
+                Section("Notes & Credential Hints") {
+                    TextField("Login hints, renewal coupons, or sharing info", text: $notes, axis: .vertical)
+                        .lineLimit(3...5)
+                }
+            }
+            .navigationTitle("New Subscription")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveSubscription()
+                    }
+                    .disabled(!isFormValid)
+                    .fontWeight(.bold)
+                }
+            }
+        }
+    }
+    
+    private func selectPreset(_ preset: OTTServicePreset) {
+        selectedPreset = preset
+        title = preset.name
+        if let firstPlan = preset.plans.first {
+            planTier = firstPlan.name
+            amountText = "\(Int(firstPlan.price))"
+            billingCycle = firstPlan.frequency
+        }
+    }
+    
+    private func saveSubscription() {
+        let amount = Double(amountText.replacingOccurrences(of: ",", with: ""))
+        let item = LifeItem(
+            title: title.trimmingCharacters(in: .whitespaces),
+            subtitle: "\(planTier.isEmpty ? "Plan" : planTier) • \(billingCycle.rawValue)",
+            category: .subscription,
+            dueDate: dueDate,
+            amount: amount,
+            repeatFrequency: billingCycle,
+            isCompleted: false,
+            notes: notes.isEmpty ? nil : notes,
+            reminderDaysBefore: reminderDays,
+            planTier: planTier.isEmpty ? nil : planTier,
+            billingCycle: billingCycle.rawValue,
+            paymentMethod: paymentMethod.isEmpty ? nil : paymentMethod,
+            accountEmail: accountEmail.isEmpty ? nil : accountEmail,
+            sharedWith: sharedWith.isEmpty ? nil : sharedWith,
+            autoRenew: autoRenew,
+            serviceBrand: selectedPreset?.id ?? title
+        )
+        store.addItem(item)
+        HapticManager.success()
+        dismiss()
+    }
+}
+
+/// Sheet for editing an existing subscription with all OTT & digital service controls.
+public struct EditSubscriptionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    let item: LifeItem
+    
+    @State private var title: String = ""
+    @State private var planTier: String = ""
+    @State private var billingCycle: RepeatFrequency = .monthly
+    @State private var amountText: String = ""
+    @State private var dueDate: Date = Date()
+    @State private var paymentMethod: String = ""
+    @State private var accountEmail: String = ""
+    @State private var sharedWith: String = ""
+    @State private var autoRenew: Bool = true
+    @State private var notes: String = ""
+    
+    public init(store: LifeStore, item: LifeItem) {
+        self.store = store
+        self.item = item
+    }
+    
+    private var effectiveMonthlyBurn: Double {
+        let val = Double(amountText.replacingOccurrences(of: ",", with: "")) ?? 0
+        switch billingCycle {
+        case .monthly: return val
+        case .quarterly: return val / 3.0
+        case .halfYearly: return val / 6.0
+        case .yearly: return val / 12.0
+        case .never: return val
+        }
+    }
+    
+    public var body: some View {
+        NavigationStack {
+            Form {
+                Section("Service & Plan") {
+                    TextField("Service Name", text: $title)
+                    TextField("Plan Tier (e.g. Premium 4K)", text: $planTier)
+                }
+                
+                Section("Billing Cycle & Pricing") {
+                    Picker("Billing Frequency", selection: $billingCycle) {
+                        Text("Monthly").tag(RepeatFrequency.monthly)
+                        Text("Quarterly (3m)").tag(RepeatFrequency.quarterly)
+                        Text("Half-Yearly (6m)").tag(RepeatFrequency.halfYearly)
+                        Text("Annual (1yr)").tag(RepeatFrequency.yearly)
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    HStack {
+                        Text("₹").foregroundColor(.secondary)
+                        TextField("Amount", text: $amountText)
+                            .keyboardType(.numberPad)
+                    }
+                    
+                    if effectiveMonthlyBurn > 0 {
+                        HStack(spacing: 6) {
+                            Image(systemName: "flame.fill").foregroundColor(.purple)
+                            Text("Effective Monthly Burn: \(formatCurrency(effectiveMonthlyBurn))/month")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.purple)
+                        }
+                    }
+                }
+                
+                Section("Renewal & Auto-Debit") {
+                    DatePicker("Next Renewal Date", selection: $dueDate, displayedComponents: [.date])
+                    Toggle("Auto-Debit Active (e-Mandate)", isOn: $autoRenew)
+                }
+                
+                Section("Payment Source & Account") {
+                    TextField("Payment Method (e.g. HDFC Card)", text: $paymentMethod)
+                    TextField("Registered Email / Phone", text: $accountEmail)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                    TextField("Profile / Screens (e.g. 4 Screens)", text: $sharedWith)
+                }
+                
+                Section("Notes") {
+                    TextField("Notes & details", text: $notes, axis: .vertical)
+                        .lineLimit(3...5)
+                }
+            }
+            .navigationTitle("Edit Subscription")
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                title = item.title
+                planTier = item.planTier ?? item.subtitle
+                billingCycle = item.repeatFrequency
+                amountText = item.amount != nil ? "\(Int(item.amount!))" : ""
+                dueDate = item.dueDate
+                paymentMethod = item.paymentMethod ?? ""
+                accountEmail = item.accountEmail ?? ""
+                sharedWith = item.sharedWith ?? ""
+                autoRenew = item.autoRenew ?? true
+                notes = item.notes ?? ""
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        var updated = item
+                        updated.title = title.trimmingCharacters(in: .whitespaces)
+                        updated.subtitle = "\(planTier.isEmpty ? "Plan" : planTier) • \(billingCycle.rawValue)"
+                        updated.planTier = planTier.isEmpty ? nil : planTier
+                        updated.billingCycle = billingCycle.rawValue
+                        updated.repeatFrequency = billingCycle
+                        updated.amount = Double(amountText.replacingOccurrences(of: ",", with: ""))
+                        updated.dueDate = dueDate
+                        updated.paymentMethod = paymentMethod.isEmpty ? nil : paymentMethod
+                        updated.accountEmail = accountEmail.isEmpty ? nil : accountEmail
+                        updated.sharedWith = sharedWith.isEmpty ? nil : sharedWith
+                        updated.autoRenew = autoRenew
+                        updated.notes = notes.isEmpty ? nil : notes
+                        store.updateItem(updated)
+                        HapticManager.success()
+                        dismiss()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
         }
     }
 }

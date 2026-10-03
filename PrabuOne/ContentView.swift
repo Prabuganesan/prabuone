@@ -103,6 +103,9 @@ public struct ContentView: View {
             $0.title.lowercased().contains(cleanQuery) ||
             $0.subtitle.lowercased().contains(cleanQuery) ||
             $0.category.displayName.lowercased().contains(cleanQuery) ||
+            ($0.planTier?.lowercased().contains(cleanQuery) ?? false) ||
+            ($0.paymentMethod?.lowercased().contains(cleanQuery) ?? false) ||
+            ($0.accountEmail?.lowercased().contains(cleanQuery) ?? false) ||
             ($0.notes?.lowercased().contains(cleanQuery) ?? false)
         }
     }
@@ -698,27 +701,38 @@ public struct ContentView: View {
                             
                             Divider().background(Color.white.opacity(0.2))
                             
-                            // 3 Key Pulse Metric Tiles
-                            HStack(spacing: 8) {
+                            // 4 Key Pulse Metric Tiles (EMIs, LIC Premiums, Life Cover, Cards & Accounts)
+                            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                                 microMetricPill(
                                     icon: "indianrupeesign.square.fill",
                                     color: .orange,
                                     label: "Monthly EMIs",
-                                    value: formatCurrency(store.totalMonthlyLoanEmi)
+                                    value: formatCurrency(store.totalMonthlyLoanEmi),
+                                    subvalue: "\(store.loans.count) Loan\(store.loans.count == 1 ? "" : "s") Active"
                                 )
                                 
                                 microMetricPill(
                                     icon: "shield.lefthalf.filled",
                                     color: .emeraldAccent,
-                                    label: "Life Cover",
-                                    value: formatCurrency(store.totalInsuranceSumAssured)
+                                    label: "LIC Premiums",
+                                    value: "\(formatCurrency(store.totalMonthlyInsurancePremium))/mo",
+                                    subvalue: "\(formatCurrency(store.totalAnnualInsurancePremiums))/yr"
+                                )
+                                
+                                microMetricPill(
+                                    icon: "heart.text.square.fill",
+                                    color: .pink,
+                                    label: "Total Life Cover",
+                                    value: formatCurrency(store.totalInsuranceSumAssured),
+                                    subvalue: "\(store.licPolicies.count) Polic\(store.licPolicies.count == 1 ? "y" : "ies") Active"
                                 )
                                 
                                 microMetricPill(
                                     icon: "creditcard.fill",
                                     color: .cyan,
-                                    label: "Cards & A/Cs",
-                                    value: "\(store.creditCards.count + store.bankAccounts.count) Total"
+                                    label: "Cards & Accounts",
+                                    value: "\(store.creditCards.count + store.bankAccounts.count) Total",
+                                    subvalue: "\(store.creditCards.count) Cards • \(store.bankAccounts.count) A/Cs"
                                 )
                             }
                         }
@@ -1021,26 +1035,33 @@ public struct ContentView: View {
         }
     }
     
-    private func microMetricPill(icon: String, color: Color, label: String, value: String) -> some View {
+    private func microMetricPill(icon: String, color: Color, label: String, value: String, subvalue: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 10))
+                    .font(.system(size: 11))
                     .foregroundColor(color)
                 Text(label)
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.75))
             }
             Text(value)
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 13, weight: .heavy, design: .rounded))
                 .foregroundColor(.white)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
+            
+            if let subvalue = subvalue {
+                Text(subvalue)
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
+                    .lineLimit(1)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
+        .padding(9)
         .background(Color.white.opacity(0.08))
-        .cornerRadius(10)
+        .cornerRadius(12)
     }
     
     private func launchpadButton(icon: String, color: Color, label: String, badge: String?) -> some View {

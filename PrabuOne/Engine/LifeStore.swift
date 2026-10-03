@@ -40,21 +40,43 @@ public final class LifeStore: ObservableObject {
             .sorted { $0.dueDate < $1.dueDate }
     }
     
-    /// Total financial outflow committed for the current calendar month.
-    public var thisMonthCommitmentTotal: Double {
+    /// Total recurring monthly burn rate for subscriptions (normalized from monthly, quarterly, yearly).
+    public var totalMonthlySubscriptionsBurn: Double {
+        items(for: .subscription)
+            .filter { !$0.isCompleted }
+            .reduce(0) { $0 + $1.normalizedMonthlyAmount }
+    }
+    
+    /// Comprehensive monthly financial outflow: Loan EMIs + LIC Premiums + Subscriptions Burn + Month's Utility Bills.
+    public var totalMonthlyFinancialOutflow: Double {
+        let emi = totalMonthlyLoanEmi
+        let lic = totalMonthlyInsurancePremium
+        let subs = totalMonthlySubscriptionsBurn
+        
         let calendar = Calendar.current
         let currentMonth = calendar.component(.month, from: Date())
         let currentYear = calendar.component(.year, from: Date())
         
-        return items
+        let billsAndOther = items
             .filter { item in
-                guard !item.isCompleted, let _ = item.amount else { return false }
+                guard !item.isCompleted,
+                      item.category != .loan,
+                      item.category != .insurance,
+                      item.category != .subscription,
+                      let _ = item.amount else { return false }
                 let itemMonth = calendar.component(.month, from: item.dueDate)
                 let itemYear = calendar.component(.year, from: item.dueDate)
                 return itemMonth == currentMonth && itemYear == currentYear
             }
             .compactMap { $0.amount }
             .reduce(0, +)
+            
+        return emi + lic + subs + billsAndOther
+    }
+    
+    /// Total financial outflow committed for the current calendar month.
+    public var thisMonthCommitmentTotal: Double {
+        totalMonthlyFinancialOutflow
     }
     
     /// Count of renewals and events happening in the current calendar month.
@@ -63,12 +85,22 @@ public final class LifeStore: ObservableObject {
         let currentMonth = calendar.component(.month, from: Date())
         let currentYear = calendar.component(.year, from: Date())
         
-        return items.filter { item in
+        let itemCount = items.filter { item in
             guard !item.isCompleted else { return false }
             let itemMonth = calendar.component(.month, from: item.dueDate)
             let itemYear = calendar.component(.year, from: item.dueDate)
             return itemMonth == currentMonth && itemYear == currentYear
         }.count
+        
+        let licCount = licPolicies.filter { policy in
+            let pMonth = calendar.component(.month, from: policy.nextDueDate)
+            let pYear = calendar.component(.year, from: policy.nextDueDate)
+            return pMonth == currentMonth && pYear == currentYear
+        }.count
+        
+        let loanCount = loans.count
+        
+        return itemCount + licCount + (loanCount > 0 ? loanCount : 0)
     }
     
     /// Returns items filtered by category.
@@ -109,6 +141,16 @@ public final class LifeStore: ObservableObject {
         
         if updated.repeatFrequency == .monthly {
             if let nextDate = Calendar.current.date(byAdding: .month, value: 1, to: updated.dueDate) {
+                updated.dueDate = nextDate
+                updated.isCompleted = false
+            }
+        } else if updated.repeatFrequency == .quarterly {
+            if let nextDate = Calendar.current.date(byAdding: .month, value: 3, to: updated.dueDate) {
+                updated.dueDate = nextDate
+                updated.isCompleted = false
+            }
+        } else if updated.repeatFrequency == .halfYearly {
+            if let nextDate = Calendar.current.date(byAdding: .month, value: 6, to: updated.dueDate) {
                 updated.dueDate = nextDate
                 updated.isCompleted = false
             }
@@ -271,12 +313,31 @@ public final class LifeStore: ObservableObject {
         }
     }
     
+    /// Monthly normalized premium outflow for all LIC and insurance policies.
+    public var totalMonthlyInsurancePremium: Double {
+        totalAnnualInsurancePremiums / 12.0
+    }
+    
+    /// Actual insurance premiums scheduled for payment in the current calendar month.
+    public var thisMonthInsurancePremiumsDue: Double {
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: Date())
+        let currentYear = calendar.component(.year, from: Date())
+        return licPolicies.filter { policy in
+            let pMonth = calendar.component(.month, from: policy.nextDueDate)
+            let pYear = calendar.component(.year, from: policy.nextDueDate)
+            return pMonth == currentMonth && pYear == currentYear
+        }.reduce(0) { $0 + $1.premiumAmount }
+    }
+    
     public func addInsurancePolicy(_ policy: InsurancePolicyRecord) {
         licPolicies.append(policy)
         HapticManager.success()
         let freq: RepeatFrequency = {
             switch policy.premiumFrequency.lowercased() {
             case "monthly": return .monthly
+            case "quarterly": return .quarterly
+            case "half-yearly": return .halfYearly
             case "yearly", "annual": return .yearly
             default: return .never
             }

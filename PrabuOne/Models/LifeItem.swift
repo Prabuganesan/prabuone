@@ -36,6 +36,8 @@ public enum LifeCategory: String, Codable, CaseIterable, Identifiable {
 public enum RepeatFrequency: String, Codable, CaseIterable, Identifiable {
     case never = "One Time"
     case monthly = "Monthly"
+    case quarterly = "Quarterly"
+    case halfYearly = "Half-Yearly"
     case yearly = "Yearly"
     
     public var id: String { rawValue }
@@ -73,6 +75,15 @@ public struct LifeItem: Identifiable, Codable, Equatable {
     public var notes: String?
     public var reminderDaysBefore: [Int] // e.g. [7, 3, 1, 0]
     
+    // Rich subscription & recurring service metadata (OTT, AI, Cloud, Memberships)
+    public var planTier: String?         // e.g. "Premium 4K", "Family Plan", "VIP Annual"
+    public var billingCycle: String?      // e.g. "Monthly", "Quarterly", "Half-Yearly", "Yearly"
+    public var paymentMethod: String?    // e.g. "HDFC Regalia Card", "ICICI UPI AutoPay", "Apple ID"
+    public var accountEmail: String?     // e.g. "prabu@gmail.com"
+    public var sharedWith: String?       // e.g. "4 Screens • Family"
+    public var autoRenew: Bool?          // true if recurring e-mandate/auto-debit active
+    public var serviceBrand: String?     // e.g. "Netflix", "Prime Video", "Hotstar", "YouTube", "Spotify"
+    
     public init(
         id: UUID = UUID(),
         title: String,
@@ -83,7 +94,14 @@ public struct LifeItem: Identifiable, Codable, Equatable {
         repeatFrequency: RepeatFrequency = .never,
         isCompleted: Bool = false,
         notes: String? = nil,
-        reminderDaysBefore: [Int] = [7, 3, 1, 0]
+        reminderDaysBefore: [Int] = [7, 3, 1, 0],
+        planTier: String? = nil,
+        billingCycle: String? = nil,
+        paymentMethod: String? = nil,
+        accountEmail: String? = nil,
+        sharedWith: String? = nil,
+        autoRenew: Bool? = nil,
+        serviceBrand: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -95,9 +113,79 @@ public struct LifeItem: Identifiable, Codable, Equatable {
         self.isCompleted = isCompleted
         self.notes = notes
         self.reminderDaysBefore = reminderDaysBefore
+        self.planTier = planTier
+        self.billingCycle = billingCycle
+        self.paymentMethod = paymentMethod
+        self.accountEmail = accountEmail
+        self.sharedWith = sharedWith
+        self.autoRenew = autoRenew
+        self.serviceBrand = serviceBrand
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, title, subtitle, category, dueDate, amount, repeatFrequency, isCompleted, notes, reminderDaysBefore
+        case planTier, billingCycle, paymentMethod, accountEmail, sharedWith, autoRenew, serviceBrand
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
+        category = try container.decodeIfPresent(LifeCategory.self, forKey: .category) ?? .custom
+        dueDate = try container.decodeIfPresent(Date.self, forKey: .dueDate) ?? Date()
+        amount = try container.decodeIfPresent(Double.self, forKey: .amount)
+        repeatFrequency = try container.decodeIfPresent(RepeatFrequency.self, forKey: .repeatFrequency) ?? .never
+        isCompleted = try container.decodeIfPresent(Bool.self, forKey: .isCompleted) ?? false
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        reminderDaysBefore = try container.decodeIfPresent([Int].self, forKey: .reminderDaysBefore) ?? [7, 3, 1, 0]
+        planTier = try container.decodeIfPresent(String.self, forKey: .planTier)
+        billingCycle = try container.decodeIfPresent(String.self, forKey: .billingCycle)
+        paymentMethod = try container.decodeIfPresent(String.self, forKey: .paymentMethod)
+        accountEmail = try container.decodeIfPresent(String.self, forKey: .accountEmail)
+        sharedWith = try container.decodeIfPresent(String.self, forKey: .sharedWith)
+        autoRenew = try container.decodeIfPresent(Bool.self, forKey: .autoRenew)
+        serviceBrand = try container.decodeIfPresent(String.self, forKey: .serviceBrand)
     }
     
     // MARK: - Computed Properties
+    
+    /// Converts any frequency (e.g. ₹1499/year or ₹699/quarter) to an accurate monthly burn amount.
+    public var normalizedMonthlyAmount: Double {
+        guard let amount = amount, amount > 0 else { return 0 }
+        switch repeatFrequency {
+        case .monthly:
+            return amount
+        case .quarterly:
+            return amount / 3.0
+        case .halfYearly:
+            return amount / 6.0
+        case .yearly:
+            return amount / 12.0
+        case .never:
+            // One-time payment: if due in current month, consider it for monthly pulse
+            let calendar = Calendar.current
+            let isCurrentMonth = calendar.isDate(dueDate, equalTo: Date(), toGranularity: .month)
+            return isCurrentMonth ? amount : 0
+        }
+    }
+    
+    /// Annual run rate for this commitment.
+    public var normalizedAnnualAmount: Double {
+        guard let amount = amount, amount > 0 else { return 0 }
+        switch repeatFrequency {
+        case .monthly:
+            return amount * 12.0
+        case .quarterly:
+            return amount * 4.0
+        case .halfYearly:
+            return amount * 2.0
+        case .yearly:
+            return amount
+        case .never:
+            return amount
+        }
+    }
     
     public var daysRemaining: Int {
         let calendar = Calendar.current
