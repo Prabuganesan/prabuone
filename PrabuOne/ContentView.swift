@@ -14,6 +14,8 @@ public struct ContentView: View {
     @State private var showingGoogleBackupSheet = false
     @State private var showingQRScanner = false
     @State private var showingDocumentScanner = false
+    @State private var showingDeviceHealth = false
+    @StateObject private var deviceManager = DeviceHealthManager.shared
     @State private var selectedLoanToEdit: LoanAccount? = nil
     @State private var selectedPolicyToEdit: InsurancePolicyRecord? = nil
     @State private var selectedDocToEdit: DocumentRecord? = nil
@@ -935,6 +937,20 @@ public struct ContentView: View {
                                 
                                 Button(action: {
                                     HapticManager.light()
+                                    showingDeviceHealth = true
+                                }) {
+                                    launchpadButton(
+                                        icon: "iphone.gen3",
+                                        color: .indigo,
+                                        label: "Phone Info",
+                                        badge: "\(deviceManager.batteryPercentage)%"
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    HapticManager.light()
                                     showingGoogleBackupSheet = true
                                 }) {
                                     launchpadButton(
@@ -1144,6 +1160,20 @@ public struct ContentView: View {
                                         badgeCount: 0
                                     )
                                 }
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingDeviceHealth = true
+                                }) {
+                                    PillarCard(
+                                        icon: "iphone.gen3",
+                                        color: .indigo,
+                                        title: "Phone & Battery",
+                                        subtitle: "\(deviceManager.marketingModel.isEmpty ? "iPhone" : deviceManager.marketingModel) • \(deviceManager.batteryPercentage)% Battery",
+                                        badgeCount: 0
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -1179,6 +1209,9 @@ public struct ContentView: View {
             }
             .sheet(isPresented: $showingGoogleBackupSheet) {
                 GoogleBackupView(store: store)
+            }
+            .sheet(isPresented: $showingDeviceHealth) {
+                DeviceHealthView()
             }
             .sheet(isPresented: $showingQRScanner) {
                 QRScannerView(store: store)

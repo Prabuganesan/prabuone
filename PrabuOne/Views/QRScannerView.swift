@@ -196,60 +196,77 @@ public struct QRScannerView: View {
     
     public var body: some View {
         NavigationStack {
-            ZStack {
-                Color.black.ignoresSafeArea()
+            GeometryReader { screenGeo in
+                let topSafeArea = screenGeo.safeAreaInsets.top
+                let bottomSafeArea = screenGeo.safeAreaInsets.bottom
+                let boxSize: CGFloat = min(screenGeo.size.width * 0.72, 270)
+                let boxCenterOffsetY: CGFloat = -26 // optically centered slightly above center
                 
-                if cameraSupported {
-                    // Real Camera Preview
-                    QRScannerCameraFeedRepresentable(
-                        isPaused: isScanningPaused,
-                        isTorchOn: isFlashlightOn,
-                        onCodeScanned: { code, format in
-                            handleScannedCode(code, format: format)
-                        }
-                    )
-                    .ignoresSafeArea()
-                } else {
-                    // Simulator Fallback Canvas
-                    simulatorFallbackView
-                }
-                
-                // Viewfinder Target Overlay
-                viewfinderOverlay
-                
-                // Top Action Bar (Torch, Gallery, Close)
-                VStack {
-                    topControlsHeader
-                    Spacer()
+                ZStack {
+                    Color.black.ignoresSafeArea()
                     
-                    // Bottom Scanned Result Card
-                    if let payload = activePayload {
-                        scannedPayloadResultCard(payload: payload)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    if cameraSupported {
+                        // Real Camera Preview
+                        QRScannerCameraFeedRepresentable(
+                            isPaused: isScanningPaused,
+                            isTorchOn: isFlashlightOn,
+                            onCodeScanned: { code, format in
+                                handleScannedCode(code, format: format)
+                            }
+                        )
+                        .ignoresSafeArea()
                     } else {
-                        bottomQuickBar
-                            .padding(.bottom, 24)
+                        // Simulator Fallback Canvas
+                        simulatorFallbackView
                     }
-                }
-                
-                // Toast notification
-                if let toast = toastMessage {
-                    VStack {
+                    
+                    // Hardware-accelerated even-odd cutout mask (zero artifacts)
+                    ScannerCutoutMask(boxSize: boxSize, cornerRadius: 24, offsetY: boxCenterOffsetY)
+                        .fill(Color.black.opacity(0.60), style: FillStyle(eoFill: true))
+                        .ignoresSafeArea()
+                    
+                    // Target Box & Animated Oscillating Laser
+                    reticleTargetView(boxSize: boxSize, offsetY: boxCenterOffsetY)
+                    
+                    // Instructions Label placed cleanly beneath the box
+                    instructionsPill(boxSize: boxSize, offsetY: boxCenterOffsetY)
+                    
+                    // Top Controls Header & Bottom Action Bar
+                    VStack(spacing: 0) {
+                        topHeader(topSafeArea: topSafeArea)
+                        
                         Spacer()
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text(toast)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
+                        
+                        // Bottom Scanned Result Card or Quick Bar
+                        if let payload = activePayload {
+                            scannedPayloadResultCard(payload: payload)
+                                .transition(.move(edge: .bottom).combined(with: .opacity))
+                                .padding(.bottom, max(bottomSafeArea, 16))
+                        } else {
+                            bottomQuickBar
+                                .padding(.bottom, max(bottomSafeArea + 12, 30))
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Color.black.opacity(0.85))
-                        .clipShape(Capsule())
-                        .shadow(radius: 8)
-                        .padding(.bottom, activePayload != nil ? 220 : 70)
-                        .transition(.scale.combined(with: .opacity))
+                    }
+                    
+                    // Toast notification
+                    if let toast = toastMessage {
+                        VStack {
+                            Spacer()
+                            HStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                Text(toast)
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Color.black.opacity(0.85))
+                            .clipShape(Capsule())
+                            .shadow(radius: 8)
+                            .padding(.bottom, activePayload != nil ? 220 : 80)
+                            .transition(.scale.combined(with: .opacity))
+                        }
                     }
                 }
             }
@@ -267,140 +284,150 @@ public struct QRScannerView: View {
         }
     }
     
-    // MARK: - Viewfinder Overlay
+    // MARK: - Viewfinder Reticle & Laser Sweep
     
-    private var viewfinderOverlay: some View {
-        GeometryReader { proxy in
-            let boxSize: CGFloat = min(proxy.size.width * 0.72, 280)
+    private func reticleTargetView(boxSize: CGFloat, offsetY: CGFloat) -> some View {
+        ZStack {
+            // Subtle glowing rounded border
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.20), lineWidth: 1.5)
             
-            ZStack {
-                // Dimmed background with transparent cutout
-                Color.black.opacity(0.55)
-                    .mask {
-                        Rectangle()
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                    .frame(width: boxSize, height: boxSize)
-                                    .blendMode(.destinationOut)
-                            )
-                    }
-                    .ignoresSafeArea()
-                
-                // Target Box & Animated Laser
-                ZStack {
-                    // Glowing borders & corner brackets
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1.5)
-                        .frame(width: boxSize, height: boxSize)
-                    
-                    // Corner accents
-                    CornerBrackets(size: boxSize, bracketLength: 30, lineWidth: 3.5, color: .cyan)
-                    
-                    // Oscillating laser beam
-                    if !isScanningPaused {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.cyan.opacity(0), Color.cyan.opacity(0.8), Color.cyan.opacity(0)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: boxSize - 20, height: 3)
-                            .shadow(color: Color.cyan, radius: 8, x: 0, y: 0)
-                            .offset(y: laserOffset)
-                    }
-                }
-                
-                // Instructions Label
+            // Four 100% perfectly aligned corner brackets
+            CornerBracketsShape(cornerRadius: 24, bracketLength: 36)
+                .stroke(
+                    LinearGradient(
+                        colors: [Color.cyan, Color(red: 0.1, green: 0.6, blue: 1.0)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                )
+            
+            // Center subtle target dot
+            Circle()
+                .fill(Color.cyan.opacity(0.35))
+                .frame(width: 8, height: 8)
+            
+            // Oscillating laser beam
+            if !isScanningPaused {
                 VStack {
-                    Spacer()
-                        .frame(height: (proxy.size.height / 2) + (boxSize / 2) + 20)
-                    
-                    Text("Point camera at any UPI QR, Website, or Barcode")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(Capsule())
-                    
-                    Spacer()
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.cyan.opacity(0), Color.cyan.opacity(0.95), Color.cyan.opacity(0)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 3)
+                        .shadow(color: Color.cyan, radius: 8, x: 0, y: 0)
+                        .offset(y: laserOffset)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(width: boxSize - 20)
+                .clipped()
             }
         }
+        .frame(width: boxSize, height: boxSize)
+        .offset(y: offsetY)
     }
     
-    // MARK: - Top Controls Header
+    // MARK: - Instructions Pill
     
-    private var topControlsHeader: some View {
-        HStack {
+    private func instructionsPill(boxSize: CGFloat, offsetY: CGFloat) -> some View {
+        VStack {
+            HStack(spacing: 8) {
+                Image(systemName: "viewfinder")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.cyan)
+                Text("Align QR code, UPI, or Barcode in frame")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.white.opacity(0.92))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.black.opacity(0.65))
+            .background(.ultraThinMaterial.opacity(0.4))
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.16), lineWidth: 1)
+            )
+        }
+        .offset(y: offsetY + (boxSize / 2) + 28)
+    }
+    
+    // MARK: - Neat Top Controls Header
+    
+    private func topHeader(topSafeArea: CGFloat) -> some View {
+        HStack(alignment: .center) {
+            // Dismiss / Close Button
             Button(action: {
                 HapticManager.light()
                 dismiss()
             }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.white)
                     .frame(width: 40, height: 40)
-                    .background(Color.black.opacity(0.55))
+                    .background(Color.black.opacity(0.45))
+                    .background(.ultraThinMaterial)
                     .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                    )
             }
+            .buttonStyle(.plain)
             
             Spacer()
             
-            HStack(spacing: 12) {
-                // Flashlight toggle (only if supported)
-                if cameraSupported {
-                    Button(action: {
-                        HapticManager.selection()
-                        isFlashlightOn.toggle()
-                    }) {
-                        Image(systemName: isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(isFlashlightOn ? .yellow : .white)
-                            .frame(width: 40, height: 40)
-                            .background(Color.black.opacity(0.55))
-                            .clipShape(Circle())
-                    }
-                }
-                
-                // Import from Photo Library
-                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 40, height: 40)
-                        .background(Color.black.opacity(0.55))
-                        .clipShape(Circle())
-                }
-                
-                // History List
+            // Clean Elegant Center Title Pill
+            HStack(spacing: 7) {
+                Image(systemName: "qrcode.viewfinder")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.cyan)
+                Text("QR & Barcode")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
+            .background(Color.black.opacity(0.45))
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+            )
+            
+            Spacer()
+            
+            // Flashlight Toggle (Torch)
+            if cameraSupported {
                 Button(action: {
-                    HapticManager.light()
-                    showHistorySheet = true
+                    HapticManager.selection()
+                    isFlashlightOn.toggle()
                 }) {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 40, height: 40)
-                            .background(Color.black.opacity(0.55))
-                            .clipShape(Circle())
-                        
-                        if !scanHistory.isEmpty {
+                    Image(systemName: isFlashlightOn ? "flashlight.on.fill" : "flashlight.off.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(isFlashlightOn ? .yellow : .white)
+                        .frame(width: 40, height: 40)
+                        .background(isFlashlightOn ? Color.yellow.opacity(0.25) : Color.black.opacity(0.45))
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .overlay(
                             Circle()
-                                .fill(Color.cyan)
-                                .frame(width: 9, height: 9)
-                                .offset(x: -2, y: 2)
-                        }
-                    }
+                                .stroke(isFlashlightOn ? Color.yellow.opacity(0.65) : Color.white.opacity(0.20), lineWidth: 1)
+                        )
                 }
+                .buttonStyle(.plain)
+            } else {
+                Color.clear
+                    .frame(width: 40, height: 40)
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 16)
+        .padding(.top, max(topSafeArea + 4, 16))
     }
     
     // MARK: - Scanned Result Action Card
@@ -724,35 +751,51 @@ public struct QRScannerView: View {
     // MARK: - Bottom Quick Bar
     
     private var bottomQuickBar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 14) {
             PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                HStack(spacing: 6) {
-                    Image(systemName: "photo")
+                HStack(spacing: 7) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
                     Text("Scan Photo")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
                 }
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.white.opacity(0.15))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 11)
+                .background(Color.black.opacity(0.55))
+                .background(.ultraThinMaterial)
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                )
             }
+            .buttonStyle(.plain)
             
             Button(action: {
                 HapticManager.light()
                 showHistorySheet = true
             }) {
-                HStack(spacing: 6) {
+                HStack(spacing: 7) {
                     Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.cyan)
                     Text("History (\(scanHistory.count))")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.white)
                 }
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color.white.opacity(0.15))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 11)
+                .background(Color.black.opacity(0.55))
+                .background(.ultraThinMaterial)
                 .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                )
             }
+            .buttonStyle(.plain)
         }
     }
     
@@ -1002,8 +1045,9 @@ public struct QRScannerView: View {
     }
     
     private func startLaserAnimation() {
+        laserOffset = -105
         withAnimation(Animation.easeInOut(duration: 1.8).repeatForever(autoreverses: true)) {
-            laserOffset = 110
+            laserOffset = 105
         }
     }
     
@@ -1036,57 +1080,63 @@ public struct QRScannerView: View {
     }
 }
 
-// MARK: - Corner Brackets Helper
+// MARK: - Hardware Cutout Mask (Even-Odd)
 
-fileprivate struct CornerBrackets: View {
-    let size: CGFloat
-    let bracketLength: CGFloat
-    let lineWidth: CGFloat
-    let color: Color
+fileprivate struct ScannerCutoutMask: Shape {
+    let boxSize: CGFloat
+    let cornerRadius: CGFloat
+    let offsetY: CGFloat
     
-    var body: some View {
-        ZStack {
-            // Top Left
-            Path { path in
-                path.move(to: CGPoint(x: 0, y: bracketLength))
-                path.addLine(to: CGPoint(x: 0, y: 16))
-                path.addQuadCurve(to: CGPoint(x: 16, y: 0), control: CGPoint(x: 0, y: 0))
-                path.addLine(to: CGPoint(x: bracketLength, y: 0))
-            }
-            .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-            .offset(x: -size / 2, y: -size / 2)
-            
-            // Top Right
-            Path { path in
-                path.move(to: CGPoint(x: size - bracketLength, y: 0))
-                path.addLine(to: CGPoint(x: size - 16, y: 0))
-                path.addQuadCurve(to: CGPoint(x: size, y: 16), control: CGPoint(x: size, y: 0))
-                path.addLine(to: CGPoint(x: size, y: bracketLength))
-            }
-            .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-            .offset(x: -size / 2, y: -size / 2)
-            
-            // Bottom Left
-            Path { path in
-                path.move(to: CGPoint(x: 0, y: size - bracketLength))
-                path.addLine(to: CGPoint(x: 0, y: size - 16))
-                path.addQuadCurve(to: CGPoint(x: 16, y: size), control: CGPoint(x: 0, y: size))
-                path.addLine(to: CGPoint(x: bracketLength, y: size))
-            }
-            .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-            .offset(x: -size / 2, y: -size / 2)
-            
-            // Bottom Right
-            Path { path in
-                path.move(to: CGPoint(x: size - bracketLength, y: size))
-                path.addLine(to: CGPoint(x: size - 16, y: size))
-                path.addQuadCurve(to: CGPoint(x: size, y: size - 16), control: CGPoint(x: size, y: size))
-                path.addLine(to: CGPoint(x: size, y: size - bracketLength))
-            }
-            .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
-            .offset(x: -size / 2, y: -size / 2)
-        }
-        .frame(width: size, height: size)
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.addRect(rect)
+        let holeRect = CGRect(
+            x: (rect.width - boxSize) / 2,
+            y: (rect.height - boxSize) / 2 + offsetY,
+            width: boxSize,
+            height: boxSize
+        )
+        path.addRoundedRect(in: holeRect, cornerSize: CGSize(width: cornerRadius, height: cornerRadius), style: .continuous)
+        return path
+    }
+}
+
+// MARK: - Precise Corner Brackets Shape
+
+fileprivate struct CornerBracketsShape: Shape {
+    var cornerRadius: CGFloat = 24
+    var bracketLength: CGFloat = 36
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let r = cornerRadius
+        let l = bracketLength
+        
+        // Top Left
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + l))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
+        path.addQuadCurve(to: CGPoint(x: rect.minX + r, y: rect.minY), control: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX + l, y: rect.minY))
+        
+        // Top Right
+        path.move(to: CGPoint(x: rect.maxX - l, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + r), control: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + l))
+        
+        // Bottom Right
+        path.move(to: CGPoint(x: rect.maxX, y: rect.maxY - l))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - r))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX - r, y: rect.maxY), control: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX - l, y: rect.maxY))
+        
+        // Bottom Left
+        path.move(to: CGPoint(x: rect.minX + l, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + r, y: rect.maxY))
+        path.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - r), control: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - l))
+        
+        return path
     }
 }
 

@@ -38,6 +38,8 @@
 		B10000000000000000000230 /* ZipArchiveManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000130 /* ZipArchiveManager.swift */; };
 		B10000000000000000000231 /* UniversalDocumentLinker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000131 /* UniversalDocumentLinker.swift */; };
 		B10000000000000000000232 /* PaymentMethodPickerRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000132 /* PaymentMethodPickerRow.swift */; };
+		B10000000000000000000233 /* DeviceHealthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000133 /* DeviceHealthManager.swift */; };
+		B10000000000000000000234 /* DeviceHealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000134 /* DeviceHealthView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +76,8 @@
 		B10000000000000000000130 /* ZipArchiveManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipArchiveManager.swift; sourceTree = "<group>"; };
 		B10000000000000000000131 /* UniversalDocumentLinker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UniversalDocumentLinker.swift; sourceTree = "<group>"; };
 		B10000000000000000000132 /* PaymentMethodPickerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentMethodPickerRow.swift; sourceTree = "<group>"; };
+		B10000000000000000000133 /* DeviceHealthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealthManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000134 /* DeviceHealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealthView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +161,7 @@
 				B10000000000000000000111 /* LifeStore.swift */,
 				B10000000000000000000121 /* HapticManager.swift */,
 				B10000000000000000000130 /* ZipArchiveManager.swift */,
+				B10000000000000000000133 /* DeviceHealthManager.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -178,6 +183,7 @@
 				B10000000000000000000129 /* DocumentScannerView.swift */,
 				B10000000000000000000131 /* UniversalDocumentLinker.swift */,
 				B10000000000000000000132 /* PaymentMethodPickerRow.swift */,
+				B10000000000000000000134 /* DeviceHealthView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -282,6 +288,8 @@
 				B10000000000000000000230 /* ZipArchiveManager.swift in Sources */,
 				B10000000000000000000231 /* UniversalDocumentLinker.swift in Sources */,
 				B10000000000000000000232 /* PaymentMethodPickerRow.swift in Sources */,
+				B10000000000000000000233 /* DeviceHealthManager.swift in Sources */,
+				B10000000000000000000234 /* DeviceHealthView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
