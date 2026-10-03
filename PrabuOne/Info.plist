@@ -71,11 +71,17 @@
 	<key>NSCameraUsageDescription</key>
 	<string>My One uses your camera to scan QR codes, UPI payment codes, and capture multi-page documents for your digital vault.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>My One accesses your photo library to import documents, receipts, and QR codes for scanning and vault backup.</string>
+	<string>My One accesses your photo library to detect screenshots for cleanup, inspect detailed EXIF camera optics, select photos for collages, and import documents into your digital vault.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>My One requires permission to save your created photo collages, stripped privacy photos, and Emergency Medical ID cards directly to your Photos library.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>My One uses your microphone for the live decibel sound meter to diagnose microphone input and inspect ambient noise levels.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>My One uses motion sensors to test your phone's gyroscope, surface level angles, and barometer telemetry.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>My One reads your blood group, height, weight, resting heart rate, blood oxygen, sleep, and daily activity metrics from Apple Health to populate your Medical ID and personal telemetry dashboard.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>My One synchronizes your medical vital stats and emergency body measurements with Apple Health.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>My One uses Face ID to diagnose and authenticate your biometric hardware security.</string>
 </dict>

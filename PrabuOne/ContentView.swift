@@ -16,6 +16,8 @@ public struct ContentView: View {
     @State private var showingDocumentScanner = false
     @State private var showingDeviceHealth = false
     @State private var showingExpenseTracker = false
+    @State private var showingPhotoTools = false
+    @State private var showingHealthProfile = false
     @StateObject private var deviceManager = DeviceHealthManager.shared
     @State private var selectedLoanToEdit: LoanAccount? = nil
     @State private var selectedPolicyToEdit: InsurancePolicyRecord? = nil
@@ -135,6 +137,19 @@ public struct ContentView: View {
         }
     }
     
+    private var healthMatches: Bool {
+        guard !cleanQuery.isEmpty else { return false }
+        let h = store.healthProfile
+        return h.fullName.lowercased().contains(cleanQuery) ||
+            h.bloodGroup.rawValue.lowercased().contains(cleanQuery) ||
+            h.emergencyContacts.contains(where: { $0.name.lowercased().contains(cleanQuery) || $0.phoneNumber.contains(cleanQuery) || $0.relationship.lowercased().contains(cleanQuery) }) ||
+            h.allergies.contains(where: { $0.allergen.lowercased().contains(cleanQuery) || $0.reaction.lowercased().contains(cleanQuery) }) ||
+            h.medications.contains(where: { $0.name.lowercased().contains(cleanQuery) || $0.dosage.lowercased().contains(cleanQuery) }) ||
+            h.chronicConditions.contains(where: { $0.lowercased().contains(cleanQuery) }) ||
+            h.insurance.providerName.lowercased().contains(cleanQuery) ||
+            h.insurance.policyNumber.lowercased().contains(cleanQuery)
+    }
+    
     private var totalSearchResultsCount: Int {
         cardSearchResults.count +
         bankSearchResults.count +
@@ -144,7 +159,8 @@ public struct ContentView: View {
         (vehicleMatches ? 1 : 0) +
         itemSearchResults.count +
         noteSearchResults.count +
-        expenseSearchResults.count
+        expenseSearchResults.count +
+        (healthMatches ? 1 : 0)
     }
     
     private func copyToClipboard(text: String, label: String) {
@@ -291,6 +307,24 @@ public struct ContentView: View {
                                         showingDeviceHealth = true
                                     }) {
                                         Label("Phone Info & Diagnostics", systemImage: "iphone.gen3")
+                                    }
+                                }
+                                
+                                Section("Media & Photo Studio") {
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingPhotoTools = true
+                                    }) {
+                                        Label("Media Studio & EXIF", systemImage: "photo.stack.fill")
+                                    }
+                                }
+                                
+                                Section("Health & Emergency") {
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingHealthProfile = true
+                                    }) {
+                                        Label("Medical ID & Health", systemImage: "cross.case.fill")
                                     }
                                 }
                                 
@@ -783,6 +817,56 @@ public struct ContentView: View {
                                         }
                                     }
                                 }
+                                
+                                // 9. Medical ID & Health
+                                if healthMatches {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Medical ID & Health")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.red)
+                                        
+                                        NavigationLink(destination: HealthProfileHubView(store: store)) {
+                                            HStack(spacing: 12) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color.red.opacity(0.15))
+                                                        .frame(width: 36, height: 36)
+                                                    Image(systemName: "cross.case.fill")
+                                                        .foregroundColor(.red)
+                                                        .font(.system(size: 16))
+                                                }
+                                                
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    HStack(spacing: 6) {
+                                                        Text("Medical ID: \(store.healthProfile.fullName.isEmpty ? "Prabu Ganesan" : store.healthProfile.fullName)")
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                            .foregroundColor(.primary)
+                                                        Text(store.healthProfile.bloodGroup.rawValue)
+                                                            .font(.system(size: 9.5, weight: .black))
+                                                            .foregroundColor(.white)
+                                                            .padding(.horizontal, 6)
+                                                            .padding(.vertical, 2)
+                                                            .background(Color.red)
+                                                            .clipShape(Capsule())
+                                                    }
+                                                    Text("\(store.healthProfile.allergies.count) Allergies • \(store.healthProfile.medications.count) Medications • \(store.healthProfile.emergencyContacts.count) Contacts")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Image(systemName: "chevron.right")
+                                                    .font(.system(size: 11, weight: .bold))
+                                                    .foregroundColor(.secondary.opacity(0.4))
+                                            }
+                                            .padding(12)
+                                            .background(Color(UIColor.secondarySystemBackground))
+                                            .cornerRadius(12)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -984,6 +1068,34 @@ public struct ContentView: View {
                                         color: .purple,
                                         label: "Expenses",
                                         badge: store.expenses.isEmpty ? nil : "\(store.expenses.count)"
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingHealthProfile = true
+                                }) {
+                                    launchpadButton(
+                                        icon: "cross.case.fill",
+                                        color: .red,
+                                        label: "Medical ID",
+                                        badge: store.healthProfile.bloodGroup.rawValue
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingPhotoTools = true
+                                }) {
+                                    launchpadButton(
+                                        icon: "photo.on.rectangle.angled",
+                                        color: .indigo,
+                                        label: "Media Studio",
+                                        badge: "Clean"
                                     )
                                     .frame(width: 82)
                                 }
@@ -1289,6 +1401,26 @@ public struct ContentView: View {
                                     )
                                 }
                                 
+                                NavigationLink(destination: HealthProfileHubView(store: store)) {
+                                    PillarCard(
+                                        icon: "cross.case.fill",
+                                        color: .red,
+                                        title: "Medical ID",
+                                        subtitle: "\(store.healthProfile.bloodGroup.rawValue) • \(store.healthProfile.allergies.count) Allergies • \(store.healthProfile.medications.count) Meds",
+                                        badgeCount: store.healthProfile.allergies.count
+                                    )
+                                }
+                                
+                                NavigationLink(destination: PhotoToolsHubView()) {
+                                    PillarCard(
+                                        icon: "photo.stack.fill",
+                                        color: .indigo,
+                                        title: "Media Studio",
+                                        subtitle: "Cleaner • EXIF • Collage",
+                                        badgeCount: 0
+                                    )
+                                }
+                                
                                 Button(action: {
                                     HapticManager.light()
                                     showingDeviceHealth = true
@@ -1367,6 +1499,16 @@ public struct ContentView: View {
                     ExpenseTrackerHubView(store: store)
                 }
             }
+            .sheet(isPresented: $showingPhotoTools) {
+                NavigationStack {
+                    PhotoToolsHubView()
+                }
+            }
+            .sheet(isPresented: $showingHealthProfile) {
+                NavigationStack {
+                    HealthProfileHubView(store: store)
+                }
+            }
             .onOpenURL { url in
                 handleIncomingURL(url)
             }
@@ -1393,6 +1535,10 @@ public struct ContentView: View {
                 }
             }
             showingExpenseTracker = true
+        } else if host == "health" || host == "medical-id" || host == "medical" {
+            showingHealthProfile = true
+        } else if host == "photos" || host == "collage" || host == "cleanup" || host == "exif" {
+            showingPhotoTools = true
         }
     }
     

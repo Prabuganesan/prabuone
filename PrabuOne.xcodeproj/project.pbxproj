@@ -45,6 +45,11 @@
 		B10000000000000000000237 /* GmailExpenseSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000137 /* GmailExpenseSyncManager.swift */; };
 		B10000000000000000000238 /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000138 /* LogExpenseIntent.swift */; };
 		B10000000000000000000239 /* ExpenseTrackerHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000139 /* ExpenseTrackerHubView.swift */; };
+		B10000000000000000000240 /* HealthProfileData.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000140 /* HealthProfileData.swift */; };
+		B10000000000000000000241 /* PhotoToolsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000141 /* PhotoToolsManager.swift */; };
+		B10000000000000000000242 /* PhotoToolsHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000142 /* PhotoToolsHubView.swift */; };
+		B10000000000000000000243 /* HealthProfileHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000143 /* HealthProfileHubView.swift */; };
+		B10000000000000000000244 /* AppleHealthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000144 /* AppleHealthManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -88,6 +93,11 @@
 		B10000000000000000000137 /* GmailExpenseSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailExpenseSyncManager.swift; sourceTree = "<group>"; };
 		B10000000000000000000138 /* LogExpenseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExpenseIntent.swift; sourceTree = "<group>"; };
 		B10000000000000000000139 /* ExpenseTrackerHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTrackerHubView.swift; sourceTree = "<group>"; };
+		B10000000000000000000140 /* HealthProfileData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthProfileData.swift; sourceTree = "<group>"; };
+		B10000000000000000000141 /* PhotoToolsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoToolsManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000142 /* PhotoToolsHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoToolsHubView.swift; sourceTree = "<group>"; };
+		B10000000000000000000143 /* HealthProfileHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthProfileHubView.swift; sourceTree = "<group>"; };
+		B10000000000000000000144 /* AppleHealthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleHealthManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,6 +163,7 @@
 				B10000000000000000000122 /* QuickNote.swift */,
 				B10000000000000000000124 /* FinancialObligations.swift */,
 				B10000000000000000000135 /* ExpenseTransaction.swift */,
+				B10000000000000000000140 /* HealthProfileData.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -176,6 +187,8 @@
 				B10000000000000000000136 /* BankingTextParser.swift */,
 				B10000000000000000000137 /* GmailExpenseSyncManager.swift */,
 				B10000000000000000000138 /* LogExpenseIntent.swift */,
+				B10000000000000000000141 /* PhotoToolsManager.swift */,
+				B10000000000000000000144 /* AppleHealthManager.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -199,6 +212,8 @@
 				B10000000000000000000132 /* PaymentMethodPickerRow.swift */,
 				B10000000000000000000134 /* DeviceHealthView.swift */,
 				B10000000000000000000139 /* ExpenseTrackerHubView.swift */,
+				B10000000000000000000142 /* PhotoToolsHubView.swift */,
+				B10000000000000000000143 /* HealthProfileHubView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -310,6 +325,11 @@
 				B10000000000000000000237 /* GmailExpenseSyncManager.swift in Sources */,
 				B10000000000000000000238 /* LogExpenseIntent.swift in Sources */,
 				B10000000000000000000239 /* ExpenseTrackerHubView.swift in Sources */,
+				B10000000000000000000240 /* HealthProfileData.swift in Sources */,
+				B10000000000000000000241 /* PhotoToolsManager.swift in Sources */,
+				B10000000000000000000242 /* PhotoToolsHubView.swift in Sources */,
+				B10000000000000000000243 /* HealthProfileHubView.swift in Sources */,
+				B10000000000000000000244 /* AppleHealthManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

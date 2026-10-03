@@ -18,6 +18,7 @@ public final class LifeStore: ObservableObject {
     @Published public var documents: [DocumentRecord] = [] { didSet { saveDocumentsToDisk() } }
     @Published public var quickNotes: [QuickNote] = [] { didSet { saveNotesToDisk() } }
     @Published public var expenses: [ExpenseTransaction] = [] { didSet { saveExpensesToDisk() } }
+    @Published public var healthProfile: HealthProfileRecord = HealthProfileRecord() { didSet { saveHealthProfileToDisk() } }
     
     public var activeVehicle: VehicleProfile {
         if let id = activeVehicleId, let found = vehicles.first(where: { $0.id == id }) {
@@ -57,6 +58,7 @@ public final class LifeStore: ObservableObject {
     private let documentsFileName = "prabuone_documents.json"
     private let notesFileName = "prabuone_notes.json"
     private let expensesFileName = "prabuone_expenses.json"
+    private let healthProfileFileName = "prabuone_health_profile.json"
     
     public init() {
         loadFromDisk()
@@ -822,6 +824,60 @@ public final class LifeStore: ObservableObject {
         }
     }
     
+    // MARK: - Mutations (Health Profile & Emergency Medical ID)
+    
+    public func updateHealthProfile(_ profile: HealthProfileRecord) {
+        self.healthProfile = profile
+        HapticManager.success()
+    }
+    
+    public func addEmergencyContact(_ contact: EmergencyContact) {
+        var p = self.healthProfile
+        if contact.isPrimary {
+            for i in 0..<p.emergencyContacts.count {
+                p.emergencyContacts[i].isPrimary = false
+            }
+        }
+        p.emergencyContacts.append(contact)
+        self.healthProfile = p
+        HapticManager.success()
+    }
+    
+    public func deleteEmergencyContact(id: UUID) {
+        var p = self.healthProfile
+        p.emergencyContacts.removeAll { $0.id == id }
+        self.healthProfile = p
+        HapticManager.light()
+    }
+    
+    public func addMedication(_ med: MedicationRecord) {
+        var p = self.healthProfile
+        p.medications.append(med)
+        self.healthProfile = p
+        HapticManager.success()
+    }
+    
+    public func deleteMedication(id: UUID) {
+        var p = self.healthProfile
+        p.medications.removeAll { $0.id == id }
+        self.healthProfile = p
+        HapticManager.light()
+    }
+    
+    public func addAllergy(_ allergy: AllergyRecord) {
+        var p = self.healthProfile
+        p.allergies.append(allergy)
+        self.healthProfile = p
+        HapticManager.success()
+    }
+    
+    public func deleteAllergy(id: UUID) {
+        var p = self.healthProfile
+        p.allergies.removeAll { $0.id == id }
+        self.healthProfile = p
+        HapticManager.light()
+    }
+    
     // MARK: - Persistence & Seeds
     
     private func getURL(for fileName: String) -> URL {
@@ -862,6 +918,10 @@ public final class LifeStore: ObservableObject {
     
     public func saveExpensesToDisk() {
         try? JSONEncoder().encode(expenses).write(to: getURL(for: expensesFileName), options: .atomic)
+    }
+    
+    public func saveHealthProfileToDisk() {
+        try? JSONEncoder().encode(healthProfile).write(to: getURL(for: healthProfileFileName), options: .atomic)
     }
     
     private func loadFromDisk() {
@@ -969,6 +1029,15 @@ public final class LifeStore: ObservableObject {
         } else {
             self.expenses = []
         }
+        
+        let healthURL = getURL(for: healthProfileFileName)
+        if FileManager.default.fileExists(atPath: healthURL.path),
+           let data = try? Data(contentsOf: healthURL),
+           let loaded = try? JSONDecoder().decode(HealthProfileRecord.self, from: data) {
+            self.healthProfile = loaded
+        } else {
+            self.healthProfile = HealthProfileRecord()
+        }
     }
     
     // MARK: - Google Backup & Full Archive Export/Restore
@@ -1012,7 +1081,8 @@ public final class LifeStore: ObservableObject {
             documents: self.documents,
             quickNotes: self.quickNotes,
             attachments: [],
-            expenses: self.expenses
+            expenses: self.expenses,
+            healthProfile: self.healthProfile
         )
         
         let encoder = JSONEncoder()
@@ -1195,6 +1265,7 @@ public final class LifeStore: ObservableObject {
         self.documents = archive.documents
         self.quickNotes = archive.quickNotes
         self.expenses = archive.expenses ?? []
+        self.healthProfile = archive.healthProfile ?? HealthProfileRecord()
         
         saveToDisk()
         saveCardsToDisk()
@@ -1205,6 +1276,7 @@ public final class LifeStore: ObservableObject {
         saveDocumentsToDisk()
         saveNotesToDisk()
         saveExpensesToDisk()
+        saveHealthProfileToDisk()
         
         ReminderEngine.shared.cancelAllReminders()
         for item in self.items {
@@ -1284,6 +1356,7 @@ public struct PrabuOneBackupArchive: Codable {
     public var quickNotes: [QuickNote]
     public var attachments: [BackupAttachmentPayload]
     public var expenses: [ExpenseTransaction]?
+    public var healthProfile: HealthProfileRecord?
     
     public init(
         version: Int = 2,
@@ -1298,7 +1371,8 @@ public struct PrabuOneBackupArchive: Codable {
         documents: [DocumentRecord],
         quickNotes: [QuickNote],
         attachments: [BackupAttachmentPayload] = [],
-        expenses: [ExpenseTransaction] = []
+        expenses: [ExpenseTransaction] = [],
+        healthProfile: HealthProfileRecord? = nil
     ) {
         self.version = version
         self.exportDate = exportDate
@@ -1313,10 +1387,11 @@ public struct PrabuOneBackupArchive: Codable {
         self.quickNotes = quickNotes
         self.attachments = attachments
         self.expenses = expenses
+        self.healthProfile = healthProfile
     }
     
     private enum CodingKeys: String, CodingKey {
-        case version, exportDate, items, creditCards, bankAccounts, loans, licPolicies, vehicleProfile, vehicles, documents, quickNotes, attachments, expenses
+        case version, exportDate, items, creditCards, bankAccounts, loans, licPolicies, vehicleProfile, vehicles, documents, quickNotes, attachments, expenses, healthProfile
     }
     
     public init(from decoder: Decoder) throws {
@@ -1334,6 +1409,7 @@ public struct PrabuOneBackupArchive: Codable {
         quickNotes = try container.decodeIfPresent([QuickNote].self, forKey: .quickNotes) ?? []
         attachments = try container.decodeIfPresent([BackupAttachmentPayload].self, forKey: .attachments) ?? []
         expenses = try container.decodeIfPresent([ExpenseTransaction].self, forKey: .expenses) ?? []
+        healthProfile = try container.decodeIfPresent(HealthProfileRecord.self, forKey: .healthProfile)
     }
 }
 
