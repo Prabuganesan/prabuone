@@ -94,6 +94,7 @@ public struct GoogleBackupView: View {
                                 snapshotTile(icon: "square.and.pencil", color: .amberAccent, title: "Quick Notes", count: "\(store.quickNotes.count)")
                                 snapshotTile(icon: "bell.badge.fill", color: .purple, title: "Commitments", count: "\(store.items.count)")
                                 snapshotTile(icon: "car.2.fill", color: .orange, title: "Garage", count: "\(store.vehicles.count) Vehicles")
+                                snapshotTile(icon: "indianrupeesign.arrow.circlepath", color: .pink, title: "Expenses", count: "\(store.expenses.count) Tracked")
                             }
                         }
                         .padding(16)
@@ -244,7 +245,8 @@ public struct GoogleBackupView: View {
         do {
             let (archive, attachmentCount) = try store.inspectBackupArchive(url: url)
             let vehicleCount = archive.vehicles?.count ?? (archive.vehicleProfile != nil ? 1 : 0)
-            self.pendingArchiveSummary = "• \(archive.creditCards.count) Cards\n• \(archive.bankAccounts.count) Bank Accounts\n• \(archive.loans.count) Loans\n• \(archive.licPolicies.count) LIC Policies\n• \(archive.documents.count) Documents\n• \(attachmentCount) Attached Files (PDFs & Scans)\n• \(vehicleCount) Vehicles\n• \(archive.quickNotes.count) Quick Notes\n• \(archive.items.count) Commitments"
+            let expenseCount = archive.expenses?.count ?? 0
+            self.pendingArchiveSummary = "• \(archive.creditCards.count) Cards\n• \(archive.bankAccounts.count) Bank Accounts\n• \(archive.loans.count) Loans\n• \(archive.licPolicies.count) LIC Policies\n• \(archive.documents.count) Documents\n• \(attachmentCount) Attached Files (PDFs & Scans)\n• \(vehicleCount) Vehicles\n• \(archive.quickNotes.count) Quick Notes\n• \(archive.items.count) Commitments\n• \(expenseCount) Expenses"
             self.pendingRestoreURL = url
             self.showingRestoreConfirmation = true
         } catch {

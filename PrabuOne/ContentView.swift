@@ -15,6 +15,7 @@ public struct ContentView: View {
     @State private var showingQRScanner = false
     @State private var showingDocumentScanner = false
     @State private var showingDeviceHealth = false
+    @State private var showingExpenseTracker = false
     @StateObject private var deviceManager = DeviceHealthManager.shared
     @State private var selectedLoanToEdit: LoanAccount? = nil
     @State private var selectedPolicyToEdit: InsurancePolicyRecord? = nil
@@ -122,6 +123,18 @@ public struct ContentView: View {
         }
     }
     
+    private var expenseSearchResults: [ExpenseTransaction] {
+        guard !cleanQuery.isEmpty else { return [] }
+        return store.expenses.filter {
+            $0.merchantOrPayee.lowercased().contains(cleanQuery) ||
+            $0.category.rawValue.lowercased().contains(cleanQuery) ||
+            ($0.bankOrSource?.lowercased().contains(cleanQuery) ?? false) ||
+            ($0.accountOrCardLast4?.contains(cleanQuery) ?? false) ||
+            ($0.referenceNumber?.lowercased().contains(cleanQuery) ?? false) ||
+            String(format: "%.0f", $0.amount).contains(cleanQuery)
+        }
+    }
+    
     private var totalSearchResultsCount: Int {
         cardSearchResults.count +
         bankSearchResults.count +
@@ -130,7 +143,8 @@ public struct ContentView: View {
         docSearchResults.count +
         (vehicleMatches ? 1 : 0) +
         itemSearchResults.count +
-        noteSearchResults.count
+        noteSearchResults.count +
+        expenseSearchResults.count
     }
     
     private func copyToClipboard(text: String, label: String) {
@@ -235,6 +249,13 @@ public struct ContentView: View {
                             // ⚡ Universal Quick Actions Menu (+ Button)
                             Menu {
                                 Section("Quick Add") {
+                                    Button(action: {
+                                        HapticManager.selection()
+                                        showingExpenseTracker = true
+                                    }) {
+                                        Label("Log Expense & SMS", systemImage: "indianrupeesign.circle.fill")
+                                    }
+                                    
                                     Button(action: {
                                         HapticManager.selection()
                                         showingAddSheet = true
@@ -724,6 +745,44 @@ public struct ContentView: View {
                                         }
                                     }
                                 }
+                                
+                                // 8. Expenses & Transactions
+                                if !expenseSearchResults.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Expenses & Transactions (\(expenseSearchResults.count))")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.purple)
+                                        
+                                        ForEach(expenseSearchResults.prefix(5)) { expense in
+                                            NavigationLink(destination: ExpenseTrackerHubView(store: store)) {
+                                                HStack(spacing: 12) {
+                                                    Image(systemName: expense.category.iconName)
+                                                        .foregroundColor(expense.category.color)
+                                                        .frame(width: 20)
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(expense.merchantOrPayee)
+                                                            .font(.system(size: 14, weight: .semibold))
+                                                            .foregroundColor(.primary)
+                                                        Text("\(expense.category.rawValue) • \(expense.accountLabel)")
+                                                            .font(.system(size: 12))
+                                                            .foregroundColor(.secondary)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                    
+                                                    Text(expense.formattedSignedAmount)
+                                                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                                                        .foregroundColor(expense.type.color)
+                                                }
+                                                .padding(12)
+                                                .background(Color(UIColor.secondarySystemBackground))
+                                                .cornerRadius(12)
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -919,6 +978,17 @@ public struct ContentView: View {
                         // 🚀 Quick Launchpad Bar
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
+                                NavigationLink(destination: ExpenseTrackerHubView(store: store)) {
+                                    launchpadButton(
+                                        icon: "indianrupeesign.arrow.circlepath",
+                                        color: .purple,
+                                        label: "Expenses",
+                                        badge: store.expenses.isEmpty ? nil : "\(store.expenses.count)"
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
                                 Button(action: {
                                     HapticManager.light()
                                     showingQRScanner = true
@@ -1077,6 +1147,16 @@ public struct ContentView: View {
                             .buttonStyle(.plain)
                             
                             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                                NavigationLink(destination: ExpenseTrackerHubView(store: store)) {
+                                    PillarCard(
+                                        icon: "indianrupeesign.circle.fill",
+                                        color: .purple,
+                                        title: "Expense Tracker",
+                                        subtitle: "\(formatCurrency(store.thisMonthExpensesTotal)) Outflow • SMS & Gmail",
+                                        badgeCount: store.expenses.count
+                                    )
+                                }
+                                
                                 NavigationLink(destination: MoneyHubView(store: store)) {
                                     PillarCard(
                                         icon: "creditcard.fill",
@@ -1100,7 +1180,7 @@ public struct ContentView: View {
                                 NavigationLink(destination: SubscriptionsHubView(store: store)) {
                                     PillarCard(
                                         icon: "arrow.triangle.2.circlepath.circle.fill",
-                                        color: .purple,
+                                        color: .pink,
                                         title: "Subscriptions",
                                         subtitle: "\(store.items(for: .subscription).count) OTT, AI & Cloud",
                                         badgeCount: store.items(for: .subscription).filter { !$0.isCompleted }.count
@@ -1282,6 +1362,36 @@ public struct ContentView: View {
             .sheet(item: $selectedDocToEdit) { doc in
                 EditDocumentSheet(store: store, document: doc)
             }
+            .sheet(isPresented: $showingExpenseTracker) {
+                NavigationStack {
+                    ExpenseTrackerHubView(store: store)
+                }
+            }
+            .onOpenURL { url in
+                handleIncomingURL(url)
+            }
+        }
+    }
+    
+    private func handleIncomingURL(_ url: URL) {
+        guard url.scheme?.lowercased() == "prabuone" else { return }
+        let host = url.host?.lowercased() ?? ""
+        if host == "log-expense" || host == "expense" || host == "track" {
+            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+               let text = components.queryItems?.first(where: { $0.name == "text" })?.value,
+               !text.isEmpty {
+                if let parsed = BankingTextParser.parse(text) {
+                    let expense = parsed.toExpense(source: .smsShortcut)
+                    store.addExpense(expense)
+                    withAnimation {
+                        copiedToastText = "Logged \(expense.formattedSignedAmount) for \(expense.merchantOrPayee)"
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        withAnimation { copiedToastText = nil }
+                    }
+                }
+            }
+            showingExpenseTracker = true
         }
     }
     

@@ -17,6 +17,7 @@ public final class LifeStore: ObservableObject {
     @Published public var activeVehicleId: UUID? = nil { didSet { saveActiveVehicleId() } }
     @Published public var documents: [DocumentRecord] = [] { didSet { saveDocumentsToDisk() } }
     @Published public var quickNotes: [QuickNote] = [] { didSet { saveNotesToDisk() } }
+    @Published public var expenses: [ExpenseTransaction] = [] { didSet { saveExpensesToDisk() } }
     
     public var activeVehicle: VehicleProfile {
         if let id = activeVehicleId, let found = vehicles.first(where: { $0.id == id }) {
@@ -55,6 +56,7 @@ public final class LifeStore: ObservableObject {
     private let vehicleFileName = "prabuone_vehicle.json"
     private let documentsFileName = "prabuone_documents.json"
     private let notesFileName = "prabuone_notes.json"
+    private let expensesFileName = "prabuone_expenses.json"
     
     public init() {
         loadFromDisk()
@@ -726,6 +728,84 @@ public final class LifeStore: ObservableObject {
         }
     }
     
+    // MARK: - Mutations (Expenses & Banking Alerts)
+    
+    @discardableResult
+    public func addExpense(_ expense: ExpenseTransaction) -> ExpenseTransaction {
+        expenses.insert(expense, at: 0)
+        HapticManager.success()
+        return expense
+    }
+    
+    public func updateExpense(_ expense: ExpenseTransaction) {
+        if let index = expenses.firstIndex(where: { $0.id == expense.id }) {
+            expenses[index] = expense
+            HapticManager.selection()
+        }
+    }
+    
+    public func deleteExpense(_ expense: ExpenseTransaction) {
+        expenses.removeAll { $0.id == expense.id }
+        HapticManager.light()
+    }
+    
+    public func containsDuplicateExpense(_ candidate: ExpenseTransaction) -> Bool {
+        return expenses.contains { existing in
+            if let ref1 = existing.referenceNumber, !ref1.isEmpty,
+               let ref2 = candidate.referenceNumber, !ref2.isEmpty,
+               ref1.lowercased() == ref2.lowercased() {
+                return true
+            }
+            if abs(existing.amount - candidate.amount) < 0.01 &&
+               existing.merchantOrPayee.lowercased() == candidate.merchantOrPayee.lowercased() &&
+               abs(existing.transactionDate.timeIntervalSince(candidate.transactionDate)) < 180 {
+                return true
+            }
+            return false
+        }
+    }
+    
+    public var thisMonthExpensesTotal: Double {
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: Date())
+        let currentYear = calendar.component(.year, from: Date())
+        
+        return expenses.filter {
+            $0.type == .debit &&
+            calendar.component(.month, from: $0.transactionDate) == currentMonth &&
+            calendar.component(.year, from: $0.transactionDate) == currentYear
+        }.reduce(0) { $0 + $1.amount }
+    }
+    
+    public var thisMonthIncomeTotal: Double {
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: Date())
+        let currentYear = calendar.component(.year, from: Date())
+        
+        return expenses.filter {
+            $0.type == .credit &&
+            calendar.component(.month, from: $0.transactionDate) == currentMonth &&
+            calendar.component(.year, from: $0.transactionDate) == currentYear
+        }.reduce(0) { $0 + $1.amount }
+    }
+    
+    public var expensesByCategoryThisMonth: [(category: ExpenseCategory, amount: Double, count: Int)] {
+        let calendar = Calendar.current
+        let currentMonth = calendar.component(.month, from: Date())
+        let currentYear = calendar.component(.year, from: Date())
+        
+        let monthDebits = expenses.filter {
+            $0.type == .debit &&
+            calendar.component(.month, from: $0.transactionDate) == currentMonth &&
+            calendar.component(.year, from: $0.transactionDate) == currentYear
+        }
+        
+        let grouped = Dictionary(grouping: monthDebits, by: { $0.category })
+        return grouped.map { (cat, txs) in
+            (category: cat, amount: txs.reduce(0) { $0 + $1.amount }, count: txs.count)
+        }.sorted { $0.amount > $1.amount }
+    }
+    
     // MARK: - Helpers
     
     private func nextDateForDay(_ day: Int) -> Date {
@@ -778,6 +858,10 @@ public final class LifeStore: ObservableObject {
     
     private func saveNotesToDisk() {
         try? JSONEncoder().encode(quickNotes).write(to: getURL(for: notesFileName), options: .atomic)
+    }
+    
+    public func saveExpensesToDisk() {
+        try? JSONEncoder().encode(expenses).write(to: getURL(for: expensesFileName), options: .atomic)
     }
     
     private func loadFromDisk() {
@@ -876,6 +960,15 @@ public final class LifeStore: ObservableObject {
         } else {
             self.quickNotes = []
         }
+        
+        let expensesURL = getURL(for: expensesFileName)
+        if FileManager.default.fileExists(atPath: expensesURL.path),
+           let data = try? Data(contentsOf: expensesURL),
+           let loaded = try? JSONDecoder().decode([ExpenseTransaction].self, from: data) {
+            self.expenses = loaded
+        } else {
+            self.expenses = []
+        }
     }
     
     // MARK: - Google Backup & Full Archive Export/Restore
@@ -918,7 +1011,8 @@ public final class LifeStore: ObservableObject {
             vehicles: self.vehicles,
             documents: self.documents,
             quickNotes: self.quickNotes,
-            attachments: []
+            attachments: [],
+            expenses: self.expenses
         )
         
         let encoder = JSONEncoder()
@@ -941,7 +1035,8 @@ public final class LifeStore: ObservableObject {
             "vehiclesCount": self.vehicles.count,
             "documentsCount": self.documents.count,
             "attachmentsCount": copiedAttachmentCount,
-            "notesCount": self.quickNotes.count
+            "notesCount": self.quickNotes.count,
+            "expensesCount": self.expenses.count
         ]
         if let manifestData = try? JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys]) {
             try? manifestData.write(to: stagingFolderURL.appendingPathComponent("manifest.json"), options: .atomic)
@@ -1099,6 +1194,7 @@ public final class LifeStore: ObservableObject {
         
         self.documents = archive.documents
         self.quickNotes = archive.quickNotes
+        self.expenses = archive.expenses ?? []
         
         saveToDisk()
         saveCardsToDisk()
@@ -1108,6 +1204,7 @@ public final class LifeStore: ObservableObject {
         saveVehicleToDisk()
         saveDocumentsToDisk()
         saveNotesToDisk()
+        saveExpensesToDisk()
         
         ReminderEngine.shared.cancelAllReminders()
         for item in self.items {
@@ -1186,6 +1283,7 @@ public struct PrabuOneBackupArchive: Codable {
     public var documents: [DocumentRecord]
     public var quickNotes: [QuickNote]
     public var attachments: [BackupAttachmentPayload]
+    public var expenses: [ExpenseTransaction]?
     
     public init(
         version: Int = 2,
@@ -1199,7 +1297,8 @@ public struct PrabuOneBackupArchive: Codable {
         vehicles: [VehicleProfile] = [],
         documents: [DocumentRecord],
         quickNotes: [QuickNote],
-        attachments: [BackupAttachmentPayload] = []
+        attachments: [BackupAttachmentPayload] = [],
+        expenses: [ExpenseTransaction] = []
     ) {
         self.version = version
         self.exportDate = exportDate
@@ -1213,10 +1312,11 @@ public struct PrabuOneBackupArchive: Codable {
         self.documents = documents
         self.quickNotes = quickNotes
         self.attachments = attachments
+        self.expenses = expenses
     }
     
     private enum CodingKeys: String, CodingKey {
-        case version, exportDate, items, creditCards, bankAccounts, loans, licPolicies, vehicleProfile, vehicles, documents, quickNotes, attachments
+        case version, exportDate, items, creditCards, bankAccounts, loans, licPolicies, vehicleProfile, vehicles, documents, quickNotes, attachments, expenses
     }
     
     public init(from decoder: Decoder) throws {
@@ -1233,5 +1333,6 @@ public struct PrabuOneBackupArchive: Codable {
         documents = try container.decodeIfPresent([DocumentRecord].self, forKey: .documents) ?? []
         quickNotes = try container.decodeIfPresent([QuickNote].self, forKey: .quickNotes) ?? []
         attachments = try container.decodeIfPresent([BackupAttachmentPayload].self, forKey: .attachments) ?? []
+        expenses = try container.decodeIfPresent([ExpenseTransaction].self, forKey: .expenses) ?? []
     }
 }

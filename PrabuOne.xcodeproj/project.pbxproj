@@ -40,6 +40,11 @@
 		B10000000000000000000232 /* PaymentMethodPickerRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000132 /* PaymentMethodPickerRow.swift */; };
 		B10000000000000000000233 /* DeviceHealthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000133 /* DeviceHealthManager.swift */; };
 		B10000000000000000000234 /* DeviceHealthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000134 /* DeviceHealthView.swift */; };
+		B10000000000000000000235 /* ExpenseTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000135 /* ExpenseTransaction.swift */; };
+		B10000000000000000000236 /* BankingTextParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000136 /* BankingTextParser.swift */; };
+		B10000000000000000000237 /* GmailExpenseSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000137 /* GmailExpenseSyncManager.swift */; };
+		B10000000000000000000238 /* LogExpenseIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000138 /* LogExpenseIntent.swift */; };
+		B10000000000000000000239 /* ExpenseTrackerHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000139 /* ExpenseTrackerHubView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -78,6 +83,11 @@
 		B10000000000000000000132 /* PaymentMethodPickerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentMethodPickerRow.swift; sourceTree = "<group>"; };
 		B10000000000000000000133 /* DeviceHealthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealthManager.swift; sourceTree = "<group>"; };
 		B10000000000000000000134 /* DeviceHealthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealthView.swift; sourceTree = "<group>"; };
+		B10000000000000000000135 /* ExpenseTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTransaction.swift; sourceTree = "<group>"; };
+		B10000000000000000000136 /* BankingTextParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankingTextParser.swift; sourceTree = "<group>"; };
+		B10000000000000000000137 /* GmailExpenseSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GmailExpenseSyncManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000138 /* LogExpenseIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogExpenseIntent.swift; sourceTree = "<group>"; };
+		B10000000000000000000139 /* ExpenseTrackerHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpenseTrackerHubView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -142,6 +152,7 @@
 				B10000000000000000000116 /* DocumentData.swift */,
 				B10000000000000000000122 /* QuickNote.swift */,
 				B10000000000000000000124 /* FinancialObligations.swift */,
+				B10000000000000000000135 /* ExpenseTransaction.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -162,6 +173,9 @@
 				B10000000000000000000121 /* HapticManager.swift */,
 				B10000000000000000000130 /* ZipArchiveManager.swift */,
 				B10000000000000000000133 /* DeviceHealthManager.swift */,
+				B10000000000000000000136 /* BankingTextParser.swift */,
+				B10000000000000000000137 /* GmailExpenseSyncManager.swift */,
+				B10000000000000000000138 /* LogExpenseIntent.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -184,6 +198,7 @@
 				B10000000000000000000131 /* UniversalDocumentLinker.swift */,
 				B10000000000000000000132 /* PaymentMethodPickerRow.swift */,
 				B10000000000000000000134 /* DeviceHealthView.swift */,
+				B10000000000000000000139 /* ExpenseTrackerHubView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -290,6 +305,11 @@
 				B10000000000000000000232 /* PaymentMethodPickerRow.swift in Sources */,
 				B10000000000000000000233 /* DeviceHealthManager.swift in Sources */,
 				B10000000000000000000234 /* DeviceHealthView.swift in Sources */,
+				B10000000000000000000235 /* ExpenseTransaction.swift in Sources */,
+				B10000000000000000000236 /* BankingTextParser.swift in Sources */,
+				B10000000000000000000237 /* GmailExpenseSyncManager.swift in Sources */,
+				B10000000000000000000238 /* LogExpenseIntent.swift in Sources */,
+				B10000000000000000000239 /* ExpenseTrackerHubView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
