@@ -6,7 +6,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
     public var bankName: String          // e.g. HDFC Bank, ICICI Bank, SBI, Axis
     public var cardName: String          // e.g. Regalia Gold, Amazon Pay, Platinum Debit
     public var cardNumber: String        // Full card number (16 digits)
-    public var cardHolderName: String    // e.g. PRABU GANESAN
+    public var cardHolderName: String    // Cardholder Name
     public var expiryDate: String        // MM/YY (e.g. "08/29")
     public var cvv: String               // e.g. "123"
     public var atmPin: String            // 4-digit ATM PIN
@@ -23,7 +23,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         bankName: String,
         cardName: String,
         cardNumber: String,
-        cardHolderName: String = "PRABU GANESAN",
+        cardHolderName: String = "",
         expiryDate: String = "",
         cvv: String = "",
         atmPin: String = "",
@@ -144,7 +144,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         let oldLast4 = try container.decodeIfPresent(String.self, forKey: .legacyLastFourDigits)
         cardNumber = fullNumber ?? oldLast4 ?? ""
         
-        cardHolderName = try container.decodeIfPresent(String.self, forKey: .cardHolderName) ?? "PRABU GANESAN"
+        cardHolderName = try container.decodeIfPresent(String.self, forKey: .cardHolderName) ?? ""
         expiryDate = try container.decodeIfPresent(String.self, forKey: .expiryDate) ?? ""
         cvv = try container.decodeIfPresent(String.self, forKey: .cvv) ?? ""
         atmPin = try container.decodeIfPresent(String.self, forKey: .atmPin) ?? ""
@@ -162,12 +162,12 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
 public struct BankAccount: Identifiable, Codable, Equatable {
     public var id: UUID
     public var bankName: String          // e.g. HDFC Bank, SBI, ICICI Bank, Axis Bank
-    public var accountHolderName: String // e.g. PRABU GANESAN
+    public var accountHolderName: String // Account Holder Name
     public var accountNumber: String     // Full Account Number (e.g. "50100432198765")
     public var ifscCode: String          // e.g. "HDFC0000060"
     public var accountType: String       // "Savings", "Current", "Salary"
-    public var upiId: String             // e.g. "prabu@okhdfcbank"
-    public var branchName: String        // e.g. "Anna Nagar Branch"
+    public var upiId: String             // e.g. "user@okhdfcbank"
+    public var branchName: String        // e.g. "Downtown Branch"
     public var accountTheme: String      // midnight, navy, sapphire, pacific, arctic, steel, sky, emerald, purple, slate, amber
     public var tpin: String              // e.g. TPIN / UPI PIN
     public var atmPin: String            // e.g. Associated ATM PIN
@@ -175,7 +175,7 @@ public struct BankAccount: Identifiable, Codable, Equatable {
     public init(
         id: UUID = UUID(),
         bankName: String,
-        accountHolderName: String = "PRABU GANESAN",
+        accountHolderName: String = "",
         accountNumber: String,
         ifscCode: String,
         accountType: String = "Savings",
@@ -258,7 +258,7 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         bankName = try container.decode(String.self, forKey: .bankName)
-        accountHolderName = try container.decodeIfPresent(String.self, forKey: .accountHolderName) ?? "PRABU GANESAN"
+        accountHolderName = try container.decodeIfPresent(String.self, forKey: .accountHolderName) ?? ""
         accountNumber = try container.decode(String.self, forKey: .accountNumber)
         ifscCode = try container.decode(String.self, forKey: .ifscCode)
         accountType = try container.decodeIfPresent(String.self, forKey: .accountType) ?? "Savings"

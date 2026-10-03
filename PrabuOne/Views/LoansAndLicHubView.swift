@@ -759,7 +759,7 @@ struct InsurancePolicyCard: View {
             
             // Footer
             HStack {
-                Text("Holder: \(policy.policyHolderName)")
+                Text(policy.policyHolderName.isEmpty ? "Self" : "Holder: \(policy.policyHolderName)")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.7))
                 
@@ -871,7 +871,7 @@ struct AddLoanSheet: View {
             Form {
                 Section("Loan Information") {
                     TextField("Lender / Bank Name (e.g. HDFC Bank, SBI)", text: $lenderName)
-                    TextField("Loan Name (e.g. Kia Sonet Car Loan)", text: $loanName)
+                    TextField("Loan Name (e.g. Car Loan, Home Loan)", text: $loanName)
                     Picker("Loan Type", selection: $loanType) {
                         ForEach(loanTypes, id: \.self) { type in
                             Text(type).tag(type)
@@ -1386,7 +1386,7 @@ struct AddInsurancePolicySheet: View {
     @State private var nextDueDate = Date().addingTimeInterval(86400 * 90)
     @State private var hasMaturityDate = false
     @State private var maturityDate = Date().addingTimeInterval(86400 * 365 * 15)
-    @State private var policyHolderName = "PRABU GANESAN"
+    @State private var policyHolderName = ""
     @State private var theme = "emerald"
     @State private var notes = ""
     

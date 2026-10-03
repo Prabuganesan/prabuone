@@ -778,7 +778,7 @@ public struct QRScannerView: View {
             
             VStack(spacing: 10) {
                 Button(action: {
-                    handleScannedCode("upi://pay?pa=merchant.prabu@okaxis&pn=Swiggy%20Order&am=480.00&cu=INR&tn=Dinner%20Payment")
+                    handleScannedCode("upi://pay?pa=merchant.food@okaxis&pn=Swiggy%20Order&am=480.00&cu=INR&tn=Dinner%20Payment")
                 }) {
                     Label("Test UPI QR (₹480 to Swiggy)", systemImage: "indianrupeesign.circle.fill")
                         .font(.system(size: 13, weight: .semibold))
@@ -802,9 +802,9 @@ public struct QRScannerView: View {
                 }
                 
                 Button(action: {
-                    handleScannedCode("WIFI:T:WPA;S:Prabu_Fiber_5G;P:UltraSpeed@2026;;")
+                    handleScannedCode("WIFI:T:WPA;S:Home_Fiber_5G;P:UltraSpeed@2026;;")
                 }) {
-                    Label("Test Wi-Fi QR (Prabu_Fiber_5G)", systemImage: "wifi")
+                    Label("Test Wi-Fi QR (Home_Fiber_5G)", systemImage: "wifi")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)

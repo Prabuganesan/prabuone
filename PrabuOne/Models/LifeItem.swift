@@ -79,7 +79,7 @@ public struct LifeItem: Identifiable, Codable, Equatable {
     public var planTier: String?         // e.g. "Premium 4K", "Family Plan", "VIP Annual"
     public var billingCycle: String?      // e.g. "Monthly", "Quarterly", "Half-Yearly", "Yearly"
     public var paymentMethod: String?    // e.g. "HDFC Regalia Card", "ICICI UPI AutoPay", "Apple ID"
-    public var accountEmail: String?     // e.g. "prabu@gmail.com"
+    public var accountEmail: String?     // e.g. "name@example.com" or phone number
     public var sharedWith: String?       // e.g. "4 Screens • Family"
     public var autoRenew: Bool?          // true if recurring e-mandate/auto-debit active
     public var serviceBrand: String?     // e.g. "Netflix", "Prime Video", "Hotstar", "YouTube", "Spotify"

@@ -3,7 +3,7 @@ import Foundation
 /// Represents a formal loan or EMI obligation (e.g. Home Loan, Car Loan, Personal Loan).
 public struct LoanAccount: Identifiable, Codable, Equatable {
     public var id: UUID
-    public var loanName: String          // e.g. "Kia Sonet Auto Loan", "SBI Home Loan"
+    public var loanName: String          // e.g. "Car Loan", "SBI Home Loan"
     public var lenderName: String        // e.g. "HDFC Bank", "SBI", "ICICI Bank", "Bajaj Finserv"
     public var accountNumber: String      // Loan Account Number
     public var loanType: String          // Personal Loan, Home Loan, Car Loan, Gold Loan, Education Loan, Business Loan, Others
@@ -205,7 +205,7 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
 /// Represents an Insurance Policy (LIC, Term Life, Health, Vehicle, etc.).
 public struct InsurancePolicyRecord: Identifiable, Codable, Equatable {
     public var id: UUID
-    public var policyName: String        // e.g. "LIC Jeevan Labh", "Star Health Comprehensive", "Kia Sonet Zero Dep"
+    public var policyName: String        // e.g. "LIC Jeevan Labh", "Star Health Comprehensive", "Comprehensive Car Insurance"
     public var insurerName: String       // e.g. "Life Insurance Corporation of India (LIC)", "HDFC Life", "Star Health"
     public var policyNumber: String      // Policy / Contract number
     public var policyType: String        // Life Insurance, Term Life, Health / Mediclaim, Vehicle Insurance, Endowment Plan, Pension / Annuity, ULIP, Others
@@ -214,7 +214,7 @@ public struct InsurancePolicyRecord: Identifiable, Codable, Equatable {
     public var premiumFrequency: String  // Yearly, Half-Yearly, Quarterly, Monthly
     public var nextDueDate: Date         // Next premium due date
     public var maturityDate: Date?       // Policy maturity date
-    public var policyHolderName: String  // e.g. "PRABU GANESAN"
+    public var policyHolderName: String  // Policyholder Name
     public var theme: String             // Color accent: emerald, sapphire, ruby, amber, midnight, purple
     public var notes: String?
     
@@ -229,7 +229,7 @@ public struct InsurancePolicyRecord: Identifiable, Codable, Equatable {
         premiumFrequency: String = "Yearly",
         nextDueDate: Date,
         maturityDate: Date? = nil,
-        policyHolderName: String = "PRABU GANESAN",
+        policyHolderName: String = "",
         theme: String = "emerald",
         notes: String? = nil
     ) {

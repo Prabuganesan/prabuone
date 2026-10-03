@@ -1643,7 +1643,7 @@ public struct AddSubscriptionSheet: View {
                         }
                     }
                     
-                    TextField("Registered Email / Phone ID (e.g. prabu@gmail.com)", text: $accountEmail)
+                    TextField("Registered Email / Phone ID (e.g. name@example.com)", text: $accountEmail)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                     
@@ -1837,126 +1837,237 @@ public struct EditSubscriptionSheet: View {
     }
 }
 
-// MARK: - 3. Mobile & Bills Hub (Bills Only)
+// MARK: - 3. Mobile, Broadband & Utility Bills Hub
 
-/// Dedicated Mobile & Utility Bills Hub.
-/// Displays mobile recharge validity, broadband plans, electricity, and utility commitments.
+public enum MobileBillTabFilter: String, CaseIterable, Identifiable {
+    case all = "All"
+    case prepaid = "Prepaid Mobile"
+    case broadband = "Broadband & Fiber"
+    case postpaid = "Postpaid Mobile"
+    case utilities = "Utilities & Bills"
+    
+    public var id: String { rawValue }
+    
+    public var iconName: String {
+        switch self {
+        case .all: return "square.grid.2x2.fill"
+        case .prepaid: return "antenna.radiowaves.left.and.right"
+        case .broadband: return "wifi.router.fill"
+        case .postpaid: return "iphone.gen3"
+        case .utilities: return "bolt.fill"
+        }
+    }
+}
+
+/// Comprehensive Mobile & Utility Bills Hub.
+/// Tracks prepaid recharges (validity days & daily data), broadband & fiber internet (speeds & accounts), postpaid bills, and utility commitments.
 public struct MobileBillsHubView: View {
     @ObservedObject var store: LifeStore
     @State private var showingAddBill = false
     @State private var selectedItemToEdit: LifeItem? = nil
+    @State private var selectedTab: MobileBillTabFilter = .all
+    @State private var searchQuery: String = ""
+    @State private var copiedToast: String? = nil
     
     public init(store: LifeStore) {
         self.store = store
     }
     
-    private var bills: [LifeItem] {
+    private var allBills: [LifeItem] {
         store.items(for: .mobileBill)
     }
     
-    private var totalOutflow: Double {
-        bills.compactMap { $0.amount }.reduce(0, +)
+    private var filteredBills: [LifeItem] {
+        var items = allBills
+        
+        let q = searchQuery.trimmingCharacters(in: .whitespaces).lowercased()
+        if !q.isEmpty {
+            items = items.filter {
+                $0.title.lowercased().contains(q) ||
+                $0.subtitle.lowercased().contains(q) ||
+                ($0.planTier?.lowercased().contains(q) ?? false) ||
+                ($0.paymentMethod?.lowercased().contains(q) ?? false) ||
+                ($0.accountEmail?.lowercased().contains(q) ?? false) ||
+                ($0.serviceBrand?.lowercased().contains(q) ?? false) ||
+                ($0.notes?.lowercased().contains(q) ?? false)
+            }
+        }
+        
+        switch selectedTab {
+        case .all:
+            return items
+        case .prepaid:
+            return items.filter { determineCategory(for: $0) == .prepaid }
+        case .broadband:
+            return items.filter { determineCategory(for: $0) == .broadband }
+        case .postpaid:
+            return items.filter { determineCategory(for: $0) == .postpaid }
+        case .utilities:
+            return items.filter { determineCategory(for: $0) == .utilities }
+        }
+    }
+    
+    private var totalMonthlyOutflow: Double {
+        allBills.filter { !$0.isCompleted }.reduce(0) { $0 + $1.normalizedMonthlyAmount }
+    }
+    
+    private var prepaidCount: Int {
+        allBills.filter { determineCategory(for: $0) == .prepaid }.count
+    }
+    
+    private var broadbandCount: Int {
+        allBills.filter { determineCategory(for: $0) == .broadband }.count
+    }
+    
+    private var dueThisMonthCount: Int {
+        let calendar = Calendar.current
+        let now = Date()
+        return allBills.filter { item in
+            !item.isCompleted &&
+            calendar.isDate(item.dueDate, equalTo: now, toGranularity: .month)
+        }.count
     }
     
     public var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Header Banner
-                if !bills.isEmpty {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("MONTHLY UTILITY COMMITMENT")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.secondary)
-                            Text(formatCurrency(totalOutflow))
-                                .font(.system(size: 24, weight: .heavy, design: .rounded))
-                                .foregroundColor(.primary)
-                        }
-                        Spacer()
-                        Image(systemName: "iphone.gen3")
-                            .font(.system(size: 32))
-                            .foregroundColor(.green)
-                    }
-                    .padding(16)
-                    .background(Color.green.opacity(0.1))
-                    .cornerRadius(16)
-                }
-                
-                // List of Bills
-                if bills.isEmpty {
-                    VStack(spacing: 10) {
-                        Image(systemName: "iphone.gen3")
-                            .font(.system(size: 40))
-                            .foregroundColor(.green.opacity(0.7))
-                            .padding(.top, 24)
-                        Text("No Bills Added Yet")
-                            .font(.headline)
-                        Text("Track mobile SIM recharges, Wi-Fi fiber, electricity, and water bills.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+        ZStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    // 📊 3-Column Analytics KPI Grid
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        kpiTile(
+                            title: "MONTHLY OUTFLOW",
+                            value: formatCurrency(totalMonthlyOutflow),
+                            icon: "indianrupeesign.circle.fill",
+                            color: .green
+                        )
                         
-                        Button(action: {
-                            HapticManager.light()
-                            showingAddBill = true
-                        }) {
-                            Label("Add Mobile or Utility Bill", systemImage: "plus")
-                                .font(.system(size: 14, weight: .bold))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                        }
-                        .padding(.top, 8)
+                        kpiTile(
+                            title: "BROADBAND",
+                            value: "\(broadbandCount) Fiber",
+                            icon: "wifi.router.fill",
+                            color: .teal
+                        )
+                        
+                        kpiTile(
+                            title: "PREPAID SIMS",
+                            value: "\(prepaidCount) Active",
+                            icon: "antenna.radiowaves.left.and.right",
+                            color: .blue
+                        )
                     }
-                    .padding(.vertical, 32)
-                } else {
-                    VStack(spacing: 10) {
-                        ForEach(bills) { item in
-                            HStack {
-                                LifeItemRow(item: item, onTogglePaid: {
-                                    withAnimation {
-                                        HapticManager.success()
-                                        store.toggleCompleted(item)
-                                    }
-                                })
+                    
+                    // 🔍 Search Bar
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 14))
+                        TextField("Search operator, mobile number, broadband ID, plan...", text: $searchQuery)
+                            .font(.system(size: 13.5))
+                        if !searchQuery.isEmpty {
+                            Button {
+                                searchQuery = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.secondary)
+                                    .font(.system(size: 14))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(Color(UIColor.secondarySystemBackground))
+                    .cornerRadius(12)
+                    
+                    // 🔘 Category Filter Segments
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(MobileBillTabFilter.allCases) { filter in
+                                let isSelected = selectedTab == filter
+                                let count = countForFilter(filter)
                                 
-                                Button(action: {
-                                    selectedItemToEdit = item
-                                }) {
-                                    Image(systemName: "pencil.circle")
-                                        .foregroundColor(.secondary)
-                                        .font(.system(size: 18))
+                                Button {
+                                    HapticManager.selection()
+                                    selectedTab = filter
+                                } label: {
+                                    HStack(spacing: 5) {
+                                        Image(systemName: filter.iconName)
+                                            .font(.system(size: 11))
+                                        Text(filter.rawValue)
+                                            .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                                        Text("(\(count))")
+                                            .font(.system(size: 10.5, weight: .bold))
+                                            .foregroundColor(isSelected ? .white.opacity(0.85) : .secondary)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 7)
+                                    .background(isSelected ? Color.green : Color(UIColor.secondarySystemBackground))
+                                    .foregroundColor(isSelected ? .white : .primary)
+                                    .cornerRadius(20)
                                 }
                                 .buttonStyle(.plain)
                             }
-                            .padding(12)
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(14)
-                            .contextMenu {
-                                Button {
-                                    selectedItemToEdit = item
-                                } label: {
-                                    Label("Edit Bill", systemImage: "pencil")
-                                }
-                                
-                                Button(role: .destructive) {
-                                    withAnimation {
-                                        store.deleteItem(item)
+                        }
+                    }
+                    
+                    // 📋 Bill Cards List
+                    if filteredBills.isEmpty {
+                        emptyStateView
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(filteredBills) { item in
+                                MobileBillCardRow(
+                                    item: item,
+                                    category: determineCategory(for: item),
+                                    onTogglePaid: {
+                                        withAnimation {
+                                            HapticManager.success()
+                                            store.toggleCompleted(item)
+                                        }
+                                    },
+                                    onQuickRecharge: {
+                                        performQuickRecharge(for: item)
+                                    },
+                                    onCopy: { text, label in
+                                        copyToClipboard(text: text, label: label)
+                                    },
+                                    onEdit: {
+                                        selectedItemToEdit = item
+                                    },
+                                    onDelete: {
+                                        withAnimation {
+                                            store.deleteItem(item)
+                                        }
                                     }
-                                } label: {
-                                    Label("Delete Bill", systemImage: "trash")
-                                }
+                                )
                             }
                         }
                     }
                 }
+                .padding(.horizontal)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
-            .padding(.horizontal)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
+            
+            // Toast HUD
+            if let toast = copiedToast {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text(toast)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.88))
+                    .clipShape(Capsule())
+                    .shadow(radius: 6)
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .navigationTitle("Mobile & Bills")
         .navigationBarTitleDisplayMode(.inline)
@@ -1966,17 +2077,774 @@ public struct MobileBillsHubView: View {
                     HapticManager.light()
                     showingAddBill = true
                 }) {
-                    Image(systemName: "plus")
-                        .fontWeight(.semibold)
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .fontWeight(.bold)
+                    }
                 }
             }
         }
         .sheet(isPresented: $showingAddBill) {
-            AddLifeItemView(store: store, initialCategory: .mobileBill)
+            AddMobileOrUtilityBillSheet(store: store, initialCategory: selectedTab)
         }
         .sheet(item: $selectedItemToEdit) { item in
-            EditLifeItemSheet(store: store, item: item)
+            EditMobileOrUtilityBillSheet(store: store, item: item)
         }
+    }
+    
+    // MARK: - KPI Tile Helper
+    
+    private func kpiTile(title: String, value: String, icon: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                    .foregroundColor(color)
+                Text(title)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            Text(value)
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(12)
+    }
+    
+    // MARK: - Empty State View
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "antenna.radiowaves.left.and.right")
+                .font(.system(size: 42))
+                .foregroundColor(.green.opacity(0.7))
+                .padding(.top, 32)
+            
+            Text("No Connections in this Filter")
+                .font(.system(size: 16, weight: .bold))
+            
+            Text("Add mobile prepaid recharge plans (with validity & daily data), broadband & fiber lines, or utility bills.")
+                .font(.system(size: 13))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            
+            Button {
+                HapticManager.light()
+                showingAddBill = true
+            } label: {
+                Label("Add Connection or Bill", systemImage: "plus")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .background(Color.green)
+                    .cornerRadius(10)
+            }
+            .padding(.top, 8)
+        }
+        .padding(.vertical, 32)
+    }
+    
+    // MARK: - Helpers & Actions
+    
+    private func countForFilter(_ filter: MobileBillTabFilter) -> Int {
+        switch filter {
+        case .all: return allBills.count
+        case .prepaid: return prepaidCount
+        case .broadband: return broadbandCount
+        case .postpaid: return allBills.filter { determineCategory(for: $0) == .postpaid }.count
+        case .utilities: return allBills.filter { determineCategory(for: $0) == .utilities }.count
+        }
+    }
+    
+    private func determineCategory(for item: LifeItem) -> MobileBillTabFilter {
+        let text = "\(item.title) \(item.subtitle) \(item.planTier ?? "") \(item.serviceBrand ?? "") \(item.notes ?? "")".lowercased()
+        
+        if text.contains("fiber") || text.contains("broadband") || text.contains("wifi") || text.contains("wi-fi") || text.contains("act") || text.contains("mbps") || text.contains("dsl") || text.contains("airfiber") || text.contains("hathway") {
+            return .broadband
+        } else if text.contains("prepaid") || text.contains("recharge") || text.contains("validity") || text.contains("gb/day") || text.contains("true 5g") || text.contains("84 days") || text.contains("28 days") || text.contains("56 days") || text.contains("365 days") {
+            return .prepaid
+        } else if text.contains("postpaid") {
+            return .postpaid
+        } else if text.contains("electricity") || text.contains("power") || text.contains("tneb") || text.contains("bescom") || text.contains("gas") || text.contains("water") || text.contains("dth") || text.contains("fastag") {
+            return .utilities
+        } else {
+            return .prepaid
+        }
+    }
+    
+    private func performQuickRecharge(for item: LifeItem) {
+        HapticManager.success()
+        // Extract validity days from planTier, subtitle, or default to 84 or 28
+        var validityDays = 84
+        let text = "\(item.planTier ?? "") \(item.subtitle)".lowercased()
+        if text.contains("365") { validityDays = 365 }
+        else if text.contains("90") { validityDays = 90 }
+        else if text.contains("84") { validityDays = 84 }
+        else if text.contains("56") { validityDays = 56 }
+        else if text.contains("28") { validityDays = 28 }
+        else if text.contains("30") { validityDays = 30 }
+        
+        // Add validity days from max(Date(), item.dueDate)
+        let baseDate = max(Date(), item.dueDate)
+        let newDueDate = Calendar.current.date(byAdding: .day, value: validityDays, to: baseDate) ?? Date()
+        
+        var updated = item
+        updated.dueDate = newDueDate
+        updated.isCompleted = false
+        store.updateItem(updated)
+        
+        copyToClipboard(text: "", label: "Recharged! Extended by \(validityDays) days")
+    }
+    
+    private func copyToClipboard(text: String, label: String) {
+        if !text.isEmpty {
+            UIPasteboard.general.string = text
+        }
+        HapticManager.success()
+        withAnimation {
+            copiedToast = label.isEmpty ? "Copied" : label
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                copiedToast = nil
+            }
+        }
+    }
+}
+
+// MARK: - Mobile & Utility Bill Card Row
+
+public struct MobileBillCardRow: View {
+    let item: LifeItem
+    let category: MobileBillTabFilter
+    let onTogglePaid: () -> Void
+    let onQuickRecharge: () -> Void
+    let onCopy: (String, String) -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    private var brandColor: Color {
+        let b = "\(item.serviceBrand ?? "") \(item.title)".lowercased()
+        if b.contains("airtel") { return .red }
+        if b.contains("jio") { return .blue }
+        if b.contains("vi") || b.contains("vodafone") || b.contains("idea") { return .orange }
+        if b.contains("bsnl") { return Color(red: 0.1, green: 0.45, blue: 0.85) }
+        if b.contains("act") { return .orange }
+        if b.contains("tata") { return .purple }
+        if b.contains("electricity") || b.contains("power") || b.contains("tneb") { return .yellow }
+        if b.contains("gas") { return .orange }
+        if b.contains("water") { return .cyan }
+        
+        switch category {
+        case .broadband: return .teal
+        case .prepaid: return .green
+        case .postpaid: return .indigo
+        case .utilities: return .amberAccent
+        case .all: return .blue
+        }
+    }
+    
+    private var validityStatus: (text: String, color: Color, isUrgent: Bool) {
+        let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()), to: Calendar.current.startOfDay(for: item.dueDate)).day ?? 0
+        if days < 0 {
+            return ("Expired (\(abs(days))d ago)", .red, true)
+        } else if days == 0 {
+            return ("Due Today", .red, true)
+        } else if days == 1 {
+            return ("Expires Tomorrow", .orange, true)
+        } else if days <= 3 {
+            return ("Expires in \(days) days", .orange, true)
+        } else if days <= 7 {
+            return ("\(days) days remaining", .yellow, false)
+        } else {
+            return ("Active • \(days) days left", .green, false)
+        }
+    }
+    
+    public var body: some View {
+        VStack(spacing: 12) {
+            // Header Row: Brand Icon, Name, Category Pill, Amount
+            HStack(alignment: .top, spacing: 12) {
+                // Provider Brand Icon
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(brandColor.opacity(0.18))
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: category.iconName)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(brandColor)
+                }
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(item.title)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        Text(category.rawValue.uppercased())
+                            .font(.system(size: 8.5, weight: .heavy))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(brandColor.opacity(0.15))
+                            .foregroundColor(brandColor)
+                            .clipShape(Capsule())
+                    }
+                    
+                    // Subtitle / Phone Number or Account ID
+                    if !item.subtitle.isEmpty {
+                        Text(item.subtitle)
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                
+                Spacer()
+                
+                // Amount
+                if let amt = item.amount {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(formatCurrency(amt))
+                            .font(.system(size: 17, weight: .heavy, design: .rounded))
+                            .foregroundColor(.primary)
+                        
+                        Text(item.repeatFrequency == .never ? "Recharge" : item.repeatFrequency.rawValue)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            // Plan Tier / Data / Speed Details Pill Bar
+            if let plan = item.planTier, !plan.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: category == .broadband ? "speedometer" : "bolt.horizontal.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(brandColor)
+                    
+                    Text(plan)
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color(UIColor.tertiarySystemBackground))
+                .cornerRadius(8)
+            }
+            
+            Divider()
+            
+            // Footer: Validity / Expiry Status & Quick Actions
+            HStack(spacing: 8) {
+                // Validity Status Capsule
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(validityStatus.color)
+                        .frame(width: 6, height: 6)
+                    Text(validityStatus.text)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(validityStatus.color)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(validityStatus.color.opacity(0.12))
+                .clipShape(Capsule())
+                
+                if let pm = item.paymentMethod, !pm.isEmpty {
+                    Text(pm)
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                // Quick Re-Recharge (extends by validity days)
+                if category == .prepaid {
+                    Button(action: onQuickRecharge) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Recharged")
+                        }
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.green.opacity(0.14))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                // Toggle Paid
+                Button(action: onTogglePaid) {
+                    Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 18))
+                        .foregroundColor(item.isCompleted ? .green : .secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14)
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(16)
+        .contextMenu {
+            Button(action: onQuickRecharge) {
+                Label("Mark Recharged (Roll Ahead)", systemImage: "arrow.clockwise")
+            }
+            
+            if !item.subtitle.isEmpty {
+                Button {
+                    onCopy(item.subtitle, "Number / Account")
+                } label: {
+                    Label("Copy Number / Account", systemImage: "doc.on.doc")
+                }
+            }
+            
+            Button(action: onEdit) {
+                Label("Edit Connection", systemImage: "pencil")
+            }
+            
+            Button(role: .destructive, action: onDelete) {
+                Label("Delete Connection", systemImage: "trash")
+            }
+        }
+    }
+}
+
+// MARK: - Add Mobile, Broadband & Utility Bill Sheet
+
+public struct AddMobileOrUtilityBillSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    
+    @State private var selectedCategory: MobileBillTabFilter = .prepaid
+    @State private var providerName: String = "Jio"
+    @State private var planName: String = "True 5G Unlimited"
+    @State private var identifier: String = ""
+    @State private var amountText: String = "749"
+    @State private var validityDays: Int = 84
+    @State private var dailyData: String = "2.0 GB/day"
+    @State private var broadbandSpeed: String = "300 Mbps"
+    @State private var rechargeDate: Date = Date()
+    @State private var dueDate: Date = Date().addingTimeInterval(84 * 86400)
+    @State private var paymentMethod: String = "Credit Card AutoPay"
+    @State private var autoPayEnabled: Bool = false
+    @State private var notes: String = ""
+    
+    // Quick Presets
+    let prepaidProviders = ["Jio", "Airtel", "Vi (Vodafone Idea)", "BSNL"]
+    let broadbandProviders = ["Airtel Xstream Fiber", "JioFiber", "ACT Fibernet", "Tata Play Fiber", "BSNL Bharat Fibre", "Hathway Fiber"]
+    let postpaidProviders = ["Airtel Postpaid", "Jio Postpaid", "Vi Max"]
+    let utilityProviders = ["Electricity Board (TNEB)", "BESCOM Power", "Tata Power", "Adani Electricity", "Piped Gas", "Water Supply", "FASTag"]
+    
+    let validityOptions = [28, 56, 84, 90, 365]
+    let dataOptions = ["1.5 GB/day", "2.0 GB/day", "2.5 GB/day", "3.0 GB/day", "Unlimited 5G", "Data Booster"]
+    let speedOptions = ["40 Mbps", "100 Mbps", "200 Mbps", "300 Mbps", "500 Mbps", "1 Gbps"]
+    
+    public init(store: LifeStore, initialCategory: MobileBillTabFilter = .prepaid) {
+        self.store = store
+        _selectedCategory = State(initialValue: initialCategory == .all ? .prepaid : initialCategory)
+    }
+    
+    public var body: some View {
+        NavigationStack {
+            Form {
+                // 1. Connection Category Selector
+                Section("Connection Type") {
+                    Picker("Category", selection: $selectedCategory) {
+                        Text("Prepaid Mobile").tag(MobileBillTabFilter.prepaid)
+                        Text("Broadband Fiber").tag(MobileBillTabFilter.broadband)
+                        Text("Postpaid").tag(MobileBillTabFilter.postpaid)
+                        Text("Utility").tag(MobileBillTabFilter.utilities)
+                    }
+                    .pickerStyle(.segmented)
+                    .onChange(of: selectedCategory) { _, newCat in
+                        updateDefaultsForCategory(newCat)
+                    }
+                }
+                
+                // 2. Provider Selection
+                Section("Provider / Operator") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(currentProviderList, id: \.self) { prov in
+                                let isSelected = providerName == prov
+                                Button {
+                                    HapticManager.selection()
+                                    providerName = prov
+                                } label: {
+                                    Text(prov)
+                                        .font(.system(size: 12, weight: isSelected ? .bold : .medium))
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(isSelected ? Color.green : Color(UIColor.tertiarySystemBackground))
+                                        .foregroundColor(isSelected ? .white : .primary)
+                                        .cornerRadius(8)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    
+                    TextField("Operator / Provider Name", text: $providerName)
+                    TextField(identifierLabel, text: $identifier)
+                        .keyboardType(selectedCategory == .prepaid || selectedCategory == .postpaid ? .phonePad : .default)
+                }
+                
+                // 3. Plan & Validity Specifics
+                if selectedCategory == .prepaid {
+                    Section("Prepaid Plan & Validity") {
+                        TextField("Plan Name (e.g. True 5G 84 Days)", text: $planName)
+                        
+                        // Validity Days Chips
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Validity Days")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.secondary)
+                            
+                            HStack(spacing: 8) {
+                                ForEach(validityOptions, id: \.self) { days in
+                                    Button {
+                                        HapticManager.selection()
+                                        validityDays = days
+                                        recalculateDueDate()
+                                    } label: {
+                                        Text("\(days) Days")
+                                            .font(.system(size: 11.5, weight: validityDays == days ? .bold : .medium))
+                                            .padding(.horizontal, 9)
+                                            .padding(.vertical, 5)
+                                            .background(validityDays == days ? Color.green : Color(UIColor.tertiarySystemBackground))
+                                            .foregroundColor(validityDays == days ? .white : .primary)
+                                            .cornerRadius(6)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        
+                        // Daily Data Chips
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Daily Data Allowance")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.secondary)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(dataOptions, id: \.self) { dataOpt in
+                                        Button {
+                                            HapticManager.selection()
+                                            dailyData = dataOpt
+                                        } label: {
+                                            Text(dataOpt)
+                                                .font(.system(size: 11.5, weight: dailyData == dataOpt ? .bold : .medium))
+                                                .padding(.horizontal, 9)
+                                                .padding(.vertical, 5)
+                                                .background(dailyData == dataOpt ? Color.green : Color(UIColor.tertiarySystemBackground))
+                                                .foregroundColor(dailyData == dataOpt ? .white : .primary)
+                                                .cornerRadius(6)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                        
+                        DatePicker("Last Recharge Date", selection: $rechargeDate, displayedComponents: [.date])
+                            .onChange(of: rechargeDate) { _, _ in
+                                recalculateDueDate()
+                            }
+                        
+                        DatePicker("Recharge Due Date (Calculated)", selection: $dueDate, displayedComponents: [.date])
+                    }
+                } else if selectedCategory == .broadband {
+                    Section("Broadband Fiber Details") {
+                        TextField("Plan Name (e.g. Fiber Entertainment)", text: $planName)
+                        
+                        // Speed Chips
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Internet Speed")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.secondary)
+                            
+                            HStack(spacing: 8) {
+                                ForEach(speedOptions, id: \.self) { sp in
+                                    Button {
+                                        HapticManager.selection()
+                                        broadbandSpeed = sp
+                                    } label: {
+                                        Text(sp)
+                                            .font(.system(size: 11.5, weight: broadbandSpeed == sp ? .bold : .medium))
+                                            .padding(.horizontal, 9)
+                                            .padding(.vertical, 5)
+                                            .background(broadbandSpeed == sp ? Color.teal : Color(UIColor.tertiarySystemBackground))
+                                            .foregroundColor(broadbandSpeed == sp ? .white : .primary)
+                                            .cornerRadius(6)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        
+                        DatePicker("Bill Due Date", selection: $dueDate, displayedComponents: [.date])
+                    }
+                } else {
+                    Section("Bill Details") {
+                        TextField("Plan / Consumer Description", text: $planName)
+                        DatePicker("Bill Due Date", selection: $dueDate, displayedComponents: [.date])
+                    }
+                }
+                
+                // 4. Financial Outflow & Payment Method
+                Section("Amount & Payment Method") {
+                    TextField("Amount in ₹", text: $amountText)
+                        .keyboardType(.decimalPad)
+                    
+                    TextField("Payment Method (e.g. HDFC Credit Card, UPI)", text: $paymentMethod)
+                    
+                    // Saved Cards Quick Suggestions
+                    if !store.creditCards.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(store.creditCards) { card in
+                                    Button {
+                                        HapticManager.selection()
+                                        paymentMethod = "\(card.bankName) \(card.cardName) •• \(card.lastFourDigits)"
+                                    } label: {
+                                        Text("\(card.bankName) •• \(card.lastFourDigits)")
+                                            .font(.system(size: 11))
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color(UIColor.tertiarySystemBackground))
+                                            .cornerRadius(6)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                    }
+                    
+                    Toggle("Auto-Debit / AutoPay Enabled", isOn: $autoPayEnabled)
+                }
+                
+                // 5. Notes & Wi-Fi Details
+                Section("Notes & Account Credentials") {
+                    TextField(selectedCategory == .broadband ? "Wi-Fi SSID, router IP (192.168.1.1), portal login hints" : "Account ID, consumer number, or notes", text: $notes, axis: .vertical)
+                }
+            }
+            .navigationTitle("Add Bill / Recharge")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveNewConnection()
+                    }
+                    .fontWeight(.bold)
+                    .disabled(providerName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+    
+    private var currentProviderList: [String] {
+        switch selectedCategory {
+        case .prepaid: return prepaidProviders
+        case .broadband: return broadbandProviders
+        case .postpaid: return postpaidProviders
+        case .utilities: return utilityProviders
+        case .all: return prepaidProviders
+        }
+    }
+    
+    private var identifierLabel: String {
+        switch selectedCategory {
+        case .prepaid, .postpaid: return "Mobile Number (e.g. +91 98765 43210)"
+        case .broadband: return "Account ID / Landline No. (e.g. 044-24567890)"
+        case .utilities: return "Consumer Number / Service Connection No."
+        case .all: return "Identifier / Account No."
+        }
+    }
+    
+    private func updateDefaultsForCategory(_ cat: MobileBillTabFilter) {
+        switch cat {
+        case .prepaid:
+            providerName = "Jio"
+            planName = "True 5G Unlimited"
+            amountText = "749"
+            validityDays = 84
+            recalculateDueDate()
+        case .broadband:
+            providerName = "Airtel Xstream Fiber"
+            planName = "Standard Fiber 100M"
+            broadbandSpeed = "100 Mbps"
+            amountText = "943"
+            dueDate = Date().addingTimeInterval(30 * 86400)
+        case .postpaid:
+            providerName = "Airtel Postpaid"
+            planName = "Family Infinity Plan"
+            amountText = "1199"
+            dueDate = Date().addingTimeInterval(20 * 86400)
+        case .utilities:
+            providerName = "Electricity Board (TNEB)"
+            planName = "Bimonthly Power Bill"
+            amountText = "1450"
+            dueDate = Date().addingTimeInterval(45 * 86400)
+        case .all:
+            break
+        }
+    }
+    
+    private func recalculateDueDate() {
+        self.dueDate = Calendar.current.date(byAdding: .day, value: validityDays, to: rechargeDate) ?? Date()
+    }
+    
+    private func saveNewConnection() {
+        let cleanProvider = providerName.trimmingCharacters(in: .whitespaces)
+        let cleanId = identifier.trimmingCharacters(in: .whitespaces)
+        let cleanAmount = Double(amountText.trimmingCharacters(in: .whitespaces))
+        
+        let planTierDescription: String
+        let repeatFreq: RepeatFrequency
+        
+        switch selectedCategory {
+        case .prepaid:
+            planTierDescription = "\(validityDays) Days • \(dailyData) • \(planName)"
+            repeatFreq = .never
+        case .broadband:
+            planTierDescription = "\(broadbandSpeed) • Unlimited Fiber • \(planName)"
+            repeatFreq = .monthly
+        case .postpaid:
+            planTierDescription = "Postpaid • \(planName)"
+            repeatFreq = .monthly
+        case .utilities:
+            planTierDescription = "Utility • \(planName)"
+            repeatFreq = .monthly
+        case .all:
+            planTierDescription = planName
+            repeatFreq = .monthly
+        }
+        
+        let newItem = LifeItem(
+            title: cleanProvider,
+            subtitle: cleanId.isEmpty ? planTierDescription : "\(cleanId) • \(planTierDescription)",
+            category: .mobileBill,
+            dueDate: dueDate,
+            amount: cleanAmount,
+            repeatFrequency: repeatFreq,
+            notes: notes.isEmpty ? nil : notes,
+            reminderDaysBefore: [7, 3, 1, 0],
+            planTier: planTierDescription,
+            billingCycle: "\(validityDays) Days",
+            paymentMethod: paymentMethod.isEmpty ? nil : paymentMethod,
+            accountEmail: cleanId.isEmpty ? nil : cleanId,
+            autoRenew: autoPayEnabled,
+            serviceBrand: cleanProvider
+        )
+        
+        store.addItem(newItem)
+        HapticManager.success()
+        dismiss()
+    }
+}
+
+// MARK: - Edit Mobile, Broadband & Utility Bill Sheet
+
+public struct EditMobileOrUtilityBillSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    let item: LifeItem
+    
+    @State private var title: String
+    @State private var subtitle: String
+    @State private var amountText: String
+    @State private var dueDate: Date
+    @State private var planTier: String
+    @State private var paymentMethod: String
+    @State private var autoRenew: Bool
+    @State private var notes: String
+    
+    public init(store: LifeStore, item: LifeItem) {
+        self.store = store
+        self.item = item
+        _title = State(initialValue: item.title)
+        _subtitle = State(initialValue: item.subtitle)
+        _amountText = State(initialValue: item.amount != nil ? String(format: "%.0f", item.amount!) : "")
+        _dueDate = State(initialValue: item.dueDate)
+        _planTier = State(initialValue: item.planTier ?? "")
+        _paymentMethod = State(initialValue: item.paymentMethod ?? "")
+        _autoRenew = State(initialValue: item.autoRenew ?? false)
+        _notes = State(initialValue: item.notes ?? "")
+    }
+    
+    public var body: some View {
+        NavigationStack {
+            Form {
+                Section("Connection Details") {
+                    TextField("Operator / Provider Name", text: $title)
+                    TextField("Identifier / Mobile / Account Number", text: $subtitle)
+                    TextField("Plan Tier (Speed / Data / Validity)", text: $planTier)
+                }
+                
+                Section("Schedule & Amount") {
+                    DatePicker("Due / Expiry Date", selection: $dueDate, displayedComponents: [.date])
+                    TextField("Amount (₹)", text: $amountText)
+                        .keyboardType(.decimalPad)
+                }
+                
+                Section("Payment Method") {
+                    TextField("e.g. HDFC Credit Card, UPI AutoPay", text: $paymentMethod)
+                    Toggle("Auto-Debit / AutoPay Enabled", isOn: $autoRenew)
+                }
+                
+                Section("Notes & Hints") {
+                    TextField("Wi-Fi SSID, router IP, or account hints", text: $notes, axis: .vertical)
+                }
+            }
+            .navigationTitle("Edit Connection")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        saveChanges()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+        }
+    }
+    
+    private func saveChanges() {
+        var updated = item
+        updated.title = title.trimmingCharacters(in: .whitespaces)
+        updated.subtitle = subtitle.trimmingCharacters(in: .whitespaces)
+        updated.amount = Double(amountText.trimmingCharacters(in: .whitespaces))
+        updated.dueDate = dueDate
+        updated.planTier = planTier.isEmpty ? nil : planTier
+        updated.paymentMethod = paymentMethod.isEmpty ? nil : paymentMethod
+        updated.autoRenew = autoRenew
+        updated.notes = notes.isEmpty ? nil : notes
+        
+        store.updateItem(updated)
+        HapticManager.success()
+        dismiss()
     }
 }
 
@@ -2213,7 +3081,7 @@ struct CreditCardView: View {
                         Text("CARD HOLDER")
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.white.opacity(0.65))
-                        Text(card.cardHolderName.isEmpty ? "PRABU GANESAN" : card.cardHolderName.uppercased())
+                        Text(card.cardHolderName.isEmpty ? "CARDHOLDER NAME" : card.cardHolderName.uppercased())
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.white)
                             .lineLimit(1)
@@ -2436,7 +3304,7 @@ struct AddCreditCardSheet: View {
     @State private var bankName = ""
     @State private var cardName = ""
     @State private var cardNumber = ""
-    @State private var cardHolderName = "PRABU GANESAN"
+    @State private var cardHolderName = ""
     @State private var expiryDate = ""
     @State private var cvv = ""
     @State private var atmPin = ""
@@ -3120,7 +3988,7 @@ struct BankAccountCardView: View {
                         Text("ACCOUNT HOLDER")
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(.white.opacity(0.65))
-                        Text(account.accountHolderName.isEmpty ? "PRABU GANESAN" : account.accountHolderName.uppercased())
+                        Text(account.accountHolderName.isEmpty ? "ACCOUNT HOLDER" : account.accountHolderName.uppercased())
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.white)
                             .lineLimit(1)
@@ -3335,7 +4203,7 @@ struct AddBankAccountSheet: View {
     @ObservedObject var store: LifeStore
     
     @State private var bankName = ""
-    @State private var accountHolderName = "PRABU GANESAN"
+    @State private var accountHolderName = ""
     @State private var accountNumber = ""
     @State private var ifscCode = ""
     @State private var accountType = "Savings"

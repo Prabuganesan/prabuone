@@ -1048,7 +1048,7 @@ public struct ContentView: View {
                                         icon: "iphone.gen3",
                                         color: .green,
                                         title: "Mobile & Bills",
-                                        subtitle: "\(store.items(for: .mobileBill).count) SIM & Utility Plans",
+                                        subtitle: "\(store.items(for: .mobileBill).count) SIM, Fiber & Utility Plans",
                                         badgeCount: store.items(for: .mobileBill).filter { !$0.isCompleted }.count
                                     )
                                 }
@@ -1072,7 +1072,7 @@ public struct ContentView: View {
                                         icon: "car.side.fill",
                                         color: .orange,
                                         title: "Vehicles",
-                                        subtitle: store.vehicleProfile.makeModel.isEmpty ? "Kia Sonet & Service" : "\(store.vehicleProfile.makeModel)",
+                                        subtitle: store.vehicleProfile.makeModel.isEmpty ? "Vehicle & Service" : "\(store.vehicleProfile.makeModel)",
                                         badgeCount: store.items(for: .vehicle).filter { !$0.isCompleted }.count
                                     )
                                 }

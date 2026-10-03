@@ -71,7 +71,7 @@ public struct CarMirrorView: View {
                     .kerning(1.2)
                     .foregroundColor(.blue)
                 Spacer()
-                Text("KIA SONET")
+                Text(store.vehicleProfile.makeModel.isEmpty ? "CAR MIRROR" : store.vehicleProfile.makeModel.uppercased())
                     .font(.system(size: 10, weight: .heavy))
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -299,7 +299,7 @@ public struct CarMirrorView: View {
                 Text("Cockpit Telemetry Snapshot")
                     .font(.system(size: 14, weight: .bold))
                 Spacer()
-                Text(vehicle.registrationNumber)
+                Text(vehicle.registrationNumber.isEmpty ? "VEHICLE" : vehicle.registrationNumber)
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundColor(.secondary)
             }
@@ -487,18 +487,20 @@ struct InCarCockpitHUDView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "car.side.fill")
                             .foregroundColor(.blue)
-                        Text(store.vehicleProfile.makeModel.uppercased())
+                        Text(store.vehicleProfile.makeModel.isEmpty ? "VEHICLE COCKPIT" : store.vehicleProfile.makeModel.uppercased())
                             .font(.system(size: 14, weight: .black, design: .rounded))
                             .foregroundColor(.white)
                             .kerning(1.2)
                         
-                        Text(store.vehicleProfile.registrationNumber)
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.blue.opacity(0.2))
-                            .cornerRadius(4)
+                        if !store.vehicleProfile.registrationNumber.isEmpty {
+                            Text(store.vehicleProfile.registrationNumber)
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.2))
+                                .cornerRadius(4)
+                        }
                     }
                     
                     Spacer()

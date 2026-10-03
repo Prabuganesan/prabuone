@@ -397,7 +397,7 @@ struct AddDocumentSheet: View {
         NavigationStack {
             Form {
                 Section("Document Information") {
-                    TextField("Document Name (e.g. Kia Sonet RC)", text: $title)
+                    TextField("Document Name (e.g. Vehicle RC, Passport)", text: $title)
                     Picker("Type", selection: $documentType) {
                         ForEach(types, id: \.self) { type in
                             Text(type).tag(type)

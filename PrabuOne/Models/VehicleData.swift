@@ -56,7 +56,7 @@ public struct FuelRecord: Identifiable, Codable, Equatable {
     }
 }
 
-/// Vehicle Profile representation (e.g. Kia Sonet).
+/// Vehicle Profile representation (car, bike, or personal vehicle).
 public struct VehicleProfile: Identifiable, Codable, Equatable {
     public var id: UUID
     public var makeModel: String
@@ -72,7 +72,7 @@ public struct VehicleProfile: Identifiable, Codable, Equatable {
     
     public init(
         id: UUID = UUID(),
-        makeModel: String = "Kia Sonet",
+        makeModel: String = "",
         registrationNumber: String = "",
         fuelType: String = "Diesel",
         currentOdometerKm: Int = 0,

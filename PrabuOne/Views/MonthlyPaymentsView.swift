@@ -142,7 +142,6 @@ public struct MonthlyPaymentsView: View {
         let targetMonth = calendar.component(.month, from: selectedDate)
         let targetYear = calendar.component(.year, from: selectedDate)
         let today = Date()
-        let isCurrentMonth = calendar.isDate(selectedDate, equalTo: today, toGranularity: .month)
         
         // 1. 🏦 Loan EMIs
         for loan in store.loans {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Complete Vehicle Hub tailored for Kia Sonet tracking:
+/// Complete Vehicle Hub for personal vehicle telemetry, mileage, and service tracking:
 /// Service timeline, odometer telemetry, fuel logs, and insurance/PUC countdowns.
 public struct VehicleHubView: View {
     @ObservedObject var store: LifeStore
@@ -410,8 +410,8 @@ struct EditVehicleProfileSheet: View {
         NavigationStack {
             Form {
                 Section("Vehicle Information") {
-                    TextField("Make & Model (e.g. Kia Sonet HTX)", text: $makeModel)
-                    TextField("Registration No. (e.g. TN 01 AB 1234)", text: $registrationNumber)
+                    TextField("Make & Model (e.g. Hyundai Creta, Honda City)", text: $makeModel)
+                    TextField("Registration No. (e.g. DL 01 AB 1234)", text: $registrationNumber)
                     Picker("Fuel Type", selection: $fuelType) {
                         ForEach(fuelTypes, id: \.self) { type in
                             Text(type).tag(type)
@@ -579,8 +579,8 @@ struct AddServiceSheet: View {
     @State private var title = "Periodic Service"
     @State private var odometerText = ""
     @State private var costText = ""
-    @State private var itemsText = "Engine Oil, Oil Filter"
-    @State private var serviceCenter = "Kia Authorized Service Center"
+    @State private var itemsText = ""
+    @State private var serviceCenter = ""
     
     var body: some View {
         NavigationStack {
@@ -591,11 +591,11 @@ struct AddServiceSheet: View {
                         .keyboardType(.numberPad)
                     TextField("Total Cost (₹)", text: $costText)
                         .keyboardType(.numberPad)
-                    TextField("Service Center", text: $serviceCenter)
+                    TextField("Service Center (e.g. Authorized Service Center)", text: $serviceCenter)
                 }
                 
                 Section("Items Replaced (Comma-separated)") {
-                    TextField("e.g. Engine Oil, Brake Pads", text: $itemsText)
+                    TextField("e.g. Engine Oil, Oil Filter, Brake Pads", text: $itemsText)
                 }
             }
             .navigationTitle("Log Service")

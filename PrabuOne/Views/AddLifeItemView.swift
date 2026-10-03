@@ -121,7 +121,7 @@ public struct AddLifeItemView: View {
                         
                         TextField("Plan Tier (e.g. Premium 4K UHD, Family, VIP)", text: $planTier)
                     } else {
-                        TextField("Title (e.g. HDFC Card, Sonet Service)", text: $title)
+                        TextField("Title (e.g. Electricity Bill, Car Service)", text: $title)
                         TextField("Subtitle (e.g. Outstanding bill, 20k km)", text: $subtitle)
                     }
                 }

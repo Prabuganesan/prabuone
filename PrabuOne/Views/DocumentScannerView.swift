@@ -706,7 +706,7 @@ public struct DocumentScannerView: View {
     
     private func loadSimulatorDemoDocuments() {
         // Generate 2 realistic sample document cards (e.g. Vehicle Insurance & Receipt)
-        let page1 = generateSampleDocumentImage(title: "VEHICLE RC & CERTIFICATE", subtitle: "Tamil Nadu Transport Dept • Registration #TN09CC1234", isDarkText: true)
+        let page1 = generateSampleDocumentImage(title: "VEHICLE RC & CERTIFICATE", subtitle: "Transport Department • Registration #DL-01-AB-1234", isDarkText: true)
         let page2 = generateSampleDocumentImage(title: "ANNUAL VEHICLE INSURANCE POLICY", subtitle: "Policy #HDFC-ERGO-992819 • Comprehensive Cover", isDarkText: false)
         
         pages = [
@@ -833,7 +833,7 @@ public struct SaveScannedDocumentToVaultSheet: View {
                 
                 // Document Info
                 Section("Document Information") {
-                    TextField("Document Title (e.g. Kia Sonet RC)", text: $title)
+                    TextField("Document Title (e.g. Vehicle RC, Passport)", text: $title)
                     
                     // Quick Suggestions Chips
                     ScrollView(.horizontal, showsIndicators: false) {

@@ -172,7 +172,7 @@ struct AddLifeDateSheet: View {
         NavigationStack {
             Form {
                 Section("Person or Event") {
-                    TextField("Name (e.g. Thaya, Dhanshika)", text: $name)
+                    TextField("Name (e.g. Mom, Rahul, Priya)", text: $name)
                     TextField("Event Description (e.g. Birthday, Anniversary)", text: $relationship)
                 }
                 
@@ -226,7 +226,7 @@ struct EditLifeDateSheet: View {
         NavigationStack {
             Form {
                 Section("Person & Event") {
-                    TextField("Title (e.g. Thaya's Birthday)", text: $title)
+                    TextField("Title (e.g. Mom's Birthday, Anniversary)", text: $title)
                     TextField("Description (e.g. Annual Celebration)", text: $subtitle)
                 }
                 
