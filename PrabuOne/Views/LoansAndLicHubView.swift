@@ -228,7 +228,7 @@ public struct LoansAndLicHubView: View {
                 .padding(.vertical, 20)
             } else {
                 ForEach(filteredLoans) { loan in
-                    LoanCard(loan: loan, onCopy: { text, label in
+                    LoanCard(loan: loan, store: store, onCopy: { text, label in
                         copyToClipboard(text: text, label: label)
                     }, onEdit: {
                         selectedLoanToEdit = loan
@@ -345,7 +345,7 @@ public struct LoansAndLicHubView: View {
                 .padding(.vertical, 20)
             } else {
                 ForEach(filteredPolicies) { policy in
-                    InsurancePolicyCard(policy: policy, onCopy: { text, label in
+                    InsurancePolicyCard(policy: policy, store: store, onCopy: { text, label in
                         copyToClipboard(text: text, label: label)
                     }, onEdit: {
                         selectedPolicyToEdit = policy
@@ -378,6 +378,7 @@ public struct LoansAndLicHubView: View {
 
 struct LoanCard: View {
     let loan: LoanAccount
+    @ObservedObject var store: LifeStore
     let onCopy: (String, String) -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -566,6 +567,32 @@ struct LoanCard: View {
             .background(Color.black.opacity(0.22))
             .cornerRadius(12)
             
+            // Auto-Debit & Connected Documents Badges
+            if (loan.linkedPaymentMethod != nil && !(loan.linkedPaymentMethod?.isEmpty ?? true)) || loan.linkedDocumentId != nil {
+                HStack(spacing: 8) {
+                    if let method = loan.linkedPaymentMethod, !method.isEmpty {
+                        HStack(spacing: 5) {
+                            Image(systemName: "creditcard.and.123")
+                                .font(.system(size: 10))
+                            Text(method)
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.18))
+                        .foregroundColor(.white)
+                        .cornerRadius(6)
+                    }
+                    
+                    if let docId = loan.linkedDocumentId {
+                        LinkedDocumentBadge(documentId: docId, store: store, label: "Loan Agreement")
+                    }
+                    
+                    Spacer()
+                }
+            }
+            
             // Details & Actions Footer
             HStack {
                 Text("\(String(format: "%.2f", loan.interestRate))% p.a. • \(loan.tenureMonths / 12)y \(loan.tenureMonths % 12)m")
@@ -616,6 +643,7 @@ struct LoanCard: View {
 
 struct InsurancePolicyCard: View {
     let policy: InsurancePolicyRecord
+    @ObservedObject var store: LifeStore
     let onCopy: (String, String) -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -757,6 +785,32 @@ struct InsurancePolicyCard: View {
             .background(Color.black.opacity(0.2))
             .cornerRadius(10)
             
+            // Auto-Debit & Connected Documents Badges
+            if (policy.linkedPaymentMethod != nil && !(policy.linkedPaymentMethod?.isEmpty ?? true)) || policy.linkedDocumentId != nil {
+                HStack(spacing: 8) {
+                    if let method = policy.linkedPaymentMethod, !method.isEmpty {
+                        HStack(spacing: 5) {
+                            Image(systemName: "creditcard.and.123")
+                                .font(.system(size: 10))
+                            Text(method)
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.18))
+                        .foregroundColor(.white)
+                        .cornerRadius(6)
+                    }
+                    
+                    if let docId = policy.linkedDocumentId {
+                        LinkedDocumentBadge(documentId: docId, store: store, label: "Policy Bond")
+                    }
+                    
+                    Spacer()
+                }
+            }
+            
             // Footer
             HStack {
                 Text(policy.policyHolderName.isEmpty ? "Self" : "Holder: \(policy.policyHolderName)")
@@ -803,13 +857,13 @@ struct AddLoanSheet: View {
     @State private var tenureMonths = 36
     @State private var dueDay = 5
     @State private var manualOverride = false
-    @State private var manualEmisPaid = 0
-    
-    // Financial Details
+    @State private var manualEmisPaid = 0    // Financial Details
     @State private var totalPrincipalString = ""
     @State private var remainingPrincipalString = ""
     @State private var emiAmountString = ""
     @State private var interestRateString = "8.5"
+    @State private var paymentMethod = ""
+    @State private var documentId: UUID? = nil
     @State private var theme = "sapphire"
     @State private var notes = ""
     
@@ -870,14 +924,14 @@ struct AddLoanSheet: View {
         NavigationStack {
             Form {
                 Section("Loan Information") {
-                    TextField("Lender / Bank Name (e.g. HDFC Bank, SBI)", text: $lenderName)
-                    TextField("Loan Name (e.g. Car Loan, Home Loan)", text: $loanName)
+                    TextField("Lender / Bank Name (e.g. HDFC, SBI)", text: $lenderName)
+                    TextField("Loan Name (e.g. Dream Car Loan)", text: $loanName)
                     Picker("Loan Type", selection: $loanType) {
                         ForEach(loanTypes, id: \.self) { type in
                             Text(type).tag(type)
                         }
                     }
-                    TextField("Loan Account Number", text: $accountNumber)
+                    TextField("Loan Account Number (Optional)", text: $accountNumber)
                         .keyboardType(.numbersAndPunctuation)
                 }
                 
@@ -998,6 +1052,19 @@ struct AddLoanSheet: View {
                         .keyboardType(.decimalPad)
                 }
                 
+                Section("Repayment Mode") {
+                    PaymentMethodPickerRow(title: "Auto-Debit / EMI Instrument", selectedMethod: $paymentMethod, store: store)
+                }
+                
+                Section("Loan Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Sanction Letter / Loan Agreement",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Loan", "Agreement", "Sanction", lenderName, loanName]
+                    )
+                }
+                
                 Section("Card Theme") {
                     Picker("Theme", selection: $theme) {
                         ForEach(themes, id: \.1) { name, code in
@@ -1056,7 +1123,9 @@ struct AddLoanSheet: View {
             endDate: calculatedEndDate,
             emisPaidOverride: manualOverride ? manualEmisPaid : nil,
             theme: theme,
-            notes: notes.isEmpty ? nil : notes
+            notes: notes.isEmpty ? nil : notes,
+            linkedPaymentMethod: paymentMethod.isEmpty ? nil : paymentMethod,
+            linkedDocumentId: documentId
         )
         store.addLoan(loan)
         dismiss()
@@ -1085,6 +1154,8 @@ struct EditLoanSheet: View {
     @State private var remainingPrincipalString: String
     @State private var emiAmountString: String
     @State private var interestRateString: String
+    @State private var paymentMethod: String
+    @State private var documentId: UUID?
     @State private var theme: String
     @State private var notes: String
     
@@ -1108,6 +1179,8 @@ struct EditLoanSheet: View {
         _remainingPrincipalString = State(initialValue: String(format: "%.0f", loan.remainingPrincipal))
         _emiAmountString = State(initialValue: String(format: "%.0f", loan.emiAmount))
         _interestRateString = State(initialValue: String(format: "%.2f", loan.interestRate))
+        _paymentMethod = State(initialValue: loan.linkedPaymentMethod ?? "")
+        _documentId = State(initialValue: loan.linkedDocumentId)
         _theme = State(initialValue: loan.theme)
         _notes = State(initialValue: loan.notes ?? "")
     }
@@ -1293,6 +1366,19 @@ struct EditLoanSheet: View {
                         .keyboardType(.decimalPad)
                 }
                 
+                Section("Repayment Mode") {
+                    PaymentMethodPickerRow(title: "Auto-Debit / EMI Instrument", selectedMethod: $paymentMethod, store: store)
+                }
+                
+                Section("Loan Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Sanction Letter / Loan Agreement",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Loan", "Agreement", "Sanction", lenderName, loanName]
+                    )
+                }
+                
                 Section("Card Theme") {
                     Picker("Theme", selection: $theme) {
                         ForEach(themes, id: \.1) { name, code in
@@ -1364,6 +1450,8 @@ struct EditLoanSheet: View {
         updated.emisPaidOverride = manualOverride ? manualEmisPaid : nil
         updated.theme = theme
         updated.notes = notes.isEmpty ? nil : notes
+        updated.linkedPaymentMethod = paymentMethod.isEmpty ? nil : paymentMethod
+        updated.linkedDocumentId = documentId
         
         store.updateLoan(updated)
         dismiss()
@@ -1387,6 +1475,8 @@ struct AddInsurancePolicySheet: View {
     @State private var hasMaturityDate = false
     @State private var maturityDate = Date().addingTimeInterval(86400 * 365 * 15)
     @State private var policyHolderName = ""
+    @State private var paymentMethod = ""
+    @State private var documentId: UUID? = nil
     @State private var theme = "emerald"
     @State private var notes = ""
     
@@ -1425,6 +1515,19 @@ struct AddInsurancePolicySheet: View {
                             Text(freq).tag(freq)
                         }
                     }
+                }
+                
+                Section("Auto-Debit / Payment Mode") {
+                    PaymentMethodPickerRow(title: "Premium Payment Instrument", selectedMethod: $paymentMethod, store: store)
+                }
+                
+                Section("Policy Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Policy Bond / Receipt",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Policy", "Insurance", "LIC", insurerName, policyName]
+                    )
                 }
                 
                 Section("Dates") {
@@ -1479,7 +1582,9 @@ struct AddInsurancePolicySheet: View {
             maturityDate: hasMaturityDate ? maturityDate : nil,
             policyHolderName: policyHolderName.trimmingCharacters(in: .whitespaces),
             theme: theme,
-            notes: notes.isEmpty ? nil : notes
+            notes: notes.isEmpty ? nil : notes,
+            linkedPaymentMethod: paymentMethod.isEmpty ? nil : paymentMethod,
+            linkedDocumentId: documentId
         )
         store.addInsurancePolicy(policy)
         dismiss()
@@ -1502,6 +1607,8 @@ struct EditInsurancePolicySheet: View {
     @State private var hasMaturityDate: Bool
     @State private var maturityDate: Date
     @State private var policyHolderName: String
+    @State private var paymentMethod: String
+    @State private var documentId: UUID?
     @State private var theme: String
     @State private var notes: String
     
@@ -1524,6 +1631,8 @@ struct EditInsurancePolicySheet: View {
         _hasMaturityDate = State(initialValue: policy.maturityDate != nil)
         _maturityDate = State(initialValue: policy.maturityDate ?? Date().addingTimeInterval(86400 * 365 * 10))
         _policyHolderName = State(initialValue: policy.policyHolderName)
+        _paymentMethod = State(initialValue: policy.linkedPaymentMethod ?? "")
+        _documentId = State(initialValue: policy.linkedDocumentId)
         _theme = State(initialValue: policy.theme)
         _notes = State(initialValue: policy.notes ?? "")
     }
@@ -1558,6 +1667,19 @@ struct EditInsurancePolicySheet: View {
                             Text(freq).tag(freq)
                         }
                     }
+                }
+                
+                Section("Auto-Debit / Payment Mode") {
+                    PaymentMethodPickerRow(title: "Premium Payment Instrument", selectedMethod: $paymentMethod, store: store)
+                }
+                
+                Section("Policy Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Policy Bond / Receipt",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Policy", "Insurance", "LIC", insurerName, policyName]
+                    )
                 }
                 
                 Section("Dates") {
@@ -1622,6 +1744,8 @@ struct EditInsurancePolicySheet: View {
         updated.policyHolderName = policyHolderName.trimmingCharacters(in: .whitespaces)
         updated.theme = theme
         updated.notes = notes.isEmpty ? nil : notes
+        updated.linkedPaymentMethod = paymentMethod.isEmpty ? nil : paymentMethod
+        updated.linkedDocumentId = documentId
         
         store.updateInsurancePolicy(updated)
         dismiss()

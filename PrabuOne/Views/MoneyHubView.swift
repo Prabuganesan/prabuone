@@ -318,6 +318,7 @@ public struct MoneyHubView: View {
             ForEach(filteredCreditCards) { card in
                 CreditCardView(
                     card: card,
+                    store: store,
                     onCopy: { text, label in
                         copyText(text, label: label)
                     },
@@ -477,6 +478,7 @@ public struct MoneyHubView: View {
             ForEach(filteredDebitCards) { card in
                 CreditCardView(
                     card: card,
+                    store: store,
                     onCopy: { text, label in
                         copyText(text, label: label)
                     },
@@ -635,6 +637,7 @@ public struct MoneyHubView: View {
             ForEach(filteredBankAccounts) { account in
                 BankAccountCardView(
                     account: account,
+                    store: store,
                     onCopy: { text, label in
                         copyText(text, label: label)
                     },
@@ -1139,6 +1142,7 @@ public struct SubscriptionsHubView: View {
                         ForEach(filteredSubs) { item in
                             SubscriptionCardRow(
                                 item: item,
+                                store: store,
                                 onTogglePaid: {
                                     withAnimation {
                                         HapticManager.success()
@@ -1210,6 +1214,7 @@ public struct SubscriptionsHubView: View {
 /// Custom visual card row for OTT and digital subscriptions.
 public struct SubscriptionCardRow: View {
     let item: LifeItem
+    var store: LifeStore? = nil
     let onTogglePaid: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -1348,8 +1353,8 @@ public struct SubscriptionCardRow: View {
                 }
             }
             
-            // Bottom Metadata Bar (Payment Method & Auto-Debit status)
-            if item.paymentMethod != nil || item.autoRenew == true {
+            // Bottom Metadata Bar (Payment Method, Linked Document & Auto-Debit status)
+            if item.paymentMethod != nil || item.autoRenew == true || item.linkedDocumentId != nil {
                 Divider().background(Color.primary.opacity(0.06))
                 
                 HStack(spacing: 8) {
@@ -1363,6 +1368,10 @@ public struct SubscriptionCardRow: View {
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
                         }
+                    }
+                    
+                    if let docId = item.linkedDocumentId, let s = store {
+                        LinkedDocumentBadge(documentId: docId, store: s, customLabel: "Invoice")
                     }
                     
                     Spacer()
@@ -1434,6 +1443,7 @@ public struct AddSubscriptionSheet: View {
     @State private var sharedWith: String = "4 Screens • Family"
     @State private var autoRenew: Bool = true
     @State private var reminderDays: [Int] = [7, 3, 1]
+    @State private var linkedDocumentId: UUID? = nil
     @State private var notes: String = ""
     
     public init(store: LifeStore) {
@@ -1594,60 +1604,23 @@ public struct AddSubscriptionSheet: View {
                 }
                 
                 // 5. Payment Source & Account Details
-                Section("Payment Method & Login") {
-                    // Quick Payment Selection
-                    TextField("Payment Source (e.g. HDFC Regalia, UPI AutoPay)", text: $paymentMethod)
-                    
-                    // Quick Fill Pills from User's Cards & Banks
-                    if !store.creditCards.isEmpty || !store.bankAccounts.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
-                                ForEach(store.creditCards) { card in
-                                    Button {
-                                        paymentMethod = "\(card.bankName) \(card.cardName)"
-                                    } label: {
-                                        Text("💳 \(card.bankName) (...\(card.lastFourDigits))")
-                                            .font(.system(size: 10.5, weight: .medium))
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color(UIColor.secondarySystemBackground))
-                                            .cornerRadius(6)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                
-                                Button {
-                                    paymentMethod = "UPI AutoPay"
-                                } label: {
-                                    Text("📲 UPI AutoPay")
-                                        .font(.system(size: 10.5, weight: .medium))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color(UIColor.secondarySystemBackground))
-                                        .cornerRadius(6)
-                                }
-                                .buttonStyle(.plain)
-                                
-                                Button {
-                                    paymentMethod = "Apple In-App"
-                                } label: {
-                                    Text("🍎 Apple In-App")
-                                        .font(.system(size: 10.5, weight: .medium))
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color(UIColor.secondarySystemBackground))
-                                        .cornerRadius(6)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
+                Section("Auto-Debit / Payment Mode") {
+                    PaymentMethodPickerRow(title: "Auto-Debit Instrument", selectedMethod: $paymentMethod, store: store)
                     
                     TextField("Registered Email / Phone ID (e.g. name@example.com)", text: $accountEmail)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                     
                     TextField("Profile / Screens (e.g. 4 Screens • Family)", text: $sharedWith)
+                }
+                
+                Section("Subscription Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Subscription Invoice / Receipt",
+                        documentId: $linkedDocumentId,
+                        store: store,
+                        suggestedKeywords: [title, "Subscription", "Invoice", "OTT"]
+                    )
                 }
                 
                 // 6. Notes & Hints
@@ -1701,7 +1674,8 @@ public struct AddSubscriptionSheet: View {
             accountEmail: accountEmail.isEmpty ? nil : accountEmail,
             sharedWith: sharedWith.isEmpty ? nil : sharedWith,
             autoRenew: autoRenew,
-            serviceBrand: selectedPreset?.id ?? title
+            serviceBrand: selectedPreset?.id ?? title,
+            linkedDocumentId: linkedDocumentId
         )
         store.addItem(item)
         HapticManager.success()
@@ -1724,6 +1698,7 @@ public struct EditSubscriptionSheet: View {
     @State private var accountEmail: String = ""
     @State private var sharedWith: String = ""
     @State private var autoRenew: Bool = true
+    @State private var linkedDocumentId: UUID? = nil
     @State private var notes: String = ""
     
     public init(store: LifeStore, item: LifeItem) {
@@ -1780,12 +1755,21 @@ public struct EditSubscriptionSheet: View {
                     Toggle("Auto-Debit Active (e-Mandate)", isOn: $autoRenew)
                 }
                 
-                Section("Payment Source & Account") {
-                    TextField("Payment Method (e.g. HDFC Card)", text: $paymentMethod)
+                Section("Auto-Debit / Payment Mode") {
+                    PaymentMethodPickerRow(title: "Auto-Debit Instrument", selectedMethod: $paymentMethod, store: store)
                     TextField("Registered Email / Phone", text: $accountEmail)
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                     TextField("Profile / Screens (e.g. 4 Screens)", text: $sharedWith)
+                }
+                
+                Section("Subscription Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Subscription Invoice / Receipt",
+                        documentId: $linkedDocumentId,
+                        store: store,
+                        suggestedKeywords: [title, "Subscription", "Invoice", "OTT"]
+                    )
                 }
                 
                 Section("Notes") {
@@ -1805,6 +1789,7 @@ public struct EditSubscriptionSheet: View {
                 accountEmail = item.accountEmail ?? ""
                 sharedWith = item.sharedWith ?? ""
                 autoRenew = item.autoRenew ?? true
+                linkedDocumentId = item.linkedDocumentId
                 notes = item.notes ?? ""
             }
             .toolbar {
@@ -1825,6 +1810,7 @@ public struct EditSubscriptionSheet: View {
                         updated.accountEmail = accountEmail.isEmpty ? nil : accountEmail
                         updated.sharedWith = sharedWith.isEmpty ? nil : sharedWith
                         updated.autoRenew = autoRenew
+                        updated.linkedDocumentId = linkedDocumentId
                         updated.notes = notes.isEmpty ? nil : notes
                         store.updateItem(updated)
                         HapticManager.success()
@@ -2017,6 +2003,7 @@ public struct MobileBillsHubView: View {
                             ForEach(filteredBills) { item in
                                 MobileBillCardRow(
                                     item: item,
+                                    store: store,
                                     category: determineCategory(for: item),
                                     onTogglePaid: {
                                         withAnimation {
@@ -2223,6 +2210,7 @@ public struct MobileBillsHubView: View {
 
 public struct MobileBillCardRow: View {
     let item: LifeItem
+    var store: LifeStore? = nil
     let category: MobileBillTabFilter
     let onTogglePaid: () -> Void
     let onQuickRecharge: () -> Void
@@ -2367,6 +2355,10 @@ public struct MobileBillCardRow: View {
                         .lineLimit(1)
                 }
                 
+                if let docId = item.linkedDocumentId, let s = store {
+                    LinkedDocumentBadge(documentId: docId, store: s, customLabel: "Bill / Receipt")
+                }
+                
                 Spacer()
                 
                 // Quick Re-Recharge (extends by validity days)
@@ -2440,6 +2432,7 @@ public struct AddMobileOrUtilityBillSheet: View {
     @State private var dueDate: Date = Date().addingTimeInterval(84 * 86400)
     @State private var paymentMethod: String = "Credit Card AutoPay"
     @State private var autoPayEnabled: Bool = false
+    @State private var linkedDocumentId: UUID? = nil
     @State private var notes: String = ""
     
     // Quick Presets
@@ -2610,31 +2603,18 @@ public struct AddMobileOrUtilityBillSheet: View {
                     TextField("Amount in ₹", text: $amountText)
                         .keyboardType(.decimalPad)
                     
-                    TextField("Payment Method (e.g. HDFC Credit Card, UPI)", text: $paymentMethod)
-                    
-                    // Saved Cards Quick Suggestions
-                    if !store.creditCards.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(store.creditCards) { card in
-                                    Button {
-                                        HapticManager.selection()
-                                        paymentMethod = "\(card.bankName) \(card.cardName) •• \(card.lastFourDigits)"
-                                    } label: {
-                                        Text("\(card.bankName) •• \(card.lastFourDigits)")
-                                            .font(.system(size: 11))
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color(UIColor.tertiarySystemBackground))
-                                            .cornerRadius(6)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                        }
-                    }
+                    PaymentMethodPickerRow(title: "Payment Instrument", selectedMethod: $paymentMethod, store: store)
                     
                     Toggle("Auto-Debit / AutoPay Enabled", isOn: $autoPayEnabled)
+                }
+                
+                Section("Connected Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Bill / Recharge Statement",
+                        documentId: $linkedDocumentId,
+                        store: store,
+                        suggestedKeywords: [providerName, "Bill", "Broadband", "Recharge"]
+                    )
                 }
                 
                 // 5. Notes & Wi-Fi Details
@@ -2752,7 +2732,8 @@ public struct AddMobileOrUtilityBillSheet: View {
             paymentMethod: paymentMethod.isEmpty ? nil : paymentMethod,
             accountEmail: cleanId.isEmpty ? nil : cleanId,
             autoRenew: autoPayEnabled,
-            serviceBrand: cleanProvider
+            serviceBrand: cleanProvider,
+            linkedDocumentId: linkedDocumentId
         )
         
         store.addItem(newItem)
@@ -2775,6 +2756,7 @@ public struct EditMobileOrUtilityBillSheet: View {
     @State private var planTier: String
     @State private var paymentMethod: String
     @State private var autoRenew: Bool
+    @State private var linkedDocumentId: UUID?
     @State private var notes: String
     
     public init(store: LifeStore, item: LifeItem) {
@@ -2787,6 +2769,7 @@ public struct EditMobileOrUtilityBillSheet: View {
         _planTier = State(initialValue: item.planTier ?? "")
         _paymentMethod = State(initialValue: item.paymentMethod ?? "")
         _autoRenew = State(initialValue: item.autoRenew ?? false)
+        _linkedDocumentId = State(initialValue: item.linkedDocumentId)
         _notes = State(initialValue: item.notes ?? "")
     }
     
@@ -2805,9 +2788,18 @@ public struct EditMobileOrUtilityBillSheet: View {
                         .keyboardType(.decimalPad)
                 }
                 
-                Section("Payment Method") {
-                    TextField("e.g. HDFC Credit Card, UPI AutoPay", text: $paymentMethod)
+                Section("Auto-Debit / Payment Mode") {
+                    PaymentMethodPickerRow(title: "Payment Instrument", selectedMethod: $paymentMethod, store: store)
                     Toggle("Auto-Debit / AutoPay Enabled", isOn: $autoRenew)
+                }
+                
+                Section("Connected Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Bill / Recharge Statement",
+                        documentId: $linkedDocumentId,
+                        store: store,
+                        suggestedKeywords: [title, "Bill", "Broadband", "Recharge"]
+                    )
                 }
                 
                 Section("Notes & Hints") {
@@ -2840,6 +2832,7 @@ public struct EditMobileOrUtilityBillSheet: View {
         updated.planTier = planTier.isEmpty ? nil : planTier
         updated.paymentMethod = paymentMethod.isEmpty ? nil : paymentMethod
         updated.autoRenew = autoRenew
+        updated.linkedDocumentId = linkedDocumentId
         updated.notes = notes.isEmpty ? nil : notes
         
         store.updateItem(updated)
@@ -2949,6 +2942,7 @@ func vaultCardGradient(for themeId: String) -> LinearGradient {
 /// Visual Credit Card Component with Realistic Design, Privacy Masking, and 1-Tap Copy Actions.
 struct CreditCardView: View {
     let card: CreditCardAccount
+    var store: LifeStore? = nil
     let onCopy: (_ text: String, _ label: String) -> Void
     var onEdit: (() -> Void)? = nil
     
@@ -3288,6 +3282,10 @@ struct CreditCardView: View {
                         .background(Color(UIColor.secondarySystemBackground))
                         .cornerRadius(8)
                     }
+                    
+                    if let docId = card.linkedDocumentId, let s = store {
+                        LinkedDocumentBadge(documentId: docId, store: s, customLabel: "Statement")
+                    }
                 }
             }
         }
@@ -3313,6 +3311,7 @@ struct AddCreditCardSheet: View {
     @State private var hasDueDay = false
     @State private var dueDay = 5
     @State private var cardTheme = "midnight"
+    @State private var documentId: UUID? = nil
     
     let commonBanks = ["HDFC Bank", "ICICI Bank", "SBI", "Axis Bank", "Kotak", "Amex", "Standard Chartered", "IndusInd"]
     
@@ -3518,6 +3517,15 @@ struct AddCreditCardSheet: View {
                             .keyboardType(.numberPad)
                     }
                 }
+                
+                Section("Card Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Card Statement / Agreement",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Card", "Statement", bankName, cardName]
+                    )
+                }
             }
             .navigationTitle(cardCategory == "Debit" ? "Add Debit Card" : "Add Credit Card")
             .navigationBarTitleDisplayMode(.inline)
@@ -3582,7 +3590,8 @@ struct AddCreditCardSheet: View {
             dueDay: (cardCategory == "Credit" && hasDueDay) ? dueDay : nil,
             cardNetwork: network,
             cardTheme: cardTheme,
-            cardCategory: cardCategory
+            cardCategory: cardCategory,
+            linkedDocumentId: documentId
         )
         store.addCreditCard(card)
         dismiss()
@@ -3608,6 +3617,7 @@ struct EditCreditCardSheet: View {
     @State private var hasDueDay = false
     @State private var dueDay = 5
     @State private var cardTheme = "midnight"
+    @State private var documentId: UUID? = nil
     
     var body: some View {
         NavigationStack {
@@ -3788,6 +3798,15 @@ struct EditCreditCardSheet: View {
                             .keyboardType(.numberPad)
                     }
                 }
+                
+                Section("Card Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Card Statement / Agreement",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Card", "Statement", bankName, cardName]
+                    )
+                }
             }
             .navigationTitle(cardCategory == "Debit" ? "Edit Debit Card" : "Edit Credit Card")
             .navigationBarTitleDisplayMode(.inline)
@@ -3805,6 +3824,7 @@ struct EditCreditCardSheet: View {
                 hasDueDay = card.dueDay != nil
                 dueDay = card.dueDay ?? 5
                 cardTheme = card.cardTheme
+                documentId = card.linkedDocumentId
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -3864,6 +3884,7 @@ struct EditCreditCardSheet: View {
         updated.dueDay = (cardCategory == "Credit" && hasDueDay) ? dueDay : nil
         updated.cardNetwork = network
         updated.cardTheme = cardTheme
+        updated.linkedDocumentId = documentId
         
         store.updateCreditCard(updated)
         dismiss()
@@ -3875,6 +3896,7 @@ struct EditCreditCardSheet: View {
 /// Visual Bank Account Card Component with Passbook / Modern Bank Card Aesthetics and 1-Tap Copy Actions.
 struct BankAccountCardView: View {
     let account: BankAccount
+    var store: LifeStore? = nil
     let onCopy: (_ text: String, _ label: String) -> Void
     var onEdit: (() -> Void)? = nil
     
@@ -4191,6 +4213,10 @@ struct BankAccountCardView: View {
                         }
                         .buttonStyle(.plain)
                     }
+                    
+                    if let docId = account.linkedDocumentId, let s = store {
+                        LinkedDocumentBadge(documentId: docId, store: s, customLabel: "Passbook / Statement")
+                    }
                 }
             }
         }
@@ -4212,6 +4238,7 @@ struct AddBankAccountSheet: View {
     @State private var tpin = ""
     @State private var atmPin = ""
     @State private var accountTheme = "midnight"
+    @State private var documentId: UUID? = nil
     
     let commonBanks = ["HDFC Bank", "ICICI Bank", "SBI", "Axis Bank", "Kotak", "Canara Bank", "Bank of Baroda", "PNB"]
     let accountTypes = ["Savings", "Current", "Salary"]
@@ -4374,6 +4401,15 @@ struct AddBankAccountSheet: View {
                     }
                     .padding(.vertical, 6)
                 }
+                
+                Section("Bank Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Passbook / Statement / Cheque",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Bank", "Passbook", "Statement", "Cheque", bankName]
+                    )
+                }
             }
             .navigationTitle("Add Bank Account")
             .navigationBarTitleDisplayMode(.inline)
@@ -4404,7 +4440,8 @@ struct AddBankAccountSheet: View {
             branchName: branchName.trimmingCharacters(in: .whitespaces),
             accountTheme: accountTheme,
             tpin: tpin.trimmingCharacters(in: .whitespaces),
-            atmPin: atmPin.trimmingCharacters(in: .whitespaces)
+            atmPin: atmPin.trimmingCharacters(in: .whitespaces),
+            linkedDocumentId: documentId
         )
         store.addBankAccount(account)
         dismiss()
@@ -4427,6 +4464,7 @@ struct EditBankAccountSheet: View {
     @State private var tpin = ""
     @State private var atmPin = ""
     @State private var accountTheme = "midnight"
+    @State private var documentId: UUID? = nil
     
     let commonBanks = ["HDFC Bank", "ICICI Bank", "SBI", "Axis Bank", "Kotak", "Canara Bank", "Bank of Baroda", "PNB"]
     let accountTypes = ["Savings", "Current", "Salary"]
@@ -4566,6 +4604,15 @@ struct EditBankAccountSheet: View {
                     }
                     .padding(.vertical, 6)
                 }
+                
+                Section("Bank Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Passbook / Statement / Cheque",
+                        documentId: $documentId,
+                        store: store,
+                        suggestedKeywords: ["Bank", "Passbook", "Statement", "Cheque", bankName]
+                    )
+                }
             }
             .navigationTitle("Edit Bank Account")
             .navigationBarTitleDisplayMode(.inline)
@@ -4580,6 +4627,7 @@ struct EditBankAccountSheet: View {
                 tpin = account.tpin
                 atmPin = account.atmPin
                 accountTheme = account.accountTheme
+                documentId = account.linkedDocumentId
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -4609,6 +4657,7 @@ struct EditBankAccountSheet: View {
         updated.accountTheme = accountTheme
         updated.tpin = tpin.trimmingCharacters(in: .whitespaces)
         updated.atmPin = atmPin.trimmingCharacters(in: .whitespaces)
+        updated.linkedDocumentId = documentId
         
         store.updateBankAccount(updated)
         dismiss()
@@ -4627,6 +4676,8 @@ struct EditLifeItemSheet: View {
     @State private var dueDate: Date = Date()
     @State private var amountText: String = ""
     @State private var repeatFrequency: RepeatFrequency = .monthly
+    @State private var paymentMethod: String = ""
+    @State private var linkedDocumentId: UUID? = nil
     @State private var notes: String = ""
     
     var body: some View {
@@ -4656,6 +4707,19 @@ struct EditLifeItemSheet: View {
                     }
                 }
                 
+                Section("Auto-Debit / Payment Mode") {
+                    PaymentMethodPickerRow(title: "Payment Instrument", selectedMethod: $paymentMethod, store: store)
+                }
+                
+                Section("Connected Documents") {
+                    UniversalDocumentPickerRow(
+                        title: "Invoice / Bill / Agreement",
+                        documentId: $linkedDocumentId,
+                        store: store,
+                        suggestedKeywords: [title, "Bill", "Invoice"]
+                    )
+                }
+                
                 Section("Notes") {
                     TextField("Notes & details", text: $notes, axis: .vertical)
                         .lineLimit(3...5)
@@ -4670,6 +4734,8 @@ struct EditLifeItemSheet: View {
                 dueDate = item.dueDate
                 amountText = item.amount != nil ? "\(Int(item.amount!))" : ""
                 repeatFrequency = item.repeatFrequency
+                paymentMethod = item.paymentMethod ?? ""
+                linkedDocumentId = item.linkedDocumentId
                 notes = item.notes ?? ""
             }
             .toolbar {
@@ -4685,6 +4751,8 @@ struct EditLifeItemSheet: View {
                         updated.dueDate = dueDate
                         updated.amount = Double(amountText.replacingOccurrences(of: ",", with: ""))
                         updated.repeatFrequency = repeatFrequency
+                        updated.paymentMethod = paymentMethod.isEmpty ? nil : paymentMethod
+                        updated.linkedDocumentId = linkedDocumentId
                         updated.notes = notes.isEmpty ? nil : notes
                         store.updateItem(updated)
                         dismiss()

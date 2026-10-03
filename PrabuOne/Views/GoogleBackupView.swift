@@ -90,10 +90,10 @@ public struct GoogleBackupView: View {
                                 snapshotTile(icon: "indianrupeesign.square.fill", color: .red, title: "Loans & EMIs", count: "\(store.loans.count)")
                                 snapshotTile(icon: "shield.lefthalf.filled", color: .emeraldAccent, title: "LIC Policies", count: "\(store.licPolicies.count)")
                                 snapshotTile(icon: "doc.text.fill", color: .teal, title: "Documents", count: "\(store.documents.count)")
-                                snapshotTile(icon: "paperclip", color: .cyan, title: "Attachments", count: "\(store.documents.filter { $0.hasAttachment }.count)")
+                                snapshotTile(icon: "doc.zipper", color: .cyan, title: "Scans / Files", count: "\(store.documents.filter { $0.hasAttachment }.count) Files")
                                 snapshotTile(icon: "square.and.pencil", color: .amberAccent, title: "Quick Notes", count: "\(store.quickNotes.count)")
                                 snapshotTile(icon: "bell.badge.fill", color: .purple, title: "Commitments", count: "\(store.items.count)")
-                                snapshotTile(icon: "car.side.fill", color: .orange, title: "Vehicle", count: store.vehicleProfile.registrationNumber.isEmpty ? "Configured" : store.vehicleProfile.registrationNumber)
+                                snapshotTile(icon: "car.2.fill", color: .orange, title: "Garage", count: "\(store.vehicles.count) Vehicles")
                             }
                         }
                         .padding(16)
@@ -148,9 +148,9 @@ public struct GoogleBackupView: View {
                             Text("How Google Drive Backup Works")
                                 .font(.system(size: 14, weight: .bold))
                             
-                            guideStep(number: "1", text: "Tap 'Backup to Google Drive' to generate a timestamped snapshot of your personal OS.")
+                            guideStep(number: "1", text: "Tap 'Backup to Google Drive' to generate a complete .ZIP archive with all database JSON + all physical document scans and PDFs.")
                             guideStep(number: "2", text: "In the iOS Share Sheet, select 'Google Drive' to upload directly into your Google Drive account, or save to Files.")
-                            guideStep(number: "3", text: "To restore anytime or on a new iPhone, tap 'Restore from Google Drive' and select your JSON backup file.")
+                            guideStep(number: "3", text: "To restore anytime or on a new iPhone, tap 'Restore from Google Drive' and select your .ZIP or .JSON backup archive.")
                         }
                         .padding(16)
                         .background(Color.blue.opacity(0.06))
@@ -167,7 +167,6 @@ public struct GoogleBackupView: View {
                         Spacer()
                         HStack(spacing: 10) {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
                             Text(toast)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.white)
@@ -195,7 +194,7 @@ public struct GoogleBackupView: View {
             }
             .fileImporter(
                 isPresented: $showingFileImporter,
-                allowedContentTypes: [.json],
+                allowedContentTypes: [.zip, .json],
                 allowsMultipleSelection: false
             ) { result in
                 switch result {
@@ -235,36 +234,21 @@ public struct GoogleBackupView: View {
             let fileURL = try store.exportBackupArchive()
             self.backupFileURL = fileURL
             self.showingShareSheet = true
-            showToast("Backup file ready. Select Google Drive to save!")
+            showToast("Complete .ZIP backup ready. Select Google Drive to upload!")
         } catch {
             errorMessage = "Failed to export backup: \(error.localizedDescription)"
         }
     }
     
     private func prepareRestore(from url: URL) {
-        let shouldStop = url.startAccessingSecurityScopedResource()
-        defer {
-            if shouldStop {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-        
         do {
-            let data = try Data(contentsOf: url)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let archive: PrabuOneBackupArchive
-            if let decoded = try? decoder.decode(PrabuOneBackupArchive.self, from: data) {
-                archive = decoded
-            } else {
-                archive = try JSONDecoder().decode(PrabuOneBackupArchive.self, from: data)
-            }
-            
-            self.pendingArchiveSummary = "• \(archive.creditCards.count) Cards\n• \(archive.bankAccounts.count) Bank Accounts\n• \(archive.loans.count) Loans\n• \(archive.licPolicies.count) LIC Policies\n• \(archive.documents.count) Documents\n• \(archive.attachments.count) Attached Files (PDFs/Scans)\n• \(archive.quickNotes.count) Quick Notes\n• \(archive.items.count) Commitments"
+            let (archive, attachmentCount) = try store.inspectBackupArchive(url: url)
+            let vehicleCount = archive.vehicles?.count ?? (archive.vehicleProfile != nil ? 1 : 0)
+            self.pendingArchiveSummary = "• \(archive.creditCards.count) Cards\n• \(archive.bankAccounts.count) Bank Accounts\n• \(archive.loans.count) Loans\n• \(archive.licPolicies.count) LIC Policies\n• \(archive.documents.count) Documents\n• \(attachmentCount) Attached Files (PDFs & Scans)\n• \(vehicleCount) Vehicles\n• \(archive.quickNotes.count) Quick Notes\n• \(archive.items.count) Commitments"
             self.pendingRestoreURL = url
             self.showingRestoreConfirmation = true
         } catch {
-            errorMessage = "Invalid Prabu One backup file: \(error.localizedDescription)"
+            errorMessage = "Invalid Prabu One backup archive: \(error.localizedDescription)"
         }
     }
     

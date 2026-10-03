@@ -19,6 +19,7 @@ public struct AddLifeItemView: View {
     @State private var sharedWith: String = ""
     @State private var autoRenew: Bool = true
     @State private var selectedPreset: OTTServicePreset? = nil
+    @State private var linkedDocumentId: UUID? = nil
     
     public init(store: LifeStore, initialCategory: LifeCategory = .creditCard) {
         self.store = store
@@ -155,13 +156,26 @@ public struct AddLifeItemView: View {
                 
                 if category == .subscription {
                     Section("Payment & Account Details") {
-                        TextField("Payment Method (e.g. HDFC Card, UPI AutoPay)", text: $paymentMethod)
+                        PaymentMethodPickerRow(title: "Auto-Debit Instrument", selectedMethod: $paymentMethod, store: store)
                         TextField("Registered Email / Phone ID", text: $accountEmail)
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
                         TextField("Screens / Family Sharing (e.g. 4 Screens)", text: $sharedWith)
                         Toggle("Auto-Debit (e-Mandate) Active", isOn: $autoRenew)
                     }
+                } else {
+                    Section("Payment Method") {
+                        PaymentMethodPickerRow(title: "Payment Instrument", selectedMethod: $paymentMethod, store: store)
+                    }
+                }
+                
+                Section("Connected Document") {
+                    UniversalDocumentPickerRow(
+                        title: category == .subscription ? "Subscription Invoice / Receipt" : "Bill / Agreement / Document",
+                        documentId: $linkedDocumentId,
+                        store: store,
+                        suggestedKeywords: [title, category.rawValue, "Invoice", "Bill", "Receipt"]
+                    )
                 }
                 
                 Section("Notes") {
@@ -222,7 +236,8 @@ public struct AddLifeItemView: View {
             accountEmail: accountEmail.isEmpty ? nil : accountEmail,
             sharedWith: sharedWith.isEmpty ? nil : sharedWith,
             autoRenew: category == .subscription ? autoRenew : nil,
-            serviceBrand: selectedPreset?.id ?? (category == .subscription ? title : nil)
+            serviceBrand: selectedPreset?.id ?? (category == .subscription ? title : nil),
+            linkedDocumentId: linkedDocumentId
         )
         
         store.addItem(newItem)

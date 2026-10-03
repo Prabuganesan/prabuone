@@ -4,6 +4,7 @@ import SwiftUI
 /// Service timeline, odometer telemetry, fuel logs, and insurance/PUC countdowns.
 public struct VehicleHubView: View {
     @ObservedObject var store: LifeStore
+    @State private var showingAddVehicle = false
     @State private var showingAddService = false
     @State private var showingAddFuel = false
     @State private var showingUpdateOdometer = false
@@ -42,25 +43,62 @@ public struct VehicleHubView: View {
         return formatter.string(from: date)
     }
     
+    private var vehicleThemeGradient: LinearGradient {
+        switch vehicle.vehicleType {
+        case .fourWheeler:
+            return LinearGradient(
+                colors: [Color(red: 0.85, green: 0.35, blue: 0.1), Color(red: 0.95, green: 0.5, blue: 0.15)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .twoWheeler:
+            return LinearGradient(
+                colors: [Color(red: 0.2, green: 0.3, blue: 0.85), Color(red: 0.45, green: 0.2, blue: 0.85)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .electricCar, .electricBike:
+            return LinearGradient(
+                colors: [Color(red: 0.05, green: 0.55, blue: 0.65), Color(red: 0.1, green: 0.75, blue: 0.5)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+    
     public var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: 18) {
+                // Garage Multi-Vehicle Selector Bar
+                garageSelectorBar
+                
                 // Vehicle Hero Card
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(vehicle.makeModel)
+                            HStack(spacing: 6) {
+                                Text(vehicle.vehicleType.rawValue)
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.85))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 2)
+                                    .background(Color.black.opacity(0.2))
+                                    .cornerRadius(6)
+                            }
+                            
+                            Text(vehicle.displayTitle)
                                 .font(.system(size: 24, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
-                            Text(vehicle.registrationNumber.isEmpty ? vehicle.fuelType : "\(vehicle.registrationNumber) • \(vehicle.fuelType)")
+                            
+                            Text(vehicle.registrationNumber.isEmpty ? vehicle.fuelType : "\(vehicle.formattedRegistration) • \(vehicle.fuelType)")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.white.opacity(0.8))
+                                .foregroundColor(.white.opacity(0.85))
                         }
                         
                         Spacer()
                         
-                        Image(systemName: "car.side.fill")
-                            .font(.system(size: 38))
+                        Image(systemName: vehicle.vehicleType.iconName)
+                            .font(.system(size: 40))
                             .foregroundColor(.white.opacity(0.9))
                     }
                     
@@ -94,13 +132,9 @@ public struct VehicleHubView: View {
                     }
                 }
                 .padding(20)
-                .background(LinearGradient(
-                    colors: [Color(red: 0.85, green: 0.35, blue: 0.1), Color(red: 0.95, green: 0.5, blue: 0.15)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ))
+                .background(vehicleThemeGradient)
                 .cornerRadius(20)
-                .shadow(color: Color.orange.opacity(0.25), radius: 8, x: 0, y: 4)
+                .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                 
                 // Key Reminders & Health Row - ALL EDITABLE
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -214,6 +248,9 @@ public struct VehicleHubView: View {
                     }
                 }
                 
+                // Connected Documents Section
+                connectedDocumentsCard
+                
                 // Maintenance History Section
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Service History")
@@ -323,16 +360,26 @@ public struct VehicleHubView: View {
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
-        .navigationTitle(vehicle.makeModel)
+        .navigationTitle(vehicle.displayTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: {
-                    HapticManager.light()
-                    showingEditProfile = true
-                }) {
-                    Image(systemName: "pencil.circle")
-                        .font(.system(size: 18))
+                HStack(spacing: 10) {
+                    Button(action: {
+                        HapticManager.light()
+                        showingAddVehicle = true
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    
+                    Button(action: {
+                        HapticManager.light()
+                        showingEditProfile = true
+                    }) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 16))
+                    }
                 }
             }
         }
@@ -378,6 +425,9 @@ public struct VehicleHubView: View {
         .sheet(isPresented: $showingAddFuel) {
             AddFuelSheet(store: store)
         }
+        .sheet(isPresented: $showingAddVehicle) {
+            AddVehicleSheet(store: store)
+        }
         .sheet(isPresented: $showingEditProfile) {
             EditVehicleProfileSheet(store: store)
         }
@@ -388,6 +438,255 @@ public struct VehicleHubView: View {
             EditFuelSheet(store: store, record: fuel)
         }
     }
+    
+    // MARK: - Garage Multi-Vehicle Selector Bar
+    private var garageSelectorBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(store.vehicles) { v in
+                    let isSelected = v.id == store.activeVehicle.id
+                    Button(action: {
+                        HapticManager.selection()
+                        store.selectActiveVehicle(id: v.id)
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: v.vehicleType.iconName)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(isSelected ? .white : .primary)
+                            
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(v.displayTitle)
+                                    .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                                    .foregroundColor(isSelected ? .white : .primary)
+                                    .lineLimit(1)
+                                
+                                Text(v.registrationNumber.isEmpty ? v.vehicleType.rawValue : v.formattedRegistration)
+                                    .font(.system(size: 10))
+                                    .foregroundColor(isSelected ? .white.opacity(0.85) : .secondary)
+                                    .lineLimit(1)
+                            }
+                            
+                            if isSelected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            isSelected ?
+                                AnyView(LinearGradient(colors: [Color.blue, Color(red: 0.1, green: 0.4, blue: 0.9)], startPoint: .leading, endPoint: .trailing)) :
+                                AnyView(Color(UIColor.secondarySystemBackground))
+                        )
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                
+                // Add Vehicle Button
+                Button(action: {
+                    HapticManager.light()
+                    showingAddVehicle = true
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
+                        Text("Add Vehicle")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.blue.opacity(0.12))
+                    .foregroundColor(.blue)
+                    .cornerRadius(12)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 4)
+        }
+    }
+    
+    // MARK: - Connected Documents Card
+    private var connectedDocumentsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Connected Vehicle Documents")
+                        .font(.system(size: 15, weight: .bold))
+                    Text("Direct 1-tap view of official documents from Document Vault")
+                        .font(.system(size: 11.5))
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                Image(systemName: "doc.badge.gearshape.fill")
+                    .foregroundColor(.blue)
+                    .font(.system(size: 18))
+            }
+            
+            Divider()
+            
+            // 1. RC Book
+            UniversalDocumentPickerRow(
+                title: "RC Book (Registration Certificate)",
+                documentId: Binding(
+                    get: { vehicle.rcDocumentId },
+                    set: { newId in store.mutateActiveVehicle { $0.rcDocumentId = newId } }
+                ),
+                store: store,
+                suggestedKeywords: ["RC", "Registration", "Vehicle", vehicle.registrationNumber]
+            )
+            
+            Divider()
+            
+            // 2. Vehicle Insurance
+            UniversalDocumentPickerRow(
+                title: "Vehicle Insurance Policy",
+                documentId: Binding(
+                    get: { vehicle.insuranceDocumentId },
+                    set: { newId in store.mutateActiveVehicle { $0.insuranceDocumentId = newId } }
+                ),
+                store: store,
+                suggestedKeywords: ["Insurance", "Policy", "Vehicle", vehicle.registrationNumber]
+            )
+            
+            Divider()
+            
+            // 3. PUC Certificate
+            UniversalDocumentPickerRow(
+                title: "Pollution Certificate (PUC)",
+                documentId: Binding(
+                    get: { vehicle.pucDocumentId },
+                    set: { newId in store.mutateActiveVehicle { $0.pucDocumentId = newId } }
+                ),
+                store: store,
+                suggestedKeywords: ["PUC", "Pollution", vehicle.registrationNumber]
+            )
+        }
+        .padding(16)
+        .background(Color(UIColor.secondarySystemBackground))
+        .cornerRadius(16)
+    }
+}
+
+/// Sheet for adding a new vehicle (4-Wheeler, 2-Wheeler, EV) to the garage.
+public struct AddVehicleSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: LifeStore
+    
+    @State private var vehicleType: VehicleType = .fourWheeler
+    @State private var nickName: String = ""
+    @State private var makeModel: String = ""
+    @State private var registrationNumber: String = ""
+    @State private var fuelType: String = "Petrol"
+    @State private var odometerText: String = ""
+    @State private var nextServiceKmText: String = "10000"
+    @State private var fastagBalanceText: String = "0"
+    @State private var insuranceExpiry: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
+    @State private var pucExpiry: Date = Calendar.current.date(byAdding: .month, value: 6, to: Date()) ?? Date()
+    
+    // Connected Documents
+    @State private var rcDocId: UUID? = nil
+    @State private var insuranceDocId: UUID? = nil
+    @State private var pucDocId: UUID? = nil
+    
+    let fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "CNG"]
+    
+    public var body: some View {
+        NavigationStack {
+            Form {
+                Section("Vehicle Type & Identification") {
+                    Picker("Vehicle Type", selection: $vehicleType) {
+                        ForEach(VehicleType.allCases) { type in
+                            Label(type.rawValue, systemImage: type.iconName).tag(type)
+                        }
+                    }
+                    
+                    TextField("Nickname (e.g. My City Car, Daily Hunter 350)", text: $nickName)
+                    TextField("Make & Model (e.g. Hyundai Creta, Royal Enfield Hunter 350)", text: $makeModel)
+                    TextField("Registration No. (e.g. TN 01 AB 1234)", text: $registrationNumber)
+                    
+                    Picker("Fuel / Power Source", selection: $fuelType) {
+                        ForEach(fuelTypes, id: \.self) { type in
+                            Text(type).tag(type)
+                        }
+                    }
+                }
+                
+                Section("Telemetry & Service Due") {
+                    TextField("Current Odometer (km)", text: $odometerText)
+                        .keyboardType(.numberPad)
+                    TextField("Next Service Target (km)", text: $nextServiceKmText)
+                        .keyboardType(.numberPad)
+                    TextField("FASTag Balance (₹)", text: $fastagBalanceText)
+                        .keyboardType(.numberPad)
+                }
+                
+                Section("Validity & Reminders") {
+                    DatePicker("Insurance Expiry", selection: $insuranceExpiry, displayedComponents: [.date])
+                    DatePicker("PUC Expiry", selection: $pucExpiry, displayedComponents: [.date])
+                }
+                
+                Section("Connected Documents (Vault)") {
+                    UniversalDocumentPickerRow(
+                        title: "RC Book (Registration Certificate)",
+                        documentId: $rcDocId,
+                        store: store,
+                        suggestedKeywords: ["RC", "Registration", "Vehicle", registrationNumber]
+                    )
+                    UniversalDocumentPickerRow(
+                        title: "Insurance Policy",
+                        documentId: $insuranceDocId,
+                        store: store,
+                        suggestedKeywords: ["Insurance", "Policy", "Vehicle", registrationNumber]
+                    )
+                    UniversalDocumentPickerRow(
+                        title: "PUC Certificate",
+                        documentId: $pucDocId,
+                        store: store,
+                        suggestedKeywords: ["PUC", "Pollution", registrationNumber]
+                    )
+                }
+            }
+            .navigationTitle("Add Vehicle")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add to Garage") {
+                        let odo = Int(odometerText) ?? 0
+                        let srv = Int(nextServiceKmText) ?? (odo + 10000)
+                        let fast = Double(fastagBalanceText) ?? 0
+                        let newV = VehicleProfile(
+                            vehicleType: vehicleType,
+                            nickName: nickName.trimmingCharacters(in: .whitespaces),
+                            makeModel: makeModel.trimmingCharacters(in: .whitespaces),
+                            registrationNumber: registrationNumber.trimmingCharacters(in: .whitespaces),
+                            fuelType: fuelType,
+                            currentOdometerKm: odo,
+                            nextServiceDueKm: srv,
+                            insuranceExpiryDate: insuranceExpiry,
+                            pucExpiryDate: pucExpiry,
+                            fastagBalance: fast,
+                            rcDocumentId: rcDocId,
+                            insuranceDocumentId: insuranceDocId,
+                            pucDocumentId: pucDocId
+                        )
+                        store.addVehicle(newV)
+                        dismiss()
+                    }
+                    .disabled(makeModel.trimmingCharacters(in: .whitespaces).isEmpty && nickName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
 }
 
 /// Sheet for editing all vehicle profile metadata.
@@ -395,6 +694,8 @@ struct EditVehicleProfileSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: LifeStore
     
+    @State private var vehicleType: VehicleType = .fourWheeler
+    @State private var nickName: String = ""
     @State private var makeModel: String = ""
     @State private var registrationNumber: String = ""
     @State private var fuelType: String = "Diesel"
@@ -404,14 +705,29 @@ struct EditVehicleProfileSheet: View {
     @State private var insuranceExpiry: Date = Date()
     @State private var pucExpiry: Date = Date()
     
+    // Connected Documents
+    @State private var rcDocId: UUID? = nil
+    @State private var insuranceDocId: UUID? = nil
+    @State private var pucDocId: UUID? = nil
+    
+    @State private var showingDeleteAlert = false
+    
     let fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid", "CNG"]
     
     var body: some View {
         NavigationStack {
             Form {
-                Section("Vehicle Information") {
+                Section("Vehicle Type & Identification") {
+                    Picker("Vehicle Type", selection: $vehicleType) {
+                        ForEach(VehicleType.allCases) { type in
+                            Label(type.rawValue, systemImage: type.iconName).tag(type)
+                        }
+                    }
+                    
+                    TextField("Nickname (e.g. My City Car, Daily Hunter 350)", text: $nickName)
                     TextField("Make & Model (e.g. Hyundai Creta, Honda City)", text: $makeModel)
                     TextField("Registration No. (e.g. DL 01 AB 1234)", text: $registrationNumber)
+                    
                     Picker("Fuel Type", selection: $fuelType) {
                         ForEach(fuelTypes, id: \.self) { type in
                             Text(type).tag(type)
@@ -432,11 +748,58 @@ struct EditVehicleProfileSheet: View {
                     DatePicker("Insurance Expiry", selection: $insuranceExpiry, displayedComponents: [.date])
                     DatePicker("PUC Certificate Expiry", selection: $pucExpiry, displayedComponents: [.date])
                 }
+                
+                Section("Connected Documents (Vault)") {
+                    UniversalDocumentPickerRow(
+                        title: "RC Book (Registration Certificate)",
+                        documentId: $rcDocId,
+                        store: store,
+                        suggestedKeywords: ["RC", "Registration", "Vehicle", registrationNumber]
+                    )
+                    UniversalDocumentPickerRow(
+                        title: "Insurance Policy",
+                        documentId: $insuranceDocId,
+                        store: store,
+                        suggestedKeywords: ["Insurance", "Policy", "Vehicle", registrationNumber]
+                    )
+                    UniversalDocumentPickerRow(
+                        title: "PUC Certificate",
+                        documentId: $pucDocId,
+                        store: store,
+                        suggestedKeywords: ["PUC", "Pollution", registrationNumber]
+                    )
+                }
+                
+                if store.vehicles.count > 1 {
+                    Section {
+                        Button(role: .destructive, action: {
+                            showingDeleteAlert = true
+                        }) {
+                            HStack {
+                                Spacer()
+                                Label("Remove Vehicle from Garage", systemImage: "trash")
+                                    .foregroundColor(.red)
+                                Spacer()
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("Edit Vehicle")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Remove Vehicle", isPresented: $showingDeleteAlert) {
+                Button("Remove", role: .destructive) {
+                    store.deleteVehicle(id: store.activeVehicle.id)
+                    dismiss()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to remove \(store.activeVehicle.displayTitle) from your garage?")
+            }
             .onAppear {
                 let v = store.vehicleProfile
+                vehicleType = v.vehicleType
+                nickName = v.nickName
                 makeModel = v.makeModel
                 registrationNumber = v.registrationNumber
                 fuelType = v.fuelType
@@ -445,6 +808,9 @@ struct EditVehicleProfileSheet: View {
                 fastagBalanceText = "\(Int(v.fastagBalance))"
                 insuranceExpiry = v.insuranceExpiryDate
                 pucExpiry = v.pucExpiryDate
+                rcDocId = v.rcDocumentId
+                insuranceDocId = v.insuranceDocumentId
+                pucDocId = v.pucDocumentId
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -453,18 +819,23 @@ struct EditVehicleProfileSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         var v = store.vehicleProfile
-                        v.makeModel = makeModel
-                        v.registrationNumber = registrationNumber
+                        v.vehicleType = vehicleType
+                        v.nickName = nickName.trimmingCharacters(in: .whitespaces)
+                        v.makeModel = makeModel.trimmingCharacters(in: .whitespaces)
+                        v.registrationNumber = registrationNumber.trimmingCharacters(in: .whitespaces)
                         v.fuelType = fuelType
                         if let odo = Int(odometerText) { v.currentOdometerKm = odo }
                         if let srv = Int(nextServiceKmText) { v.nextServiceDueKm = srv }
                         if let fast = Double(fastagBalanceText) { v.fastagBalance = fast }
                         v.insuranceExpiryDate = insuranceExpiry
                         v.pucExpiryDate = pucExpiry
-                        store.updateFullVehicleProfile(v)
+                        v.rcDocumentId = rcDocId
+                        v.insuranceDocumentId = insuranceDocId
+                        v.pucDocumentId = pucDocId
+                        store.updateVehicle(v)
                         dismiss()
                     }
-                    .disabled(makeModel.isEmpty)
+                    .disabled(makeModel.isEmpty && nickName.isEmpty)
                 }
             }
         }

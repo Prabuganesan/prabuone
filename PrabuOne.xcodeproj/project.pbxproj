@@ -35,6 +35,9 @@
 		B10000000000000000000227 /* MonthlyPaymentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000127 /* MonthlyPaymentsView.swift */; };
 		B10000000000000000000228 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000128 /* QRScannerView.swift */; };
 		B10000000000000000000229 /* DocumentScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000129 /* DocumentScannerView.swift */; };
+		B10000000000000000000230 /* ZipArchiveManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000130 /* ZipArchiveManager.swift */; };
+		B10000000000000000000231 /* UniversalDocumentLinker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000131 /* UniversalDocumentLinker.swift */; };
+		B10000000000000000000232 /* PaymentMethodPickerRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000132 /* PaymentMethodPickerRow.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +71,9 @@
 		B10000000000000000000127 /* MonthlyPaymentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyPaymentsView.swift; sourceTree = "<group>"; };
 		B10000000000000000000128 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		B10000000000000000000129 /* DocumentScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentScannerView.swift; sourceTree = "<group>"; };
+		B10000000000000000000130 /* ZipArchiveManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipArchiveManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000131 /* UniversalDocumentLinker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UniversalDocumentLinker.swift; sourceTree = "<group>"; };
+		B10000000000000000000132 /* PaymentMethodPickerRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentMethodPickerRow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,6 +156,7 @@
 				B10000000000000000000110 /* ReminderEngine.swift */,
 				B10000000000000000000111 /* LifeStore.swift */,
 				B10000000000000000000121 /* HapticManager.swift */,
+				B10000000000000000000130 /* ZipArchiveManager.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -169,6 +176,8 @@
 				B10000000000000000000127 /* MonthlyPaymentsView.swift */,
 				B10000000000000000000128 /* QRScannerView.swift */,
 				B10000000000000000000129 /* DocumentScannerView.swift */,
+				B10000000000000000000131 /* UniversalDocumentLinker.swift */,
+				B10000000000000000000132 /* PaymentMethodPickerRow.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -270,6 +279,9 @@
 				B10000000000000000000227 /* MonthlyPaymentsView.swift in Sources */,
 				B10000000000000000000228 /* QRScannerView.swift in Sources */,
 				B10000000000000000000229 /* DocumentScannerView.swift in Sources */,
+				B10000000000000000000230 /* ZipArchiveManager.swift in Sources */,
+				B10000000000000000000231 /* UniversalDocumentLinker.swift in Sources */,
+				B10000000000000000000232 /* PaymentMethodPickerRow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

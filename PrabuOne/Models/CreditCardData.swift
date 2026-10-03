@@ -17,6 +17,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
     public var cardNetwork: String       // Visa, Mastercard, RuPay, Amex
     public var cardTheme: String         // midnight, navy, sapphire, pacific, arctic, steel, sky, obsidian, emerald, titanium, purple, roseGold
     public var cardCategory: String      // "Credit" or "Debit"
+    public var linkedDocumentId: UUID?   // Linked document from Document Vault
     
     public init(
         id: UUID = UUID(),
@@ -33,7 +34,8 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         dueDay: Int? = nil,
         cardNetwork: String = "Visa",
         cardTheme: String = "midnight",
-        cardCategory: String = "Credit"
+        cardCategory: String = "Credit",
+        linkedDocumentId: UUID? = nil
     ) {
         self.id = id
         self.bankName = bankName
@@ -50,6 +52,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         self.cardNetwork = cardNetwork
         self.cardTheme = cardTheme
         self.cardCategory = cardCategory
+        self.linkedDocumentId = linkedDocumentId
     }
     
     public var isDebit: Bool {
@@ -111,7 +114,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, bankName, cardName, cardNumber, cardHolderName, expiryDate, cvv, atmPin, tpin, creditLimit, statementDay, dueDay, cardNetwork, cardTheme, cardCategory
+        case id, bankName, cardName, cardNumber, cardHolderName, expiryDate, cvv, atmPin, tpin, creditLimit, statementDay, dueDay, cardNetwork, cardTheme, cardCategory, linkedDocumentId
         case legacyLastFourDigits = "lastFourDigits"
     }
     
@@ -132,6 +135,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         try container.encode(cardNetwork, forKey: .cardNetwork)
         try container.encode(cardTheme, forKey: .cardTheme)
         try container.encode(cardCategory, forKey: .cardCategory)
+        try container.encodeIfPresent(linkedDocumentId, forKey: .linkedDocumentId)
     }
     
     public init(from decoder: Decoder) throws {
@@ -155,6 +159,7 @@ public struct CreditCardAccount: Identifiable, Codable, Equatable {
         cardNetwork = try container.decodeIfPresent(String.self, forKey: .cardNetwork) ?? "Visa"
         cardTheme = try container.decodeIfPresent(String.self, forKey: .cardTheme) ?? "midnight"
         cardCategory = try container.decodeIfPresent(String.self, forKey: .cardCategory) ?? "Credit"
+        linkedDocumentId = try container.decodeIfPresent(UUID.self, forKey: .linkedDocumentId)
     }
 }
 
@@ -171,6 +176,7 @@ public struct BankAccount: Identifiable, Codable, Equatable {
     public var accountTheme: String      // midnight, navy, sapphire, pacific, arctic, steel, sky, emerald, purple, slate, amber
     public var tpin: String              // e.g. TPIN / UPI PIN
     public var atmPin: String            // e.g. Associated ATM PIN
+    public var linkedDocumentId: UUID?   // Linked document from Document Vault
     
     public init(
         id: UUID = UUID(),
@@ -183,7 +189,8 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         branchName: String = "",
         accountTheme: String = "midnight",
         tpin: String = "",
-        atmPin: String = ""
+        atmPin: String = "",
+        linkedDocumentId: UUID? = nil
     ) {
         self.id = id
         self.bankName = bankName
@@ -196,6 +203,7 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         self.accountTheme = accountTheme
         self.tpin = tpin
         self.atmPin = atmPin
+        self.linkedDocumentId = linkedDocumentId
     }
     
     public var lastFourDigits: String {
@@ -236,7 +244,7 @@ public struct BankAccount: Identifiable, Codable, Equatable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, bankName, accountHolderName, accountNumber, ifscCode, accountType, upiId, branchName, accountTheme, tpin, atmPin
+        case id, bankName, accountHolderName, accountNumber, ifscCode, accountType, upiId, branchName, accountTheme, tpin, atmPin, linkedDocumentId
     }
     
     public func encode(to encoder: Encoder) throws {
@@ -252,6 +260,7 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         try container.encode(accountTheme, forKey: .accountTheme)
         try container.encode(tpin, forKey: .tpin)
         try container.encode(atmPin, forKey: .atmPin)
+        try container.encodeIfPresent(linkedDocumentId, forKey: .linkedDocumentId)
     }
     
     public init(from decoder: Decoder) throws {
@@ -267,6 +276,7 @@ public struct BankAccount: Identifiable, Codable, Equatable {
         accountTheme = try container.decodeIfPresent(String.self, forKey: .accountTheme) ?? "midnight"
         tpin = try container.decodeIfPresent(String.self, forKey: .tpin) ?? ""
         atmPin = try container.decodeIfPresent(String.self, forKey: .atmPin) ?? ""
+        linkedDocumentId = try container.decodeIfPresent(UUID.self, forKey: .linkedDocumentId)
     }
 }
 

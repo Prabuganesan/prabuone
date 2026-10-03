@@ -35,7 +35,7 @@ public struct CategoryDetailView: View {
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(categoryItems) { item in
-                    LifeItemRow(item: item, onTogglePaid: {
+                    LifeItemRow(item: item, store: store, onTogglePaid: {
                         withAnimation {
                             store.toggleCompleted(item)
                         }
@@ -67,6 +67,7 @@ public struct CategoryDetailView: View {
 /// Reusable row component for Life Items.
 public struct LifeItemRow: View {
     let item: LifeItem
+    var store: LifeStore? = nil
     let onTogglePaid: () -> Void
     
     public var body: some View {
@@ -108,9 +109,15 @@ public struct LifeItemRow: View {
                         .lineLimit(1)
                 }
                 
-                Text("\(item.daysRemainingText) • \(item.formattedDueDate)")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+                HStack(spacing: 6) {
+                    Text("\(item.daysRemainingText) • \(item.formattedDueDate)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                    
+                    if let docId = item.linkedDocumentId, let s = store {
+                        LinkedDocumentBadge(documentId: docId, store: s, customLabel: "Document")
+                    }
+                }
             }
             
             Spacer()

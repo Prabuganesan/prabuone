@@ -18,6 +18,8 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
     public var emisPaidOverride: Int?    // Optional manual override for EMIs paid
     public var theme: String             // Color accent: midnight, navy, sapphire, emerald, amber, ruby
     public var notes: String?
+    public var linkedPaymentMethod: String?
+    public var linkedDocumentId: UUID?
     
     public init(
         id: UUID = UUID(),
@@ -35,7 +37,9 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
         endDate: Date? = nil,
         emisPaidOverride: Int? = nil,
         theme: String = "sapphire",
-        notes: String? = nil
+        notes: String? = nil,
+        linkedPaymentMethod: String? = nil,
+        linkedDocumentId: UUID? = nil
     ) {
         self.id = id
         self.loanName = loanName
@@ -53,10 +57,12 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
         self.emisPaidOverride = emisPaidOverride
         self.theme = theme
         self.notes = notes
+        self.linkedPaymentMethod = linkedPaymentMethod
+        self.linkedDocumentId = linkedDocumentId
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, loanName, lenderName, accountNumber, loanType, totalPrincipal, remainingPrincipal, emiAmount, interestRate, dueDay, tenureMonths, startDate, endDate, emisPaidOverride, theme, notes
+        case id, loanName, lenderName, accountNumber, loanType, totalPrincipal, remainingPrincipal, emiAmount, interestRate, dueDay, tenureMonths, startDate, endDate, emisPaidOverride, theme, notes, linkedPaymentMethod, linkedDocumentId
     }
     
     public init(from decoder: Decoder) throws {
@@ -77,6 +83,8 @@ public struct LoanAccount: Identifiable, Codable, Equatable {
         emisPaidOverride = try container.decodeIfPresent(Int.self, forKey: .emisPaidOverride)
         theme = try container.decodeIfPresent(String.self, forKey: .theme) ?? "sapphire"
         notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        linkedPaymentMethod = try container.decodeIfPresent(String.self, forKey: .linkedPaymentMethod)
+        linkedDocumentId = try container.decodeIfPresent(UUID.self, forKey: .linkedDocumentId)
     }
     
     /// Automatic calculation of EMIs paid based on the loan start date and the current date/due day.
@@ -217,6 +225,8 @@ public struct InsurancePolicyRecord: Identifiable, Codable, Equatable {
     public var policyHolderName: String  // Policyholder Name
     public var theme: String             // Color accent: emerald, sapphire, ruby, amber, midnight, purple
     public var notes: String?
+    public var linkedPaymentMethod: String?
+    public var linkedDocumentId: UUID?
     
     public init(
         id: UUID = UUID(),
@@ -231,7 +241,9 @@ public struct InsurancePolicyRecord: Identifiable, Codable, Equatable {
         maturityDate: Date? = nil,
         policyHolderName: String = "",
         theme: String = "emerald",
-        notes: String? = nil
+        notes: String? = nil,
+        linkedPaymentMethod: String? = nil,
+        linkedDocumentId: UUID? = nil
     ) {
         self.id = id
         self.policyName = policyName
@@ -246,6 +258,8 @@ public struct InsurancePolicyRecord: Identifiable, Codable, Equatable {
         self.policyHolderName = policyHolderName
         self.theme = theme
         self.notes = notes
+        self.linkedPaymentMethod = linkedPaymentMethod
+        self.linkedDocumentId = linkedDocumentId
     }
     
     public var daysUntilDue: Int {
@@ -266,5 +280,28 @@ public struct InsurancePolicyRecord: Identifiable, Codable, Equatable {
     
     public var formattedPolicyNumber: String {
         policyNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    private enum CodingKeys: String, CodingKey {
+        case id, policyName, insurerName, policyNumber, policyType, sumAssured, premiumAmount, premiumFrequency, nextDueDate, maturityDate, policyHolderName, theme, notes, linkedPaymentMethod, linkedDocumentId
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        policyName = try container.decodeIfPresent(String.self, forKey: .policyName) ?? ""
+        insurerName = try container.decodeIfPresent(String.self, forKey: .insurerName) ?? ""
+        policyNumber = try container.decodeIfPresent(String.self, forKey: .policyNumber) ?? ""
+        policyType = try container.decodeIfPresent(String.self, forKey: .policyType) ?? "Life Insurance"
+        sumAssured = try container.decodeIfPresent(Double.self, forKey: .sumAssured) ?? 0
+        premiumAmount = try container.decodeIfPresent(Double.self, forKey: .premiumAmount) ?? 0
+        premiumFrequency = try container.decodeIfPresent(String.self, forKey: .premiumFrequency) ?? "Yearly"
+        nextDueDate = try container.decodeIfPresent(Date.self, forKey: .nextDueDate) ?? Date()
+        maturityDate = try container.decodeIfPresent(Date.self, forKey: .maturityDate)
+        policyHolderName = try container.decodeIfPresent(String.self, forKey: .policyHolderName) ?? ""
+        theme = try container.decodeIfPresent(String.self, forKey: .theme) ?? "emerald"
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        linkedPaymentMethod = try container.decodeIfPresent(String.self, forKey: .linkedPaymentMethod)
+        linkedDocumentId = try container.decodeIfPresent(UUID.self, forKey: .linkedDocumentId)
     }
 }

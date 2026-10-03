@@ -13,9 +13,39 @@ public final class LifeStore: ObservableObject {
     @Published public var bankAccounts: [BankAccount] = [] { didSet { saveBankAccountsToDisk() } }
     @Published public var loans: [LoanAccount] = [] { didSet { saveLoansToDisk() } }
     @Published public var licPolicies: [InsurancePolicyRecord] = [] { didSet { savePoliciesToDisk() } }
-    @Published public var vehicleProfile: VehicleProfile = VehicleProfile() { didSet { saveVehicleToDisk() } }
+    @Published public var vehicles: [VehicleProfile] = [] { didSet { saveVehicleToDisk() } }
+    @Published public var activeVehicleId: UUID? = nil { didSet { saveActiveVehicleId() } }
     @Published public var documents: [DocumentRecord] = [] { didSet { saveDocumentsToDisk() } }
     @Published public var quickNotes: [QuickNote] = [] { didSet { saveNotesToDisk() } }
+    
+    public var activeVehicle: VehicleProfile {
+        if let id = activeVehicleId, let found = vehicles.first(where: { $0.id == id }) {
+            return found
+        }
+        return vehicles.first ?? VehicleProfile()
+    }
+    
+    public var vehicleProfile: VehicleProfile {
+        get { activeVehicle }
+        set {
+            if let index = vehicles.firstIndex(where: { $0.id == newValue.id }) {
+                vehicles[index] = newValue
+            } else if let activeId = activeVehicleId, let index = vehicles.firstIndex(where: { $0.id == activeId }) {
+                vehicles[index] = newValue
+            } else {
+                vehicles.append(newValue)
+                activeVehicleId = newValue.id
+            }
+        }
+    }
+    
+    private func saveActiveVehicleId() {
+        if let id = activeVehicleId {
+            UserDefaults.standard.set(id.uuidString, forKey: "prabuone_active_vehicle_id")
+        } else {
+            UserDefaults.standard.removeObject(forKey: "prabuone_active_vehicle_id")
+        }
+    }
     
     private let itemsFileName = "prabuone_life_items.json"
     private let cardsFileName = "prabuone_credit_cards.json"
@@ -375,29 +405,78 @@ public final class LifeStore: ObservableObject {
         items.removeAll { $0.category == .insurance && $0.subtitle.contains(policy.policyNumber) }
     }
     
-    // MARK: - Mutations (Vehicle)
+    // MARK: - Vehicle Garage Management (4-Wheelers & 2-Wheelers)
+    
+    public func addVehicle(_ vehicle: VehicleProfile) {
+        vehicles.append(vehicle)
+        activeVehicleId = vehicle.id
+        HapticManager.success()
+    }
+    
+    public func updateVehicle(_ vehicle: VehicleProfile) {
+        if let index = vehicles.firstIndex(where: { $0.id == vehicle.id }) {
+            vehicles[index] = vehicle
+            HapticManager.success()
+        }
+    }
+    
+    public func deleteVehicle(_ vehicle: VehicleProfile) {
+        deleteVehicle(id: vehicle.id)
+    }
+    
+    public func deleteVehicle(id: UUID) {
+        vehicles.removeAll { $0.id == id }
+        if activeVehicleId == id {
+            activeVehicleId = vehicles.first?.id
+        }
+        saveVehicleToDisk()
+        HapticManager.light()
+    }
+    
+    public func selectActiveVehicle(_ vehicle: VehicleProfile) {
+        selectActiveVehicle(id: vehicle.id)
+    }
+    
+    public func selectActiveVehicle(id: UUID) {
+        activeVehicleId = id
+        saveVehicleToDisk()
+        HapticManager.selection()
+    }
+    
+    public func mutateActiveVehicle(_ mutation: (inout VehicleProfile) -> Void) {
+        if let index = vehicles.firstIndex(where: { $0.id == activeVehicle.id }) {
+            mutation(&vehicles[index])
+        } else if !vehicles.isEmpty {
+            mutation(&vehicles[0])
+        } else {
+            var newProfile = VehicleProfile()
+            mutation(&newProfile)
+            vehicles.append(newProfile)
+            activeVehicleId = newProfile.id
+        }
+    }
     
     public func updateOdometer(newKm: Int) {
-        vehicleProfile.currentOdometerKm = newKm
+        mutateActiveVehicle { $0.currentOdometerKm = newKm }
         HapticManager.success()
     }
     
     public func updateNextServiceKm(newKm: Int) {
-        vehicleProfile.nextServiceDueKm = newKm
+        mutateActiveVehicle { $0.nextServiceDueKm = newKm }
         HapticManager.success()
     }
     
     public func updateInsuranceExpiry(newDate: Date) {
-        vehicleProfile.insuranceExpiryDate = newDate
+        mutateActiveVehicle { $0.insuranceExpiryDate = newDate }
         HapticManager.success()
-        // Sync or create LifeItem for Insurance
-        if let itemIndex = items.firstIndex(where: { $0.category == .vehicle && $0.title.contains("Insurance") }) {
+        let active = activeVehicle
+        if let itemIndex = items.firstIndex(where: { $0.category == .vehicle && $0.title.contains("Insurance") && $0.subtitle.contains(active.formattedRegistration) }) {
             items[itemIndex].dueDate = newDate
             ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
         } else {
             let item = LifeItem(
-                title: "\(vehicleProfile.makeModel) Insurance",
-                subtitle: "Policy Renewal",
+                title: "\(active.displayTitle) Insurance",
+                subtitle: active.formattedRegistration,
                 category: .vehicle,
                 dueDate: newDate,
                 repeatFrequency: .yearly
@@ -407,16 +486,16 @@ public final class LifeStore: ObservableObject {
     }
     
     public func updatePUCExpiry(newDate: Date) {
-        vehicleProfile.pucExpiryDate = newDate
+        mutateActiveVehicle { $0.pucExpiryDate = newDate }
         HapticManager.success()
-        // Sync or create LifeItem for PUC
-        if let itemIndex = items.firstIndex(where: { $0.category == .document && $0.title.contains("PUC") }) {
+        let active = activeVehicle
+        if let itemIndex = items.firstIndex(where: { $0.category == .document && $0.title.contains("PUC") && $0.subtitle.contains(active.formattedRegistration) }) {
             items[itemIndex].dueDate = newDate
             ReminderEngine.shared.scheduleReminders(for: items[itemIndex])
         } else {
             let item = LifeItem(
-                title: "\(vehicleProfile.makeModel) PUC Certificate",
-                subtitle: "Pollution Expiry",
+                title: "\(active.displayTitle) PUC Certificate",
+                subtitle: active.formattedRegistration,
                 category: .document,
                 dueDate: newDate,
                 repeatFrequency: .yearly
@@ -426,56 +505,69 @@ public final class LifeStore: ObservableObject {
     }
     
     public func updateFastagBalance(newBalance: Double) {
-        vehicleProfile.fastagBalance = newBalance
+        mutateActiveVehicle { $0.fastagBalance = newBalance }
         HapticManager.success()
     }
     
     public func updateVehicleInfo(makeModel: String, regNo: String, fuelType: String) {
-        vehicleProfile.makeModel = makeModel
-        vehicleProfile.registrationNumber = regNo
-        vehicleProfile.fuelType = fuelType
+        mutateActiveVehicle {
+            $0.makeModel = makeModel
+            $0.registrationNumber = regNo
+            $0.fuelType = fuelType
+        }
         HapticManager.success()
     }
     
     public func updateFullVehicleProfile(_ profile: VehicleProfile) {
-        vehicleProfile = profile
-        HapticManager.success()
+        updateVehicle(profile)
     }
     
     public func addServiceRecord(_ record: VehicleServiceRecord) {
-        vehicleProfile.serviceHistory.insert(record, at: 0)
-        vehicleProfile.currentOdometerKm = max(vehicleProfile.currentOdometerKm, record.odometerKm)
-        vehicleProfile.nextServiceDueKm = record.odometerKm + 10000
+        mutateActiveVehicle {
+            $0.serviceHistory.insert(record, at: 0)
+            $0.currentOdometerKm = max($0.currentOdometerKm, record.odometerKm)
+            $0.nextServiceDueKm = record.odometerKm + 10000
+        }
         HapticManager.success()
     }
     
     public func updateServiceRecord(_ record: VehicleServiceRecord) {
-        if let index = vehicleProfile.serviceHistory.firstIndex(where: { $0.id == record.id }) {
-            vehicleProfile.serviceHistory[index] = record
-            HapticManager.success()
+        mutateActiveVehicle {
+            if let index = $0.serviceHistory.firstIndex(where: { $0.id == record.id }) {
+                $0.serviceHistory[index] = record
+            }
         }
+        HapticManager.success()
     }
     
     public func deleteServiceRecord(id: UUID) {
-        vehicleProfile.serviceHistory.removeAll { $0.id == id }
+        mutateActiveVehicle {
+            $0.serviceHistory.removeAll { $0.id == id }
+        }
         HapticManager.light()
     }
     
     public func addFuelRecord(_ record: FuelRecord) {
-        vehicleProfile.fuelHistory.insert(record, at: 0)
-        vehicleProfile.currentOdometerKm = max(vehicleProfile.currentOdometerKm, record.odometerKm)
+        mutateActiveVehicle {
+            $0.fuelHistory.insert(record, at: 0)
+            $0.currentOdometerKm = max($0.currentOdometerKm, record.odometerKm)
+        }
         HapticManager.success()
     }
     
     public func updateFuelRecord(_ record: FuelRecord) {
-        if let index = vehicleProfile.fuelHistory.firstIndex(where: { $0.id == record.id }) {
-            vehicleProfile.fuelHistory[index] = record
-            HapticManager.success()
+        mutateActiveVehicle {
+            if let index = $0.fuelHistory.firstIndex(where: { $0.id == record.id }) {
+                $0.fuelHistory[index] = record
+            }
         }
+        HapticManager.success()
     }
     
     public func deleteFuelRecord(id: UUID) {
-        vehicleProfile.fuelHistory.removeAll { $0.id == id }
+        mutateActiveVehicle {
+            $0.fuelHistory.removeAll { $0.id == id }
+        }
         HapticManager.light()
     }
     
@@ -677,7 +769,7 @@ public final class LifeStore: ObservableObject {
     }
     
     private func saveVehicleToDisk() {
-        try? JSONEncoder().encode(vehicleProfile).write(to: getURL(for: vehicleFileName), options: .atomic)
+        try? JSONEncoder().encode(vehicles).write(to: getURL(for: vehicleFileName), options: .atomic)
     }
     
     private func saveDocumentsToDisk() {
@@ -747,11 +839,24 @@ public final class LifeStore: ObservableObject {
         
         let vehicleURL = getURL(for: vehicleFileName)
         if FileManager.default.fileExists(atPath: vehicleURL.path),
-           let data = try? Data(contentsOf: vehicleURL),
-           let loaded = try? JSONDecoder().decode(VehicleProfile.self, from: data) {
-            self.vehicleProfile = loaded
+           let data = try? Data(contentsOf: vehicleURL) {
+            if let multiLoaded = try? JSONDecoder().decode([VehicleProfile].self, from: data) {
+                self.vehicles = multiLoaded
+            } else if let singleLoaded = try? JSONDecoder().decode(VehicleProfile.self, from: data) {
+                self.vehicles = [singleLoaded]
+            } else {
+                self.vehicles = []
+            }
         } else {
-            self.vehicleProfile = VehicleProfile()
+            self.vehicles = []
+        }
+        
+        if let savedActiveIdStr = UserDefaults.standard.string(forKey: "prabuone_active_vehicle_id"),
+           let savedUUID = UUID(uuidString: savedActiveIdStr),
+           self.vehicles.contains(where: { $0.id == savedUUID }) {
+            self.activeVehicleId = savedUUID
+        } else {
+            self.activeVehicleId = self.vehicles.first?.id
         }
         
         let docsURL = getURL(for: documentsFileName)
@@ -776,49 +881,134 @@ public final class LifeStore: ObservableObject {
     // MARK: - Google Backup & Full Archive Export/Restore
     
     public func exportBackupArchive() throws -> URL {
-        // Collect and embed all vault attachment files into the backup archive
-        var backupAttachments: [BackupAttachmentPayload] = []
-        for doc in self.documents {
-            if let fileName = doc.attachmentFileName,
-               let fileURL = doc.attachmentURL,
-               FileManager.default.fileExists(atPath: fileURL.path),
-               let data = try? Data(contentsOf: fileURL) {
-                let payload = BackupAttachmentPayload(
-                    fileName: fileName,
-                    fileType: doc.attachmentFileType ?? "file",
-                    originalName: doc.attachmentOriginalName,
-                    base64Data: data.base64EncodedString()
-                )
-                backupAttachments.append(payload)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HHmm"
+        let dateStr = formatter.string(from: Date())
+        
+        let fileManager = FileManager.default
+        let stagingFolderURL = fileManager.temporaryDirectory
+            .appendingPathComponent("PrabuOne_Backup_\(UUID().uuidString)", isDirectory: true)
+        let docsSubdirURL = stagingFolderURL.appendingPathComponent("documents", isDirectory: true)
+        
+        try fileManager.createDirectory(at: docsSubdirURL, withIntermediateDirectories: true)
+        
+        // 1. Copy all physical attachments (scanned PDFs, camera photos, receipts) to documents folder
+        var copiedAttachmentCount = 0
+        let vaultDir = self.vaultAttachmentsDirectoryURL
+        if let fileNames = try? fileManager.contentsOfDirectory(atPath: vaultDir.path) {
+            for fileName in fileNames {
+                let sourceFile = vaultDir.appendingPathComponent(fileName)
+                let destinationFile = docsSubdirURL.appendingPathComponent(fileName)
+                if (try? fileManager.copyItem(at: sourceFile, to: destinationFile)) != nil {
+                    copiedAttachmentCount += 1
+                }
             }
         }
         
+        // 2. Encode structured database JSON
         let archive = PrabuOneBackupArchive(
+            version: 2,
+            exportDate: Date(),
             items: self.items,
             creditCards: self.creditCards,
             bankAccounts: self.bankAccounts,
             loans: self.loans,
             licPolicies: self.licPolicies,
-            vehicleProfile: self.vehicleProfile,
+            vehicleProfile: self.activeVehicle,
+            vehicles: self.vehicles,
             documents: self.documents,
             quickNotes: self.quickNotes,
-            attachments: backupAttachments
+            attachments: []
         )
+        
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(archive)
+        let dbData = try encoder.encode(archive)
+        let dbFileURL = stagingFolderURL.appendingPathComponent("prabuone_database.json")
+        try dbData.write(to: dbFileURL, options: .atomic)
         
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HHmm"
-        let dateStr = formatter.string(from: Date())
-        let fileName = "PrabuOne_Backup_\(dateStr).json"
+        // 3. Write manifest.json
+        let manifest: [String: Any] = [
+            "appName": "PrabuOne",
+            "backupVersion": 2,
+            "exportDate": ISO8601DateFormatter().string(from: Date()),
+            "itemsCount": self.items.count,
+            "cardsCount": self.creditCards.count,
+            "bankAccountsCount": self.bankAccounts.count,
+            "loansCount": self.loans.count,
+            "licPoliciesCount": self.licPolicies.count,
+            "vehiclesCount": self.vehicles.count,
+            "documentsCount": self.documents.count,
+            "attachmentsCount": copiedAttachmentCount,
+            "notesCount": self.quickNotes.count
+        ]
+        if let manifestData = try? JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys]) {
+            try? manifestData.write(to: stagingFolderURL.appendingPathComponent("manifest.json"), options: .atomic)
+        }
         
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        try data.write(to: tempURL, options: .atomic)
+        // 4. Zip the entire staging directory into a portable .zip archive for Google Drive
+        let outputZipName = "PrabuOne_Full_Backup_\(dateStr).zip"
+        let outputZipURL = fileManager.temporaryDirectory.appendingPathComponent(outputZipName)
+        
+        let finalZipURL = try ZipArchiveManager.createZip(from: stagingFolderURL, destinationZipURL: outputZipURL)
+        
+        // Cleanup staging folder
+        try? fileManager.removeItem(at: stagingFolderURL)
         
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "last_google_backup_timestamp")
-        return tempURL
+        return finalZipURL
+    }
+    
+    /// Inspects an exported .zip or .json backup archive without mutating current state.
+    public func inspectBackupArchive(url: URL) throws -> (archive: PrabuOneBackupArchive, attachmentCount: Int) {
+        let shouldStopAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if shouldStopAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        
+        let isZip = url.pathExtension.lowercased() == "zip"
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        var decodedArchive: PrabuOneBackupArchive? = nil
+        var attachmentCount = 0
+        
+        if isZip {
+            let extractedFiles = ZipArchiveManager.extractAllFiles(from: data)
+            if let dbFile = extractedFiles.first(where: { $0.fileName.hasSuffix(".json") && ($0.fileName.contains("database") || $0.fileName.contains("Backup") || $0.fileName == "data.json") }) {
+                decodedArchive = try? decoder.decode(PrabuOneBackupArchive.self, from: dbFile.data)
+            }
+            if decodedArchive == nil {
+                for f in extractedFiles where f.fileName.hasSuffix(".json") {
+                    if let dec = try? decoder.decode(PrabuOneBackupArchive.self, from: f.data) {
+                        decodedArchive = dec
+                        break
+                    }
+                }
+            }
+            attachmentCount = extractedFiles.filter { !$0.fileName.hasSuffix(".json") && !$0.fileName.hasSuffix(".DS_Store") }.count
+        } else {
+            if let dec = try? decoder.decode(PrabuOneBackupArchive.self, from: data) {
+                decodedArchive = dec
+            } else {
+                decodedArchive = try JSONDecoder().decode(PrabuOneBackupArchive.self, from: data)
+            }
+            attachmentCount = decodedArchive?.attachments.count ?? 0
+        }
+        
+        guard let archive = decodedArchive else {
+            throw NSError(
+                domain: "LifeStore",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid backup archive: database JSON could not be decoded."]
+            )
+        }
+        
+        return (archive, attachmentCount)
     }
     
     public func restoreFromBackup(url: URL) throws -> (items: Int, cards: Int, banks: Int, loans: Int, policies: Int, docs: Int, notes: Int, attachments: Int) {
@@ -829,15 +1019,65 @@ public final class LifeStore: ObservableObject {
             }
         }
         
+        let isZip = url.pathExtension.lowercased() == "zip"
         let data = try Data(contentsOf: url)
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         
-        let archive: PrabuOneBackupArchive
-        if let decoded = try? decoder.decode(PrabuOneBackupArchive.self, from: data) {
-            archive = decoded
+        var restoredArchive: PrabuOneBackupArchive? = nil
+        var restoredAttachmentCount = 0
+        let targetVaultDir = self.vaultAttachmentsDirectoryURL
+        try? FileManager.default.createDirectory(at: targetVaultDir, withIntermediateDirectories: true)
+        
+        if isZip {
+            let extractedFiles = ZipArchiveManager.extractAllFiles(from: data)
+            
+            // 1. Locate and decode the database JSON
+            if let dbFile = extractedFiles.first(where: { $0.fileName.hasSuffix(".json") && ($0.fileName.contains("database") || $0.fileName.contains("Backup") || $0.fileName == "data.json") }) {
+                restoredArchive = try? decoder.decode(PrabuOneBackupArchive.self, from: dbFile.data)
+            }
+            
+            if restoredArchive == nil {
+                for f in extractedFiles where f.fileName.hasSuffix(".json") {
+                    if let decoded = try? decoder.decode(PrabuOneBackupArchive.self, from: f.data) {
+                        restoredArchive = decoded
+                        break
+                    }
+                }
+            }
+            
+            // 2. Restore all physical document attachments (PDFs, images) into vault directory
+            for file in extractedFiles {
+                guard !file.fileName.hasSuffix(".json") && !file.fileName.hasSuffix(".DS_Store") else { continue }
+                let destURL = targetVaultDir.appendingPathComponent(file.fileName)
+                try? file.data.write(to: destURL, options: .atomic)
+                restoredAttachmentCount += 1
+            }
         } else {
-            archive = try JSONDecoder().decode(PrabuOneBackupArchive.self, from: data)
+            // Legacy JSON single-file restore
+            if let decoded = try? decoder.decode(PrabuOneBackupArchive.self, from: data) {
+                restoredArchive = decoded
+            } else {
+                restoredArchive = try JSONDecoder().decode(PrabuOneBackupArchive.self, from: data)
+            }
+            
+            if let archive = restoredArchive {
+                for attachment in archive.attachments {
+                    if let attachmentData = Data(base64Encoded: attachment.base64Data) {
+                        let targetURL = targetVaultDir.appendingPathComponent(attachment.fileName)
+                        try? attachmentData.write(to: targetURL, options: .atomic)
+                        restoredAttachmentCount += 1
+                    }
+                }
+            }
+        }
+        
+        guard let archive = restoredArchive else {
+            throw NSError(
+                domain: "LifeStore",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid backup archive: database JSON could not be decoded."]
+            )
         }
         
         self.items = archive.items
@@ -845,20 +1085,20 @@ public final class LifeStore: ObservableObject {
         self.bankAccounts = archive.bankAccounts
         self.loans = archive.loans
         self.licPolicies = archive.licPolicies
-        self.vehicleProfile = archive.vehicleProfile
+        
+        if let multiVehicles = archive.vehicles, !multiVehicles.isEmpty {
+            self.vehicles = multiVehicles
+            self.activeVehicleId = multiVehicles.first?.id
+        } else if let single = archive.vehicleProfile {
+            self.vehicles = [single]
+            self.activeVehicleId = single.id
+        } else {
+            self.vehicles = []
+            self.activeVehicleId = nil
+        }
+        
         self.documents = archive.documents
         self.quickNotes = archive.quickNotes
-        
-        // Restore all document attachments to vault_attachments directory
-        let dir = self.vaultAttachmentsDirectoryURL
-        var restoredAttachmentCount = 0
-        for attachment in archive.attachments {
-            if let attachmentData = Data(base64Encoded: attachment.base64Data) {
-                let targetURL = dir.appendingPathComponent(attachment.fileName)
-                try? attachmentData.write(to: targetURL, options: .atomic)
-                restoredAttachmentCount += 1
-            }
-        }
         
         saveToDisk()
         saveCardsToDisk()
@@ -897,7 +1137,8 @@ public final class LifeStore: ObservableObject {
         self.bankAccounts = []
         self.loans = []
         self.licPolicies = []
-        self.vehicleProfile = VehicleProfile()
+        self.vehicles = []
+        self.activeVehicleId = nil
         self.documents = []
         self.quickNotes = []
         ReminderEngine.shared.cancelAllReminders()
@@ -916,7 +1157,7 @@ public final class LifeStore: ObservableObject {
     }
 }
 
-/// Raw file attachment payload encoded into portable base64 for cloud backup.
+/// Raw file attachment payload encoded into portable base64 for legacy backups.
 public struct BackupAttachmentPayload: Codable {
     public var fileName: String
     public var fileType: String
@@ -933,27 +1174,29 @@ public struct BackupAttachmentPayload: Codable {
 
 /// Unified portable snapshot of all Prabu One data for backup to Google Drive / local storage.
 public struct PrabuOneBackupArchive: Codable {
-    public var version: Int = 1
+    public var version: Int = 2
     public var exportDate: Date = Date()
     public var items: [LifeItem]
     public var creditCards: [CreditCardAccount]
     public var bankAccounts: [BankAccount]
     public var loans: [LoanAccount]
     public var licPolicies: [InsurancePolicyRecord]
-    public var vehicleProfile: VehicleProfile
+    public var vehicleProfile: VehicleProfile?
+    public var vehicles: [VehicleProfile]?
     public var documents: [DocumentRecord]
     public var quickNotes: [QuickNote]
     public var attachments: [BackupAttachmentPayload]
     
     public init(
-        version: Int = 1,
+        version: Int = 2,
         exportDate: Date = Date(),
         items: [LifeItem],
         creditCards: [CreditCardAccount],
         bankAccounts: [BankAccount],
         loans: [LoanAccount],
         licPolicies: [InsurancePolicyRecord],
-        vehicleProfile: VehicleProfile,
+        vehicleProfile: VehicleProfile? = nil,
+        vehicles: [VehicleProfile] = [],
         documents: [DocumentRecord],
         quickNotes: [QuickNote],
         attachments: [BackupAttachmentPayload] = []
@@ -965,14 +1208,15 @@ public struct PrabuOneBackupArchive: Codable {
         self.bankAccounts = bankAccounts
         self.loans = loans
         self.licPolicies = licPolicies
-        self.vehicleProfile = vehicleProfile
+        self.vehicleProfile = vehicleProfile ?? vehicles.first ?? VehicleProfile()
+        self.vehicles = vehicles
         self.documents = documents
         self.quickNotes = quickNotes
         self.attachments = attachments
     }
     
     private enum CodingKeys: String, CodingKey {
-        case version, exportDate, items, creditCards, bankAccounts, loans, licPolicies, vehicleProfile, documents, quickNotes, attachments
+        case version, exportDate, items, creditCards, bankAccounts, loans, licPolicies, vehicleProfile, vehicles, documents, quickNotes, attachments
     }
     
     public init(from decoder: Decoder) throws {
@@ -984,7 +1228,8 @@ public struct PrabuOneBackupArchive: Codable {
         bankAccounts = try container.decodeIfPresent([BankAccount].self, forKey: .bankAccounts) ?? []
         loans = try container.decodeIfPresent([LoanAccount].self, forKey: .loans) ?? []
         licPolicies = try container.decodeIfPresent([InsurancePolicyRecord].self, forKey: .licPolicies) ?? []
-        vehicleProfile = try container.decodeIfPresent(VehicleProfile.self, forKey: .vehicleProfile) ?? VehicleProfile()
+        vehicles = try container.decodeIfPresent([VehicleProfile].self, forKey: .vehicles)
+        vehicleProfile = try container.decodeIfPresent(VehicleProfile.self, forKey: .vehicleProfile) ?? vehicles?.first ?? VehicleProfile()
         documents = try container.decodeIfPresent([DocumentRecord].self, forKey: .documents) ?? []
         quickNotes = try container.decodeIfPresent([QuickNote].self, forKey: .quickNotes) ?? []
         attachments = try container.decodeIfPresent([BackupAttachmentPayload].self, forKey: .attachments) ?? []

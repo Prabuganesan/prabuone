@@ -83,6 +83,7 @@ public struct LifeItem: Identifiable, Codable, Equatable {
     public var sharedWith: String?       // e.g. "4 Screens • Family"
     public var autoRenew: Bool?          // true if recurring e-mandate/auto-debit active
     public var serviceBrand: String?     // e.g. "Netflix", "Prime Video", "Hotstar", "YouTube", "Spotify"
+    public var linkedDocumentId: UUID?   // Linked document from Document Vault
     
     public init(
         id: UUID = UUID(),
@@ -101,7 +102,8 @@ public struct LifeItem: Identifiable, Codable, Equatable {
         accountEmail: String? = nil,
         sharedWith: String? = nil,
         autoRenew: Bool? = nil,
-        serviceBrand: String? = nil
+        serviceBrand: String? = nil,
+        linkedDocumentId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -120,11 +122,12 @@ public struct LifeItem: Identifiable, Codable, Equatable {
         self.sharedWith = sharedWith
         self.autoRenew = autoRenew
         self.serviceBrand = serviceBrand
+        self.linkedDocumentId = linkedDocumentId
     }
     
     private enum CodingKeys: String, CodingKey {
         case id, title, subtitle, category, dueDate, amount, repeatFrequency, isCompleted, notes, reminderDaysBefore
-        case planTier, billingCycle, paymentMethod, accountEmail, sharedWith, autoRenew, serviceBrand
+        case planTier, billingCycle, paymentMethod, accountEmail, sharedWith, autoRenew, serviceBrand, linkedDocumentId
     }
     
     public init(from decoder: Decoder) throws {
@@ -146,6 +149,7 @@ public struct LifeItem: Identifiable, Codable, Equatable {
         sharedWith = try container.decodeIfPresent(String.self, forKey: .sharedWith)
         autoRenew = try container.decodeIfPresent(Bool.self, forKey: .autoRenew)
         serviceBrand = try container.decodeIfPresent(String.self, forKey: .serviceBrand)
+        linkedDocumentId = try container.decodeIfPresent(UUID.self, forKey: .linkedDocumentId)
     }
     
     // MARK: - Computed Properties
