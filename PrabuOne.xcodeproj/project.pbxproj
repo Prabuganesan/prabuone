@@ -33,6 +33,8 @@
 		B10000000000000000000225 /* LoansAndLicHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000125 /* LoansAndLicHubView.swift */; };
 		B10000000000000000000226 /* GoogleBackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000126 /* GoogleBackupView.swift */; };
 		B10000000000000000000227 /* MonthlyPaymentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000127 /* MonthlyPaymentsView.swift */; };
+		B10000000000000000000228 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000128 /* QRScannerView.swift */; };
+		B10000000000000000000229 /* DocumentScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000129 /* DocumentScannerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -64,6 +66,8 @@
 		B10000000000000000000125 /* LoansAndLicHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoansAndLicHubView.swift; sourceTree = "<group>"; };
 		B10000000000000000000126 /* GoogleBackupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleBackupView.swift; sourceTree = "<group>"; };
 		B10000000000000000000127 /* MonthlyPaymentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyPaymentsView.swift; sourceTree = "<group>"; };
+		B10000000000000000000128 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		B10000000000000000000129 /* DocumentScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentScannerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -163,6 +167,8 @@
 				B10000000000000000000125 /* LoansAndLicHubView.swift */,
 				B10000000000000000000126 /* GoogleBackupView.swift */,
 				B10000000000000000000127 /* MonthlyPaymentsView.swift */,
+				B10000000000000000000128 /* QRScannerView.swift */,
+				B10000000000000000000129 /* DocumentScannerView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -262,6 +268,8 @@
 				B10000000000000000000225 /* LoansAndLicHubView.swift in Sources */,
 				B10000000000000000000226 /* GoogleBackupView.swift in Sources */,
 				B10000000000000000000227 /* MonthlyPaymentsView.swift in Sources */,
+				B10000000000000000000228 /* QRScannerView.swift in Sources */,
+				B10000000000000000000229 /* DocumentScannerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

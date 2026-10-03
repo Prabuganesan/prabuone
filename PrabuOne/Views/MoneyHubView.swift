@@ -24,6 +24,7 @@ public struct MoneyHubView: View {
     
     // Card Sheets & Search
     @State private var showingAddCard = false
+    @State private var showingQRScanner = false
     @State private var addCardCategory: String = "Credit"
     @State private var selectedCardToEdit: CreditCardAccount? = nil
     @State private var creditSearchText = ""
@@ -183,6 +184,20 @@ public struct MoneyHubView: View {
                         .fontWeight(.semibold)
                 }
             }
+            
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    HapticManager.light()
+                    showingQRScanner = true
+                } label: {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.emeraldAccent)
+                }
+            }
+        }
+        .sheet(isPresented: $showingQRScanner) {
+            QRScannerView(store: store)
         }
         .sheet(isPresented: $showingAddCard) {
             AddCreditCardSheet(store: store, initialCategory: addCardCategory)

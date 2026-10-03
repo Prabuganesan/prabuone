@@ -54,5 +54,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Prabu One uses your camera to scan QR codes, UPI payment codes, and capture multi-page documents for your digital vault.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Prabu One accesses your photo library to import documents, receipts, and QR codes for scanning and vault backup.</string>
 </dict>
 </plist>

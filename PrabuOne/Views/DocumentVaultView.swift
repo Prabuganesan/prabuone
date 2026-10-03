@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 public struct DocumentVaultView: View {
     @ObservedObject var store: LifeStore
     @State private var showingAddDocument = false
+    @State private var showingDocScanner = false
     @State private var selectedDocToEdit: DocumentRecord? = nil
     @State private var selectedDocToView: DocumentRecord? = nil
     @State private var copiedToastText: String? = nil
@@ -36,22 +37,70 @@ public struct DocumentVaultView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 32)
                             
-                            Button(action: {
-                                HapticManager.light()
-                                showingAddDocument = true
-                            }) {
-                                Label("Add First Document", systemImage: "plus")
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 12)
-                                    .background(Color.teal)
-                                    .cornerRadius(12)
+                            VStack(spacing: 10) {
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingDocScanner = true
+                                }) {
+                                    Label("Scan Document (Multi-Page PDF)", systemImage: "doc.viewfinder.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 12)
+                                        .background(Color.teal)
+                                        .cornerRadius(12)
+                                }
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingAddDocument = true
+                                }) {
+                                    Label("Add Manually", systemImage: "plus")
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.teal)
+                                }
                             }
                             .padding(.top, 8)
                         }
                         .padding(.vertical, 20)
                     } else {
+                        // Quick Action Header Bar
+                        HStack(spacing: 12) {
+                            Button(action: {
+                                HapticManager.light()
+                                showingDocScanner = true
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "doc.viewfinder.fill")
+                                    Text("Scan Document (PDF)")
+                                }
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.teal)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color.teal.opacity(0.12))
+                                .cornerRadius(10)
+                            }
+                            
+                            Button(action: {
+                                HapticManager.light()
+                                showingAddDocument = true
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle.fill")
+                                    Text("Add Manual")
+                                }
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.primary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color(UIColor.secondarySystemBackground))
+                                .cornerRadius(10)
+                            }
+                        }
+                        .padding(.bottom, 4)
+                        
                         ForEach(store.documents) { doc in
                             DocumentCard(document: doc, onCopy: {
                                 UIPasteboard.general.string = doc.documentNumber
@@ -128,14 +177,28 @@ public struct DocumentVaultView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: {
-                    HapticManager.light()
-                    showingAddDocument = true
-                }) {
-                    Image(systemName: "plus")
-                        .fontWeight(.semibold)
+                HStack(spacing: 14) {
+                    Button(action: {
+                        HapticManager.light()
+                        showingDocScanner = true
+                    }) {
+                        Image(systemName: "doc.viewfinder.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.teal)
+                    }
+                    
+                    Button(action: {
+                        HapticManager.light()
+                        showingAddDocument = true
+                    }) {
+                        Image(systemName: "plus")
+                            .fontWeight(.semibold)
+                    }
                 }
             }
+        }
+        .sheet(isPresented: $showingDocScanner) {
+            DocumentScannerView(store: store)
         }
         .sheet(isPresented: $showingAddDocument) {
             AddDocumentSheet(store: store)
@@ -322,6 +385,7 @@ struct AddDocumentSheet: View {
     // Attachment State
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     @State private var showingFileImporter = false
+    @State private var showingScannerInAdd = false
     @State private var pendingAttachmentData: Data? = nil
     @State private var pendingAttachmentFileName: String? = nil
     @State private var pendingAttachmentFileType: String? = nil
@@ -395,15 +459,32 @@ struct AddDocumentSheet: View {
                         .padding(.vertical, 4)
                     } else {
                         VStack(spacing: 10) {
-                            HStack(spacing: 12) {
-                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                                    HStack {
-                                        Image(systemName: "photo.badge.plus")
-                                        Text("Upload Photo")
+                            HStack(spacing: 8) {
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingScannerInAdd = true
+                                }) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "doc.viewfinder.fill")
+                                        Text("Scan")
                                     }
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(.system(size: 12.5, weight: .semibold))
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
+                                    .padding(.vertical, 9)
+                                    .background(Color.teal.opacity(0.12))
+                                    .foregroundColor(.teal)
+                                    .cornerRadius(10)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "photo.badge.plus")
+                                        Text("Photo")
+                                    }
+                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 9)
                                     .background(Color.teal.opacity(0.12))
                                     .foregroundColor(.teal)
                                     .cornerRadius(10)
@@ -411,13 +492,13 @@ struct AddDocumentSheet: View {
                                 .buttonStyle(.plain)
                                 
                                 Button(action: { showingFileImporter = true }) {
-                                    HStack {
+                                    HStack(spacing: 4) {
                                         Image(systemName: "doc.badge.plus")
-                                        Text("Upload PDF")
+                                        Text("PDF")
                                     }
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(.system(size: 12.5, weight: .semibold))
                                     .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
+                                    .padding(.vertical, 9)
                                     .background(Color.teal.opacity(0.12))
                                     .foregroundColor(.teal)
                                     .cornerRadius(10)
@@ -464,6 +545,9 @@ struct AddDocumentSheet: View {
                 case .failure(let error):
                     print("Document import failed: \(error)")
                 }
+            }
+            .sheet(isPresented: $showingScannerInAdd) {
+                DocumentScannerView(store: store)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -12,6 +12,8 @@ public struct ContentView: View {
     @State private var searchText = ""
     
     @State private var showingGoogleBackupSheet = false
+    @State private var showingQRScanner = false
+    @State private var showingDocumentScanner = false
     @State private var selectedLoanToEdit: LoanAccount? = nil
     @State private var selectedPolicyToEdit: InsurancePolicyRecord? = nil
     @State private var selectedDocToEdit: DocumentRecord? = nil
@@ -195,6 +197,19 @@ public struct ContentView: View {
                         Spacer()
                         
                         HStack(spacing: 8) {
+                            // ⚡ QR & Barcode Scanner Button
+                            Button(action: {
+                                HapticManager.light()
+                                showingQRScanner = true
+                            }) {
+                                Image(systemName: "qrcode.viewfinder")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.cyan)
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.cyan.opacity(0.15))
+                                    .clipShape(Circle())
+                            }
+                            
                             // ⚡ Sudden Quick Note Button
                             Button(action: {
                                 HapticManager.light()
@@ -852,52 +867,86 @@ public struct ContentView: View {
                         }
                         
                         // 🚀 Quick Launchpad Bar
-                        HStack(spacing: 10) {
-                            NavigationLink(destination: CarMirrorView(captureManager: captureManager)) {
-                                launchpadButton(
-                                    icon: "car.side.fill",
-                                    color: .orange,
-                                    label: "Car Mirror",
-                                    badge: captureManager.stats.isCapturing ? "LIVE" : nil
-                                )
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingQRScanner = true
+                                }) {
+                                    launchpadButton(
+                                        icon: "qrcode.viewfinder",
+                                        color: .cyan,
+                                        label: "QR Scanner",
+                                        badge: "UPI"
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingDocumentScanner = true
+                                }) {
+                                    launchpadButton(
+                                        icon: "doc.viewfinder.fill",
+                                        color: .teal,
+                                        label: "Doc Scanner",
+                                        badge: "PDF"
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                NavigationLink(destination: CarMirrorView(captureManager: captureManager)) {
+                                    launchpadButton(
+                                        icon: "car.side.fill",
+                                        color: .orange,
+                                        label: "Car Mirror",
+                                        badge: captureManager.stats.isCapturing ? "LIVE" : nil
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingQuickNoteSheet = true
+                                }) {
+                                    launchpadButton(
+                                        icon: "square.and.pencil",
+                                        color: .amberAccent,
+                                        label: "Quick Note",
+                                        badge: "\(store.quickNotes.count)"
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                NavigationLink(destination: DocumentVaultView(store: store)) {
+                                    launchpadButton(
+                                        icon: "doc.text.fill",
+                                        color: .emeraldAccent,
+                                        label: "Digital Vault",
+                                        badge: "\(store.documents.count)"
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingGoogleBackupSheet = true
+                                }) {
+                                    launchpadButton(
+                                        icon: "arrow.triangle.2.circlepath",
+                                        color: .blue,
+                                        label: "Cloud Sync",
+                                        badge: nil
+                                    )
+                                    .frame(width: 82)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
-                            
-                            Button(action: {
-                                HapticManager.light()
-                                showingQuickNoteSheet = true
-                            }) {
-                                launchpadButton(
-                                    icon: "square.and.pencil",
-                                    color: .amberAccent,
-                                    label: "Quick Note",
-                                    badge: "\(store.quickNotes.count)"
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            
-                            NavigationLink(destination: DocumentVaultView(store: store)) {
-                                launchpadButton(
-                                    icon: "doc.text.fill",
-                                    color: .teal,
-                                    label: "Vault Scan",
-                                    badge: "\(store.documents.count)"
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            
-                            Button(action: {
-                                HapticManager.light()
-                                showingGoogleBackupSheet = true
-                            }) {
-                                launchpadButton(
-                                    icon: "arrow.triangle.2.circlepath",
-                                    color: .cyan,
-                                    label: "Cloud Sync",
-                                    badge: nil
-                                )
-                            }
-                            .buttonStyle(.plain)
                         }
                         
                         // 💳 Section 1: Financial Command Pillars
@@ -1038,6 +1087,34 @@ public struct ContentView: View {
                                     )
                                 }
                                 
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingDocumentScanner = true
+                                }) {
+                                    PillarCard(
+                                        icon: "doc.viewfinder.fill",
+                                        color: .teal,
+                                        title: "Doc Scanner",
+                                        subtitle: "Multi-page • PDF & Enhancer",
+                                        badgeCount: 0
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button(action: {
+                                    HapticManager.light()
+                                    showingQRScanner = true
+                                }) {
+                                    PillarCard(
+                                        icon: "qrcode.viewfinder",
+                                        color: .cyan,
+                                        title: "QR Scanner",
+                                        subtitle: "UPI Pay • Web • Wi-Fi",
+                                        badgeCount: 0
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                
                                 NavigationLink(destination: LifeDatesHubView(store: store)) {
                                     PillarCard(
                                         icon: "gift.fill",
@@ -1102,6 +1179,12 @@ public struct ContentView: View {
             }
             .sheet(isPresented: $showingGoogleBackupSheet) {
                 GoogleBackupView(store: store)
+            }
+            .sheet(isPresented: $showingQRScanner) {
+                QRScannerView(store: store)
+            }
+            .sheet(isPresented: $showingDocumentScanner) {
+                DocumentScannerView(store: store)
             }
             .sheet(item: $selectedItemToEdit) { item in
                 EditLifeItemSheet(store: store, item: item)
